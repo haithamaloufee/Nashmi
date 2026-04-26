@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "app": "npm install && tsx scripts/start-app.ts",
+    "app": "tsx scripts/start-app.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",

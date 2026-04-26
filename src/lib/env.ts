@@ -37,6 +37,19 @@ export function getMongoUri() {
   if (!/^mongodb(\+srv)?:\/\//i.test(uri)) {
     throw new InvalidEnvError("MONGODB_URI", "must start with mongodb:// or mongodb+srv://");
   }
+  try {
+    const parsed = new URL(uri);
+    const databaseName = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
+    if (!databaseName) {
+      throw new InvalidEnvError("MONGODB_URI", "must include a database name");
+    }
+    if (/[\\/."$\s]/.test(databaseName)) {
+      throw new InvalidEnvError("MONGODB_URI", "contains an invalid database name");
+    }
+  } catch (error) {
+    if (error instanceof InvalidEnvError) throw error;
+    throw new InvalidEnvError("MONGODB_URI", "is not a valid MongoDB connection string");
+  }
   return uri;
 }
 
