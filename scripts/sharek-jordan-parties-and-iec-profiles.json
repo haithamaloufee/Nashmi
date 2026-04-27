@@ -1,0 +1,2279 @@
+{
+  "schemaVersion": "sharek-party-authority-profile-seed-v1",
+  "generatedAt": "2026-04-27",
+  "dataPolicy": {
+    "important": "لا تخترع روابط تواصل اجتماعي أو أرقام منتسبين. الحقول غير الموثقة تبقى null وتظهر في لوحة الإدارة كحقول تحتاج استكمال.",
+    "images": "صور الأحزاب والهيئة مؤجلة وتضاف لاحقًا من لوحة الإدارة.",
+    "primarySource": "سجل الأحزاب الرسمي لدى الهيئة المستقلة للانتخاب هو المصدر الأساسي لبيانات التسجيل والاتصال.",
+    "statistics": "إحصائيات المنتسبين لكل حزب غير مكتملة رسميًا في المصادر المفتوحة؛ لذلك وضعت null إلا إذا تحقق المصدر."
+  },
+  "summary": {
+    "partiesCount": 32,
+    "authorityProfilesCount": 1,
+    "verifiedOfficialWebsitesCount": 4,
+    "socialLinksNeedManualVerificationCount": 29
+  },
+  "authorityProfile": {
+    "type": "authority",
+    "name": "الهيئة المستقلة للانتخاب",
+    "slug": "independent-election-commission",
+    "shortDescription": "الهيئة المستقلة للانتخاب جهة مستقلة أُنشئت عام 2012 لإدارة العملية الانتخابية والإشراف عليها دون تدخل أو تأثير من أي جهة.",
+    "description": "الهيئة المستقلة للانتخاب هي الجهة الرسمية المستقلة المسؤولة عن إدارة الانتخابات والإشراف عليها، ومتابعة شؤون الأحزاب السياسية وفق التشريعات النافذة. صفحة الهيئة داخل Sharek يجب أن تعرض التعريف، الرؤية، الرسالة، القيم، روابط الخدمات، وبيانات التواصل الرسمية.",
+    "establishedYear": 2012,
+    "vision": "ديمقراطية فاعلة تستند إلى انتخابات نزيهة وشفافة، تقوم على التعددية الحزبية وسيادة القانون والمواطنة.",
+    "mission": "إدارة العملية الانتخابية والإشراف على الأحزاب السياسية من خلال تشريعات ناظمة ووفق أفضل الممارسات الدولية.",
+    "goals": [
+      "ضمان إجراء الانتخابات وفق المعايير الدولية.",
+      "إدارة العملية الانتخابية بحياد ونزاهة وشفافية.",
+      "متابعة شؤون الأحزاب السياسية وفق القانون.",
+      "تعزيز المشاركة السياسية والتوعية الانتخابية."
+    ],
+    "contact": {
+      "poBox": "ص.ب. (375)، عمان (11953)، الأردن",
+      "email": "info@iec.jo",
+      "nationalCallCenter": "117100",
+      "phones": [
+        "117100"
+      ],
+      "website": "https://www.iec.jo/ar/",
+      "partyRegistryUrl": "https://www.iec.jo/ar/party-registry",
+      "partiesPlatformUrl": "https://parties.iec.jo/",
+      "trainingPlatformUrl": "https://rfe.iec.jo/"
+    },
+    "socialLinks": {
+      "website": "https://www.iec.jo/ar/",
+      "facebook": null,
+      "x": null,
+      "instagram": null,
+      "youtube": null
+    },
+    "officialLinks": [
+      {
+        "label": "الموقع الرسمي",
+        "url": "https://www.iec.jo/ar/"
+      },
+      {
+        "label": "سجل الأحزاب",
+        "url": "https://www.iec.jo/ar/party-registry"
+      },
+      {
+        "label": "منصة الأحزاب السياسية",
+        "url": "https://parties.iec.jo/"
+      },
+      {
+        "label": "منصة التدريب جاهز",
+        "url": "https://rfe.iec.jo/"
+      },
+      {
+        "label": "التشريعات النافذة",
+        "url": "https://www.iec.jo/ar/%D8%A7%D9%84%D8%AA%D8%B4%D8%B1%D9%8A%D8%B9%D8%A7%D8%AA-%D8%A7%D9%84%D9%86%D8%A7%D9%81%D8%B0%D8%A9"
+      }
+    ],
+    "statistics": {
+      "note": "تظهر أرقام وإحصائيات انتخابية على موقع الهيئة، لكن يجب أن يستوردها النظام من مصدر رسمي أو يتم تحديثها يدويًا مع تاريخ تحقق واضح قبل عرضها كأرقام حالية."
+    },
+    "source": {
+      "sourceName": "الموقع الرسمي للهيئة المستقلة للانتخاب",
+      "sourceUrl": "https://www.iec.jo/en/",
+      "sourceCheckedAt": "2026-04-27"
+    }
+  },
+  "parties": [
+    {
+      "name": "حزب مساواة الأردني",
+      "slug": "musawah-jordanian-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب مساواة الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب مساواة الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2022,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/25709",
+        "nationalNumber": "693000002",
+        "secretaryGeneral": "السيد زهير محمود عوده الشرفاء",
+        "mainHeadquarters": "عمان-الجاردنز- ش الخوارزمي - بنايه 57 - ط 1.",
+        "foundingOrConferenceDate": "2022-10-28",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795410168"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان-الجاردنز- ش الخوارزمي - بنايه 57 - ط 1.",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الشعب الديمقراطي الأردني (حشد)",
+      "slug": "jordanian-democratic-people-party-hashd",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الشعب الديمقراطي الأردني (حشد) حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الشعب الديمقراطي الأردني (حشد) حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2022,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30523",
+        "nationalNumber": "693000003",
+        "secretaryGeneral": "السيدة عبله محمود احمد ابو علبه",
+        "mainHeadquarters": "عمان - جبل الحسين - ش الجليل - بناية رقم (116)",
+        "foundingOrConferenceDate": "2022-11-25",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795823782"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - جبل الحسين - ش الجليل - بناية رقم (116)",
+        "branches": [
+          "الزرقاء: الوسط التجاري - شارع شامل – عمارة رقم 105",
+          "إربد: شارع الحصن – مجمع السيلاوي – بجانب البنك الأهلي الأردني – عمارة رقم 22",
+          "جرش: مخيم سوف – الشارع الرئيسي – مقابل عيادة وكالة الغوث",
+          "الكرك: مثلث الثنية – مقابل البنك الإسلامي – بناية رقم 123",
+          "البلقاء: مخيم البقعة – بالقرب من دوار دائرة الشؤون الفلسطينية – فوق مكتبة الجاحظ"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 5,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب القدوة الأردني",
+      "slug": "jordanian-qudwa-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب القدوة الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب القدوة الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2022,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30524",
+        "nationalNumber": "693000004",
+        "secretaryGeneral": "السيد اياد عبد الفتاح مصلح النجار",
+        "mainHeadquarters": "عمان / شارع وادي صقرة (الأمير محمد) / بالقرب من مدرسة سمير الرفاعي / مجمع (33) / الطابق الأول",
+        "foundingOrConferenceDate": "2022-12-02",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0796111212"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان / شارع وادي صقرة (الأمير محمد) / بالقرب من مدرسة سمير الرفاعي / مجمع (33) / الطابق الأول",
+        "branches": [
+          "إربد: شارع الحصن - عمارة بيبرس - الطابق الثاني - مقابل شركة الشرق الأوسط للتأمين"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 1,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الإصلاح",
+      "slug": "islah-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الإصلاح حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الإصلاح حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30527",
+        "nationalNumber": "693000006",
+        "secretaryGeneral": "السيد مصطفى صالح العماوي",
+        "mainHeadquarters": "عمان - تلاع العلي / ش عبد العزيز الهنداوي بناية رقم (13ج)",
+        "foundingOrConferenceDate": "2023-01-28",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0796660777"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - تلاع العلي / ش عبد العزيز الهنداوي بناية رقم (13ج)",
+        "branches": [
+          "الزرقاء: شارع باب الواد / مجمع كادي الحاج التجاري",
+          "عجلون: عمارة رجائي الياس عيسوه قرب المؤسسة المدنية",
+          "الطفيلة: الشارع الرئيسي – وسط الطفيلة",
+          "إربد/الرمثا: الحي الجنوبي قرب دوار الرمثا الرئيسي",
+          "الكرك: مثلث الثنية عمارة بوابة الكرك",
+          "العقبة: مبنى جمعية المركز الإسلامي",
+          "معان: جمعية الثنية التكاملية للخدمات",
+          "جرش: السوق التجاري",
+          "المفرق: شارع البلدية بجانب البنك الأهلي الأردني"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 9,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الأمــة",
+      "slug": "al-ummah-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الأمــة حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الأمــة حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30529",
+        "nationalNumber": "693000007",
+        "secretaryGeneral": "السيد وائل أكرم اسعد السقا",
+        "mainHeadquarters": "عمان - العبدلي - مقابل وزارة الصناعة والتجارة - مبنى الاتحاد المهني - الطابق السابع",
+        "foundingOrConferenceDate": "2023-02-04",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795554240"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - العبدلي - مقابل وزارة الصناعة والتجارة - مبنى الاتحاد المهني - الطابق السابع",
+        "branches": [
+          "عمان: العبدلي - مقابل وزارة الصناعة والتجارة - مبنى الاتحاد المهني",
+          "عمان: وسط البلد - شارع السلط - فوق مطعم القدس",
+          "إربد: شارع الهاشمي - مقابل مسجد الهاشمي",
+          "الزرقاء: الرصيفة - شارع ياجوز",
+          "جرش: السوق التجاري",
+          "الكرك: مثلث الثنية"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 6,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": "للحزب عدد كبير من الفروع في سجل الهيئة؛ تم وضع عينة مختصرة، ويمكن لكودكس حفظ النص الكامل إذا قرأ صفحة الهيئة مباشرة."
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الميثاق الوطني",
+      "slug": "national-charter-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الميثاق الوطني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الميثاق الوطني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30533",
+        "nationalNumber": "693000010",
+        "secretaryGeneral": "السيد عبيد احمد عبيد ياسين",
+        "mainHeadquarters": "عمان - وادي السير - حي الروابي - شارع ابراهيم قطان - بناية رقم (27)",
+        "foundingOrConferenceDate": "2023-03-04",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0771000618",
+          "+962771000618",
+          "+96264403102"
+        ],
+        "email": "info@mithaqparty.jo",
+        "website": "https://mithaqparty.jo/",
+        "headquarters": "عمان - وادي السير - حي الروابي - شارع ابراهيم قطان - بناية رقم (27)",
+        "branches": [
+          "إربد: ايدون / شارع وصفي التل بالقرب من شارع عمان",
+          "إربد: لواء الرمثا / وسط البلد / شارع الوحدة",
+          "الكرك: الثنية / الصبيحيات / شارع المديرية"
+        ]
+      },
+      "socialLinks": {
+        "website": "https://mithaqparty.jo/",
+        "facebook": "https://www.facebook.com/nationalcharterparty",
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 3,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [
+        {
+          "title": "موقع رسمي نشط وبيانات حزبية حديثة",
+          "date": "2026-03",
+          "description": "يظهر الموقع الرسمي أخبارًا وبيانات حزبية حديثة، إضافة إلى معلومات تواصل مباشرة.",
+          "sourceUrl": "https://mithaqparty.jo/"
+        },
+        {
+          "title": "إعلان رقم منتسبين منشور صحفيًا",
+          "date": "2024",
+          "description": "ورد في خبر صحفي أن الحزب أعلن وصول منتسبيه إلى 10033 عضوًا بحسب آخر إحصائية من الهيئة في ذلك الوقت. يُفضّل التحقق من الرقم قبل عرضه كإحصائية حالية.",
+          "sourceUrl": "https://www.addustour.com/articles/1426642-10-%D8%A2%D9%84%D8%A7%D9%81-%D9%85%D9%86%D8%AA%D8%B3%D8%A8-%D9%84%D8%AD%D8%B2%D8%A8-%D8%A7%D9%84%D9%85%D9%8A%D8%AB%D8%A7%D9%82-%D8%A7%D9%84%D9%88%D8%B7%D9%86%D9%8A"
+        }
+      ],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": true,
+        "socialLinksNeedManualVerification": false,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "الحزب الديمقراطي الاجتماعي الأردني",
+      "slug": "jordanian-social-democratic-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "الحزب الديمقراطي الاجتماعي الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "الحزب الديمقراطي الاجتماعي الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30534",
+        "nationalNumber": "693000011",
+        "secretaryGeneral": "السيد عبد الحميد علي حمد عليمات",
+        "mainHeadquarters": "عمان - الشميساني - ش شجرة الدر - عمارة 74 - خلف السيفوي",
+        "foundingOrConferenceDate": "2023-03-10",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795314931"
+        ],
+        "email": null,
+        "website": "https://www.sdp-jordan.com",
+        "headquarters": "عمان - الشميساني - ش شجرة الدر - عمارة 74 - خلف السيفوي",
+        "branches": [
+          "عمان: الرجم الشامي - ضاحية الأميرة إيمان - مقابل مسجد التوحيد",
+          "إربد: ايدون - مجمع عمان الجديد - عمارة القدس - ط3",
+          "المفرق: شارع البلدية - مقابل البلدية - بناية الوقفي ط4"
+        ]
+      },
+      "socialLinks": {
+        "website": "https://www.sdp-jordan.com",
+        "facebook": "https://www.facebook.com/JSDP.JORDAN",
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 3,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [
+        {
+          "title": "موقع رسمي يحتوي أخبارًا وبرامج وفعاليات",
+          "date": "2025",
+          "description": "الموقع الرسمي يعرض أخبارًا وفعاليات وبرامج الحزب بصورة دورية.",
+          "sourceUrl": "https://sdp-jordan.com/"
+        }
+      ],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": true,
+        "socialLinksNeedManualVerification": false,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الوحدويون الديمقراطي الاردني",
+      "slug": "jordanian-democratic-unionists-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الوحدويون الديمقراطي الاردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الوحدويون الديمقراطي الاردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30536",
+        "nationalNumber": "693000012",
+        "secretaryGeneral": "السيد راكان حسين أبو طرية",
+        "mainHeadquarters": "عمان - جبل عمان - الدوار الثالث - رقم (66) - ش عبدالمنعم رياض - زهران",
+        "foundingOrConferenceDate": "2023-03-17",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0799064908"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - جبل عمان - الدوار الثالث - رقم (66) - ش عبدالمنعم رياض - زهران",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الغد الأردني",
+      "slug": "jordanian-al-ghad-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الغد الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الغد الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30548",
+        "nationalNumber": "693000014",
+        "secretaryGeneral": "السيد محمد رمضان محمد عبدالله",
+        "mainHeadquarters": "عمان - منطقة أحد - البيضاء - ش المستندة - الطابق الأول - شقة رقم (3)",
+        "foundingOrConferenceDate": "2023-04-14",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0785145574"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - منطقة أحد - البيضاء - ش المستندة - الطابق الأول - شقة رقم (3)",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "المستقبل والحياة الأردني",
+      "slug": "jordanian-future-and-life-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "المستقبل والحياة الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "المستقبل والحياة الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30549",
+        "nationalNumber": "693000015",
+        "secretaryGeneral": "السيد صلاح ابراهيم محمد القضاه",
+        "mainHeadquarters": "عمان – ش وصفي التل – بجانب مستشفى الشرق الأوسط للعيون – ش حمدان خليفات – عمارة رقم 30",
+        "foundingOrConferenceDate": "2023-04-28",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0790840862"
+        ],
+        "email": null,
+        "website": "https://jordanianfutureparty.org",
+        "headquarters": "عمان – ش وصفي التل – بجانب مستشفى الشرق الأوسط للعيون – ش حمدان خليفات – عمارة رقم 30",
+        "branches": [
+          "جنوب عمان: الجويدة - الطيبة - الشارع الرئيسي - بجانب بنك الإسكان - مجمع محمد سلامة عمرو رقم (2)"
+        ]
+      },
+      "socialLinks": {
+        "website": "https://jordanianfutureparty.org",
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 1,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": true,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب مسار",
+      "slug": "masar-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب مسار حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب مسار حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30550",
+        "nationalNumber": "693000016",
+        "secretaryGeneral": "السيد غازي عوض محمد عليان",
+        "mainHeadquarters": "عمان - دير غبار - مجمع السلطان - ش نائب عمران المعايطة - بناية رقم (33) ط4",
+        "foundingOrConferenceDate": "2023-04-29",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0792366777"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - دير غبار - مجمع السلطان - ش نائب عمران المعايطة - بناية رقم (33) ط4",
+        "branches": [
+          "عمان: الشميساني / قرب مركز هيا الثقافي",
+          "جرش: مقابل بنك القاهرة عمان",
+          "معان: شارع المحكمة فوق المؤسسة المدنية",
+          "عجلون: مقابل نقابة المهندسين"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 4,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الوحدة الشعبية الديمقراطي الأردني",
+      "slug": "jordanian-democratic-popular-unity-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الوحدة الشعبية الديمقراطي الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الوحدة الشعبية الديمقراطي الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30551",
+        "nationalNumber": "693000017",
+        "secretaryGeneral": "السيد عصام عزمي عبد العزيز الخواجا",
+        "mainHeadquarters": "عمان - جبل الحسين - شارع طبريا - خلف مستشفى الامل - بناية رقم 96",
+        "foundingOrConferenceDate": "2023-05-05",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0776400456"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - جبل الحسين - شارع طبريا - خلف مستشفى الامل - بناية رقم 96",
+        "branches": [
+          "الزرقاء: مقابل الأحوال المدنية / شارع قاسم بولاد",
+          "إربد: شارع الهاشمي شمال مسجد الهاشمي",
+          "البلقاء: مخيم البقعة الشارع الرئيسي",
+          "الكرك: حي البقاعين - شارع المستشفى الإيطالي"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 4,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "الحزب الوطني الدستوري",
+      "slug": "national-constitutional-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "الحزب الوطني الدستوري حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "الحزب الوطني الدستوري حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30553",
+        "nationalNumber": "693000019",
+        "secretaryGeneral": "السيد احمد عبد الرحيم ابراهيم الشناق",
+        "mainHeadquarters": "عمان - ضاحية الرشيد - ش ابراهيم بن سنان - بناية رقم (27) عمارة الإنشراح ط4",
+        "foundingOrConferenceDate": "2023-05-05",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795680419"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - ضاحية الرشيد - ش ابراهيم بن سنان - بناية رقم (27) عمارة الإنشراح ط4",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب العمال",
+      "slug": "jordanian-labour-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب العمال حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب العمال حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30554",
+        "nationalNumber": "693000020",
+        "secretaryGeneral": "السيدة رلى احمد محمد الفرا",
+        "mainHeadquarters": "عمان الشميساني شارع الشريف ناصر بن جميل بناية رقم (14)",
+        "foundingOrConferenceDate": "2023-05-06",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0776050550"
+        ],
+        "email": null,
+        "website": "https://jolabour.org/",
+        "headquarters": "عمان الشميساني شارع الشريف ناصر بن جميل بناية رقم (14)",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": "https://jolabour.org/",
+        "facebook": "https://www.facebook.com/jolabour.org",
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [
+        {
+          "title": "موقع رسمي للحزب",
+          "date": "2026",
+          "description": "يوجد موقع رسمي منشور باسم الحزب يعرض أخبارًا وموادًا حزبية.",
+          "sourceUrl": "https://jolabour.org/"
+        }
+      ],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": true,
+        "socialLinksNeedManualVerification": false,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "الحزب الشيوعي الأردني",
+      "slug": "jordanian-communist-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "الحزب الشيوعي الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "الحزب الشيوعي الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30555",
+        "nationalNumber": "693000021",
+        "secretaryGeneral": "السيد فهمي خليل درويش الكتوت",
+        "mainHeadquarters": "عمان – حي الرشيد – ش علي الجماعين – بناية رقم (4)",
+        "foundingOrConferenceDate": "2023-05-12",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795591375"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان – حي الرشيد – ش علي الجماعين – بناية رقم (4)",
+        "branches": [
+          "الزرقاء: اوتستراد الزرقاء - شارع الجيش - قرب محافظة الزرقاء",
+          "إربد: عمارة الطعاني - شارع المتنبي - مقابل مسجد الهاشمي",
+          "مادبا: شارع سالم ابو الغنم - عمارة رقم 8"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 3,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب البعث العربي الاشتراكي الأردني",
+      "slug": "jordanian-arab-socialist-baath-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب البعث العربي الاشتراكي الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب البعث العربي الاشتراكي الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30556",
+        "nationalNumber": "693000022",
+        "secretaryGeneral": "السيد زهير محمود احمد الرواشدة",
+        "mainHeadquarters": "عمان - الجاردنز - عمارة رقم (30) - شارع حمدان خليفات - الطابق الثاني",
+        "foundingOrConferenceDate": "2023-05-12",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0775404090"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - الجاردنز - عمارة رقم (30) - شارع حمدان خليفات - الطابق الثاني",
+        "branches": [
+          "الكرك: المرج / بجانب مديرية صحة الكرك",
+          "إربد: شارع الملك حسين / قرب دوار القادسية"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 2,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب حصاد الأردني",
+      "slug": "hasad-jordanian-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب حصاد الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب حصاد الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30557",
+        "nationalNumber": "693000023",
+        "secretaryGeneral": "السيد ديب ابراهيم ديب دمياطي / الأمين العام بالإنابة",
+        "mainHeadquarters": "عمان - ش وصفي التل - بجانب مستشفى الشرق الأوسط للعيون - عمارة رقم (30)",
+        "foundingOrConferenceDate": "2023-05-12",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795539081"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - ش وصفي التل - بجانب مستشفى الشرق الأوسط للعيون - عمارة رقم (30)",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الوفاق الأردني",
+      "slug": "jordanian-wifaq-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الوفاق الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الوفاق الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30558",
+        "nationalNumber": "693000024",
+        "secretaryGeneral": "السيد عبد الرحمن محمود خليل كساب",
+        "mainHeadquarters": "عمان - جبل الحسين - ش نابلس - بناية رقم (55)",
+        "foundingOrConferenceDate": "2023-05-12",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0790585101"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - جبل الحسين - ش نابلس - بناية رقم (55)",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "الحزب العربي الديمقراطي الأردني",
+      "slug": "jordanian-arab-democratic-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "الحزب العربي الديمقراطي الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "الحزب العربي الديمقراطي الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30560",
+        "nationalNumber": "693000026",
+        "secretaryGeneral": "السيد عثمان نايف عثمان السواعي",
+        "mainHeadquarters": "عمان - صويلح - إشارة الدوريات باتجاه محافظة البلقاء - عمارة رقم (370) الشارع الرئيسي",
+        "foundingOrConferenceDate": "2023-05-13",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0792870164"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - صويلح - إشارة الدوريات باتجاه محافظة البلقاء - عمارة رقم (370) الشارع الرئيسي",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب نماء",
+      "slug": "namaa-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب نماء حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب نماء حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30562",
+        "nationalNumber": "693000028",
+        "secretaryGeneral": "السيد محمد عقلة عبدالرحمن الرواشدة",
+        "mainHeadquarters": "عمان - لواء بيادر وادي السير - شارع ام السماق امتداد شارع مكة – مجمع الفيصل - عمارة رقم (4) - ط (1)",
+        "foundingOrConferenceDate": "2023-09-09",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0777884444",
+          "0790555948"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - لواء بيادر وادي السير - شارع ام السماق امتداد شارع مكة – مجمع الفيصل - عمارة رقم (4) - ط (1)",
+        "branches": [
+          "إربد: شارع ابو راشد - مجمع ايمن حميدات - مكتب رقم (9)"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 1,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "الحزب المدني الديمقراطي الأردني",
+      "slug": "jordanian-civil-democratic-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "الحزب المدني الديمقراطي الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "الحزب المدني الديمقراطي الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30563",
+        "nationalNumber": "693000029",
+        "secretaryGeneral": "السيد حماده حسني احمد ابو نجمه",
+        "mainHeadquarters": "عمان - الصويفية - ش باريس - مجمع انوار باريس(2) - العمارة(19) - الطابق الثاني - مكتب (214)",
+        "foundingOrConferenceDate": "2023-12-16",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795625044"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - الصويفية - ش باريس - مجمع انوار باريس(2) - العمارة(19) - الطابق الثاني - مكتب (214)",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الوفاء الوطني الأردني",
+      "slug": "jordanian-national-loyalty-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الوفاء الوطني الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الوفاء الوطني الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2023,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30564",
+        "nationalNumber": "693000030",
+        "secretaryGeneral": "السيد مازن حمد عيسى الضلاعين",
+        "mainHeadquarters": "عمان - تلاع العلي - ش وصفي التل - مقابل جبري - مجمع البركة - ط2 - مكتب رقم 7",
+        "foundingOrConferenceDate": "2023-12-30",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0790478087",
+          "0772306581",
+          "0799506729",
+          "0788394843"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - تلاع العلي - ش وصفي التل - مقابل جبري - مجمع البركة - ط2 - مكتب رقم 7",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب البناء الوطني",
+      "slug": "national-building-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب البناء الوطني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب البناء الوطني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2024,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30565",
+        "nationalNumber": "693000031",
+        "secretaryGeneral": "السيد بركات عطيوي ابراهيم عوجان",
+        "mainHeadquarters": "عمان/ الشميساني/ ش عبدالحميد شرف/ بناية رقم (89) / مجمع ابو السعود-ط (2)",
+        "foundingOrConferenceDate": "2024-01-12",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0798473333"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان/ الشميساني/ ش عبدالحميد شرف/ بناية رقم (89) / مجمع ابو السعود-ط (2)",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب عزم",
+      "slug": "azm-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب عزم حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب عزم حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2024,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30566",
+        "nationalNumber": "693000032",
+        "secretaryGeneral": "السيد زيد إبراهيم نصار نفاع",
+        "mainHeadquarters": "عمان / الرابية / شارع عبدالله ابو طويلة / اسكان الخفش / عمارة رقم 5 / الطابق الأول",
+        "foundingOrConferenceDate": "2024-01-20",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0792380023"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان / الرابية / شارع عبدالله ابو طويلة / اسكان الخفش / عمارة رقم 5 / الطابق الأول",
+        "branches": [
+          "إربد: دير ابي سعيد - الحي الشمالي - مقابل متصرفية لواء الكورة"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 1,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب التنمية الوطني",
+      "slug": "national-development-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب التنمية الوطني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب التنمية الوطني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2024,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30567",
+        "nationalNumber": "693000033",
+        "secretaryGeneral": "السيد ناظم نواف محمود عبابنه",
+        "mainHeadquarters": "عمان - جبل الحسين - بناية مدريد رقم (1) - الطابق الأول - مكتب رقم (11)",
+        "foundingOrConferenceDate": "2024-02-23",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0788017159"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - جبل الحسين - بناية مدريد رقم (1) - الطابق الأول - مكتب رقم (11)",
+        "branches": [
+          "إربد: مقابل المستشفى الإسلامي - عمارة عباس - الطابق الأول"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 1,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب البناء و العمل",
+      "slug": "building-and-work-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب البناء و العمل حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب البناء و العمل حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2024,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30568",
+        "nationalNumber": "693000034",
+        "secretaryGeneral": "السيد زياد محمد حمدان الحجاج",
+        "mainHeadquarters": "عمان - شفا بدران - شارع محمد حمدان الحجاج - بناية رقم (61)",
+        "foundingOrConferenceDate": "2024-02-23",
+        "mergerDate": "2026-03-11",
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0796220005"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - شفا بدران - شارع محمد حمدان الحجاج - بناية رقم (61)",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب النهضة و العمال الديمقراطي",
+      "slug": "renaissance-and-democratic-workers-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب النهضة و العمال الديمقراطي حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب النهضة و العمال الديمقراطي حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2024,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30569",
+        "nationalNumber": "693000035",
+        "secretaryGeneral": "السيد مصطفى احمد موسى الفريحات",
+        "mainHeadquarters": "عمان دير غبار - مقابل مسجد أبو عيشة - بناية بوابة عمان - ط4",
+        "foundingOrConferenceDate": "2024-02-23",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795056413"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان دير غبار - مقابل مسجد أبو عيشة - بناية بوابة عمان - ط4",
+        "branches": [
+          "إربد: جامعة اليرموك - البوابة الشمالية - بناية المرحوم عبدالرؤوف التل - الطابق الأول"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 1,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب العمل",
+      "slug": "amal-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب العمل حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب العمل حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2024,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30570",
+        "nationalNumber": "693000036",
+        "secretaryGeneral": "السيد معتز محمد موسى ابو رمان",
+        "mainHeadquarters": "عمان - الرابية - عمارة الرابية بلازا - رقم (11) - الطابق الثالث",
+        "foundingOrConferenceDate": "2024-02-26",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0790155555"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - الرابية - عمارة الرابية بلازا - رقم (11) - الطابق الثالث",
+        "branches": [
+          "المفرق: البادية الشمالية - الصالحية - الشارع الرئيسي",
+          "عجلون: إشارة مثلث اشتفينا",
+          "جرش: شارع المفرق - عمارة اتحاد الجمعيات التعاونية"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 3,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب الاتحاد الوطني الأردني",
+      "slug": "jordanian-national-union-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب الاتحاد الوطني الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب الاتحاد الوطني الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2024,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30571",
+        "nationalNumber": "693000037",
+        "secretaryGeneral": "السيد محمد فواز احمد خصاونه",
+        "mainHeadquarters": "عمان - أم أذينة / ش الملك فيصل بن عبد العزيز / بناية رقم (60) ط1",
+        "foundingOrConferenceDate": "2024-03-05",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0786548248"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - أم أذينة / ش الملك فيصل بن عبد العزيز / بناية رقم (60) ط1",
+        "branches": [
+          "الطفيلة: القصبة - واد زيد - الشارع الرئيسي",
+          "إربد: ايدون - الحي الجنوبي - بالقرب من دوار النسيم",
+          "الزرقاء: الرصيفة - الجبل الشمالي - الشارع الرئيسي"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 3,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب المحافظين الأردني",
+      "slug": "jordanian-conservatives-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب المحافظين الأردني حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب المحافظين الأردني حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2025,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/30572",
+        "nationalNumber": "693000039",
+        "secretaryGeneral": "السيد طلال طلب فنيخر الشرفات",
+        "mainHeadquarters": "عمان - شارع مكة - دخلة محطة السندباد للمحروقات - شارع الريحانة - بناية رقم 20 - الطابق الأرضي شمال",
+        "foundingOrConferenceDate": "2025-08-03",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "07955553367"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - شارع مكة - دخلة محطة السندباد للمحروقات - شارع الريحانة - بناية رقم 20 - الطابق الأرضي شمال",
+        "branches": []
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 0,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب مبادرة",
+      "slug": "mubadara-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب مبادرة حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب مبادرة حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": 2025,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/37074",
+        "nationalNumber": "693000040",
+        "secretaryGeneral": "السيد صلاح تميم موسى المعايطه",
+        "mainHeadquarters": "عمان – ام اذينه – شارع دجلة - مبنى رقم 27",
+        "foundingOrConferenceDate": "2025-10-14",
+        "mergerDate": null,
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0775111666"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان – ام اذينه – شارع دجلة - مبنى رقم 27",
+        "branches": [
+          "إربد: شارع محمد مريود - مجمع فؤاد الحجي 2 - طابق 3 - مكتب 54",
+          "الزرقاء: الزرقاء الجديدة - شارع 36 - مقابل السيفوي - حديقة القدس",
+          "عجلون: مبنى الاتحاد العام للجمعيات الخيرية - مقابل أشغال عجلون",
+          "جرش: دوار القيروان - عمارة احمد العتوم - الطابق الثاني"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 4,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [
+        {
+          "title": "اندماج حزبي إرادة وتقدّم تحت اسم مبادرة",
+          "date": "2025-10",
+          "description": "أفادت مصادر صحفية ورسمية بأن إجراءات اندماج حزبي إرادة وتقدّم أصبحت سارية قانونيًا تحت مسمى حزب مبادرة.",
+          "sourceUrl": "https://www.fananews.com/%D8%A7%D9%86%D8%AF%D9%85%D8%A7%D8%AC-%D8%A5%D8%B1%D8%A7%D8%AF%D8%A9-%D9%88%D8%AA%D9%82%D8%AF%D9%91%D9%85-%D8%B1%D8%B3%D9%85%D9%8A%D8%A7%D9%8B-%D9%81%D9%8A-%D8%AD%D8%B2%D8%A8-%D8%AC%D8%AF%D9%8A/"
+        }
+      ],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    },
+    {
+      "name": "حزب التغيير",
+      "slug": "change-party",
+      "status": "active",
+      "isVerified": true,
+      "shortDescription": "حزب التغيير حزب سياسي أردني مسجل في سجل الأحزاب لدى الهيئة المستقلة للانتخاب، وتعرض هذه البطاقة بياناته التعريفية والتواصلية الأساسية كما وردت في المصادر الرسمية المتاحة.",
+      "description": "حزب التغيير حزب سياسي أردني مسجل وفق أحكام قانون الأحزاب السياسية. هذه البيانات مخصصة لصفحة الحزب داخل منصة Sharek، وتركز على التعريف الرسمي، بيانات التواصل، المقر، تاريخ المؤتمر، وروابط الحزب الموثقة عند توفرها، مع ترك الصور والشعارات ليتم رفعها لاحقًا من لوحة الإدارة.",
+      "foundedYear": null,
+      "vision": "تعزيز المشاركة السياسية والعمل العام المنظم وفق أحكام الدستور والقانون، وتمكين المواطنين من الاطلاع على البرامج والأنشطة الحزبية بصورة واضحة ومحايدة.",
+      "goals": [
+        "المشاركة في الحياة السياسية والعمل العام بطرق سلمية وديمقراطية.",
+        "تقديم معلومات واضحة للمواطنين حول الحزب وبرامجه وأنشطته.",
+        "تعزيز الحوار السياسي المنظم واحترام التعددية وسيادة القانون."
+      ],
+      "officialRegistry": {
+        "registryUrl": "https://iec.jo/node/37499",
+        "nationalNumber": "693000041",
+        "secretaryGeneral": "السيد فوزان فهد فوزان البقور",
+        "mainHeadquarters": "عمان - الصويفية - مقابل بن العميد - عمارة رقم (10)",
+        "foundingOrConferenceDate": null,
+        "mergerDate": "2026-03-16",
+        "sourceName": "سجل الأحزاب - الهيئة المستقلة للانتخاب",
+        "sourceCheckedAt": "2026-04-27"
+      },
+      "contact": {
+        "phones": [
+          "0795109301"
+        ],
+        "email": null,
+        "website": null,
+        "headquarters": "عمان - الصويفية - مقابل بن العميد - عمارة رقم (10)",
+        "branches": [
+          "عجلون: مقابل دوار عجلون",
+          "جرش: مقابل مصانع ألبان - منطقة الدير"
+        ]
+      },
+      "socialLinks": {
+        "website": null,
+        "facebook": null,
+        "x": null,
+        "instagram": null,
+        "youtube": null
+      },
+      "statistics": {
+        "membersCount": null,
+        "womenMembersCount": null,
+        "youthMembersCount": null,
+        "menMembersCount": null,
+        "branchesCount": 2,
+        "statisticsNote": "لا يتم اعتماد عدد منتسبي الحزب في هذا الملف إلا إذا توفر رقم حديث موثق لكل حزب من مصدر رسمي أو تصريح واضح. يمكن تحديث هذه الحقول لاحقًا من لوحة الإدارة."
+      },
+      "committees": [],
+      "latestAchievements": [],
+      "dataQuality": {
+        "registryDataVerified": true,
+        "officialWebsiteVerified": false,
+        "socialLinksNeedManualVerification": true,
+        "statisticsNeedManualVerification": true,
+        "imagesDeferred": true,
+        "notes": ""
+      },
+      "media": {
+        "logoMediaId": null,
+        "coverMediaId": null,
+        "imageUploadNote": "صور الحزب والشعار والغلاف مؤجلة وتضاف لاحقًا من لوحة الإدارة."
+      }
+    }
+  ],
+  "suggestedSchemaExtensions": {
+    "Party": [
+      "officialRegistry.nationalNumber",
+      "officialRegistry.secretaryGeneral",
+      "officialRegistry.foundingOrConferenceDate",
+      "officialRegistry.mergerDate",
+      "contact.phones",
+      "contact.headquarters",
+      "contact.branches",
+      "contact.website",
+      "socialLinks.website/facebook/x/instagram/youtube",
+      "statistics.membersCount/womenMembersCount/youthMembersCount/branchesCount/statisticsNote",
+      "committees[]",
+      "latestAchievements[]",
+      "dataQuality.*"
+    ],
+    "AuthorityProfile": [
+      "name",
+      "slug",
+      "shortDescription",
+      "description",
+      "establishedYear",
+      "vision",
+      "mission",
+      "goals[]",
+      "contact",
+      "socialLinks",
+      "officialLinks[]",
+      "statistics",
+      "source"
+    ]
+  }
+}

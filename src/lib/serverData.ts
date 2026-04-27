@@ -10,6 +10,7 @@ import Report from "@/models/Report";
 import AuditLog from "@/models/AuditLog";
 import Comment from "@/models/Comment";
 import PartyFollower from "@/models/PartyFollower";
+import AuthorityProfile from "@/models/AuthorityProfile";
 
 function logSafeDataError(error: unknown) {
   if (!(error instanceof Error)) {
@@ -69,6 +70,13 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
       viewerUserId ? PartyFollower.exists({ partyId: party._id, userId: viewerUserId }) : null
     ]);
     return serialize({ party, posts, polls, isFollowing: Boolean(follow) });
+  });
+}
+
+export async function getAuthorityProfileBySlug(slug: string) {
+  return safeData(null as unknown, async () => {
+    const authority = await AuthorityProfile.findOne({ slug, status: "active" }).lean();
+    return authority ? serialize(authority) : null;
   });
 }
 

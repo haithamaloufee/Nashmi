@@ -15,12 +15,86 @@ import Comment from "../src/models/Comment";
 import Report from "../src/models/Report";
 import AuditLog from "../src/models/AuditLog";
 import Law from "../src/models/Law";
-import PartyFollower from "../src/models/PartyFollower";
 import PollVote from "../src/models/PollVote";
+import AuthorityProfile from "../src/models/AuthorityProfile";
 import { recalculateCounters } from "./recalculate-counters";
 import { demoLawCards } from "./demo-data";
+import jordanProfiles from "./sharek-jordan-parties-and-iec-profiles.json";
 
 const password = "Password123!";
+
+const placeholderPartySlugs = [
+  "civil-renaissance",
+  "green-development",
+  "national-future",
+  "youth-reform",
+  "social-justice"
+];
+
+type JordanPartySeed = (typeof jordanProfiles.parties)[number];
+
+function compactSearchValues(values: unknown[]): string[] {
+  return values
+    .flatMap((value) => {
+      if (Array.isArray(value)) return compactSearchValues(value);
+      if (value && typeof value === "object") return compactSearchValues(Object.values(value));
+      return typeof value === "string" ? [value] : [];
+    })
+    .filter(Boolean);
+}
+
+function buildPartySearchText(party: JordanPartySeed) {
+  return createSearchText(
+    compactSearchValues([
+      party.name,
+      party.shortDescription,
+      party.description,
+      party.vision,
+      party.goals,
+      party.officialRegistry,
+      party.contact,
+      party.socialLinks,
+      party.statistics,
+      party.committees,
+      party.latestAchievements
+    ])
+  );
+}
+
+async function archivePlaceholderParties() {
+  const placeholders = await Party.find({ slug: { $in: placeholderPartySlugs } }).select("_id slug").lean();
+  if (placeholders.length === 0) return;
+
+  const placeholderIds = placeholders.map((party) => party._id);
+  await Promise.all([
+    Party.updateMany({ slug: { $in: placeholderPartySlugs } }, { $set: { status: "archived" } }),
+    Post.updateMany({ partyId: { $in: placeholderIds }, authorType: "party" }, { $set: { status: "hidden" } }),
+    Poll.updateMany({ partyId: { $in: placeholderIds }, authorType: "party" }, { $set: { status: "hidden" } })
+  ]);
+}
+
+function partySeedUpdate(party: JordanPartySeed) {
+  return {
+    name: party.name,
+    slug: party.slug,
+    shortDescription: party.shortDescription,
+    description: party.description,
+    foundedYear: party.foundedYear,
+    vision: party.vision,
+    goals: party.goals,
+    socialLinks: party.socialLinks,
+    officialRegistry: party.officialRegistry,
+    contact: party.contact,
+    committees: party.committees,
+    statistics: party.statistics,
+    latestAchievements: party.latestAchievements,
+    dataQuality: party.dataQuality,
+    contactEmail: party.contact?.email || null,
+    status: party.status,
+    isVerified: party.isVerified,
+    searchNormalized: buildPartySearchText(party)
+  };
+}
 
 async function upsertUser(email: string, role: string, name: string) {
   const emailNormalized = normalizeEmail(email);
@@ -51,44 +125,26 @@ async function main() {
     upsertUser("citizen2@sharek.demo", "citizen", "مواطن تجريبي 2"),
     upsertUser("citizen3@sharek.demo", "citizen", "مواطنة تجريبية 3")
   ]);
-  const partyUsers = await Promise.all(
-    [1, 2, 3, 4, 5].map((index) => upsertUser(`party${index}@sharek.demo`, "party", `حساب حزب ${index}`))
+  await Promise.all(
+    [1, 2, 3, 4, 5].map((index) => upsertUser(`party${index}@sharek.demo`, "party", `Demo party account ${index}`))
   );
 
-  const partySeeds = [
-    ["حزب النهضة المدنية", "civil-renaissance", "يركز على تحديث الخدمات العامة وتعزيز المشاركة المدنية."],
-    ["حزب المستقبل الوطني", "national-future", "يطرح أفكارا عامة حول التعليم والفرص الاقتصادية للشباب."],
-    ["حزب العدالة المجتمعية", "social-justice", "يهتم بالعدالة الاجتماعية وسياسات الحماية والمساواة."],
-    ["حزب التنمية الخضراء", "green-development", "يركز على التنمية المستدامة وحماية البيئة والاقتصاد المحلي."],
-    ["حزب الشباب والإصلاح", "youth-reform", "يعرض رؤى حول تمكين الشباب وتطوير العمل العام."]
-  ];
+  await archivePlaceholderParties();
 
-  const parties = [];
-  for (let index = 0; index < partySeeds.length; index += 1) {
-    const [name, slug, shortDescription] = partySeeds[index];
-    let party = await Party.findOne({ slug });
-    if (!party) {
-      party = await Party.create({
-        name,
-        slug,
-        shortDescription,
-        description: `${shortDescription} هذا وصف تجريبي محايد لا يتضمن توصية أو دعاية، ويهدف إلى إظهار طريقة عرض معلومات الأحزاب داخل منصة شارك.`,
-        foundedYear: 2024 - index,
-        vision: "تعزيز المشاركة العامة المنظمة واحترام سيادة القانون وتوسيع قنوات الحوار.",
-        goals: ["تطوير التواصل مع المواطنين", "نشر الوعي السياسي", "دعم مشاركة الشباب", "تقديم معلومات واضحة عن البرامج العامة"],
-        socialLinks: {},
-        contactEmail: `party${index + 1}@sharek.demo`,
-        accountUserId: partyUsers[index]._id,
-        createdByAdminId: superAdmin._id,
-        status: "active",
-        isVerified: true,
-        searchNormalized: createSearchText([name, shortDescription, "مشاركة سياسية شباب قانون"])
-      });
-    } else if (!party.accountUserId) {
-      party.accountUserId = partyUsers[index]._id;
-      await party.save();
-    }
-    parties.push(party);
+  for (const partyData of jordanProfiles.parties) {
+    await Party.findOneAndUpdate(
+      { slug: partyData.slug },
+      {
+        $set: partySeedUpdate(partyData),
+        $setOnInsert: {
+          createdByAdminId: superAdmin._id,
+          followersCount: 0,
+          postsCount: 0,
+          pollsCount: 0
+        }
+      },
+      { upsert: true, new: true }
+    );
   }
 
   const lawDocs = [];
@@ -135,66 +191,67 @@ async function main() {
     lawDocs.push(law);
   }
 
-  const postAuthors = [...parties, ...parties, null, null, null, null];
   const posts = [];
-  for (let index = 0; index < 10; index += 1) {
-    const party = postAuthors[index] as any;
-    const authorUser = party ? partyUsers[parties.findIndex((item) => String(item._id) === String(party._id))] : iec;
-    const authorType = party ? "party" : "iec";
-    const title = party ? `تحديث من ${party.name}` : `تنويه توعوي من الهيئة ${index - 5}`;
-    let post = await Post.findOne({ title });
+  for (let index = 0; index < 4; index += 1) {
+    const title = `IEC awareness notice ${index + 1}`;
+    let post = await Post.findOne({ title, authorType: "iec" });
     if (!post) {
-      const content = party
-        ? "منشور تجريبي محايد يعرض نشاطا عاما ومعلومة تنظيمية دون دعاية أو دعوة تصويت."
-        : "تؤكد الهيئة أهمية قراءة التعليمات الرسمية والتحقق من مصادر المعلومات قبل المشاركة.";
+      const content = "The commission encourages citizens to check official sources before participating.";
       post = await Post.create({
-        authorType,
-        authorUserId: authorUser._id,
-        partyId: party?._id || null,
+        authorType: "iec",
+        authorUserId: iec._id,
+        partyId: null,
         title,
         content,
         mediaIds: [],
-        tags: ["توعية", "مشاركة"],
+        tags: ["awareness", "participation"],
         status: "published",
         publishedAt: new Date(Date.now() - index * 3600_000),
-        searchNormalized: createSearchText([title, content, "توعية مشاركة"])
+        searchNormalized: createSearchText([title, content, "awareness participation"])
       });
     }
     posts.push(post);
   }
 
+  const pollSeeds = [
+    {
+      question: "Which topic should Sharek cover most?",
+      description: "A neutral platform engagement poll.",
+      options: ["Parties", "Laws", "Elections"]
+    },
+    {
+      question: "Which channel is best for civic awareness?",
+      description: "A neutral poll about user preferences.",
+      options: ["Platform", "Social media", "Field sessions"]
+    }
+  ];
   const polls = [];
-  for (let index = 0; index < 5; index += 1) {
-    const party = parties[index];
-    const question = `ما أكثر موضوع ترغب بمناقشته مع ${party.name}؟`;
-    let poll = await Poll.findOne({ question });
+  for (let index = 0; index < pollSeeds.length; index += 1) {
+    const pollSeed = pollSeeds[index];
+    let poll = await Poll.findOne({ question: pollSeed.question, authorType: "iec" });
     if (!poll) {
       poll = await Poll.create({
-        authorType: "party",
-        authorUserId: partyUsers[index]._id,
-        partyId: party._id,
-        question,
-        description: "تصويت تجريبي للتفاعل العام داخل المنصة.",
-        options: ["التعليم", "فرص العمل", "الخدمات العامة", "المشاركة الشبابية"].slice(0, 2 + (index % 3)).map((text) => ({ text, votesCount: 0 })),
+        authorType: "iec",
+        authorUserId: iec._id,
+        partyId: null,
+        question: pollSeed.question,
+        description: pollSeed.description,
+        options: pollSeed.options.map((text) => ({ text, votesCount: 0 })),
         pollType: "single_choice",
         allowedVoterRoles: ["citizen"],
         resultsVisibility: "always",
         allowVoteChange: false,
         status: "active",
         publishedAt: new Date(Date.now() - index * 7200_000),
-        searchNormalized: createSearchText([question, "تصويت تعليم فرص عمل خدمات"])
+        searchNormalized: createSearchText([pollSeed.question, pollSeed.description, ...pollSeed.options])
       });
     }
     polls.push(poll);
   }
 
-  for (let index = 0; index < citizens.length; index += 1) {
-    await PartyFollower.updateOne({ partyId: parties[index]._id, userId: citizens[index]._id }, { $setOnInsert: { partyId: parties[index]._id, userId: citizens[index]._id } }, { upsert: true });
-  }
-
-  for (let index = 0; index < 20; index += 1) {
+  for (let index = 0; index < 8; index += 1) {
     const targetPost = posts[index % posts.length];
-    const content = `تعليق تجريبي رقم ${index + 1} بلغة محترمة حول أهمية المشاركة المنظمة.`;
+    const content = `Demo comment ${index + 1} about organized participation.`;
     const exists = await Comment.findOne({ targetType: "post", targetId: targetPost._id, content });
     if (!exists) {
       await Comment.create({
@@ -202,7 +259,7 @@ async function main() {
         targetId: targetPost._id,
         authorUserId: citizens[index % citizens.length]._id,
         authorRoleSnapshot: "citizen",
-        partyId: targetPost.partyId,
+        partyId: null,
         content,
         status: "published"
       });
@@ -219,7 +276,6 @@ async function main() {
     ["post", posts[0]._id],
     ["post", posts[1]._id],
     ["poll", polls[0]._id],
-    ["party", parties[0]._id],
     ["comment", (await Comment.findOne({}).sort({ createdAt: 1 }))!._id]
   ] as const;
   for (let index = 0; index < reportTargets.length; index += 1) {
@@ -231,7 +287,7 @@ async function main() {
         targetId,
         reporterUserId: citizens[index % citizens.length]._id,
         reason: index % 2 === 0 ? "misinformation" : "other",
-        details: "بلاغ تجريبي لعرض مسار المراجعة.",
+        details: "Demo report for the moderation flow.",
         status: "open"
       });
     }
@@ -245,11 +301,35 @@ async function main() {
       action: "seed.demo",
       targetType: "system",
       targetId: null,
-      metadata: { users: 10, parties: 5, laws: lawDocs.length },
+      metadata: { users: 10, parties: jordanProfiles.parties.length, laws: lawDocs.length },
       ipHash: null,
       userAgentHash: null
     });
   }
+
+  const authorityProfileSeed = jordanProfiles.authorityProfile;
+  await AuthorityProfile.findOneAndUpdate(
+    { slug: authorityProfileSeed.slug },
+    {
+      $set: {
+        name: authorityProfileSeed.name,
+        slug: authorityProfileSeed.slug,
+        shortDescription: authorityProfileSeed.shortDescription,
+        description: authorityProfileSeed.description,
+        establishedYear: authorityProfileSeed.establishedYear,
+        vision: authorityProfileSeed.vision,
+        mission: authorityProfileSeed.mission,
+        goals: authorityProfileSeed.goals,
+        contact: authorityProfileSeed.contact,
+        socialLinks: authorityProfileSeed.socialLinks,
+        officialLinks: authorityProfileSeed.officialLinks,
+        statistics: authorityProfileSeed.statistics,
+        source: authorityProfileSeed.source,
+        status: "active"
+      }
+    },
+    { upsert: true, new: true }
+  );
 
   await recalculateCounters();
   console.log("Seed completed");

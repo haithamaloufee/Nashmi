@@ -6,6 +6,7 @@ import LogoutButton from "@/components/layout/LogoutButton";
 const links = [
   { href: "/", label: "الرئيسية" },
   { href: "/parties", label: "بوابة الأحزاب" },
+  { href: "/iec", label: "الهيئة المستقلة" },
   { href: "/updates", label: "آخر المستجدات" },
   { href: "/laws", label: "افهم قانونك" },
   { href: "/chat", label: "المساعد الذكي" }

@@ -43,6 +43,67 @@ export const adminUserCreateSchema = z.object({
   status: z.enum(["active", "disabled", "pending", "locked"]).default("active")
 });
 
+const dateTextSchema = z.string().trim().min(1).max(50).nullable().optional();
+
+const partySocialLinksSchema = z.object({
+  website: optionalUrlSchema,
+  facebook: optionalUrlSchema,
+  x: optionalUrlSchema,
+  instagram: optionalUrlSchema,
+  youtube: optionalUrlSchema
+}).default({});
+
+const partyOfficialRegistrySchema = z.object({
+  registryUrl: optionalUrlSchema,
+  nationalNumber: z.string().trim().max(120).nullable().optional(),
+  secretaryGeneral: z.string().trim().max(200).nullable().optional(),
+  mainHeadquarters: z.string().trim().max(500).nullable().optional(),
+  foundingOrConferenceDate: dateTextSchema,
+  mergerDate: dateTextSchema,
+  sourceName: z.string().trim().max(200).nullable().optional(),
+  sourceCheckedAt: dateTextSchema
+}).default({});
+
+const partyContactSchema = z.object({
+  phones: z.array(z.string().trim().min(3).max(80)).default([]),
+  email: z.string().email().nullable().optional(),
+  website: optionalUrlSchema,
+  headquarters: z.string().trim().max(500).nullable().optional(),
+  branches: z.array(z.string().trim().min(1).max(300)).default([])
+}).default({});
+
+const partyStatisticsSchema = z.object({
+  membersCount: z.number().int().min(0).nullable().optional(),
+  womenMembersCount: z.number().int().min(0).nullable().optional(),
+  youthMembersCount: z.number().int().min(0).nullable().optional(),
+  menMembersCount: z.number().int().min(0).nullable().optional(),
+  branchesCount: z.number().int().min(0).nullable().optional(),
+  statisticsNote: z.string().trim().max(1000).nullable().optional()
+}).default({});
+
+const partyCommitteeSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(500).nullable().optional(),
+  members: z.array(z.string().trim().min(1).max(160)).default([]),
+  contact: z.string().trim().max(250).nullable().optional()
+});
+
+const partyAchievementSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  date: dateTextSchema,
+  description: z.string().trim().max(1000).nullable().optional(),
+  sourceUrl: optionalUrlSchema
+});
+
+const partyDataQualitySchema = z.object({
+  registryDataVerified: z.boolean().default(false),
+  officialWebsiteVerified: z.boolean().default(false),
+  socialLinksNeedManualVerification: z.boolean().default(true),
+  statisticsNeedManualVerification: z.boolean().default(true),
+  imagesDeferred: z.boolean().default(true),
+  notes: z.string().trim().max(1000).nullable().optional()
+}).default({});
+
 export const partySchema = z.object({
   name: shortTextSchema,
   slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/),
@@ -51,7 +112,13 @@ export const partySchema = z.object({
   foundedYear: z.number().int().min(1900).max(2100).nullable().optional(),
   vision: z.string().trim().min(5).max(1500),
   goals: z.array(z.string().trim().min(2).max(180)).max(8).default([]),
-  socialLinks: z.record(z.string().url()).default({}),
+  socialLinks: partySocialLinksSchema,
+  officialRegistry: partyOfficialRegistrySchema,
+  contact: partyContactSchema,
+  statistics: partyStatisticsSchema,
+  committees: z.array(partyCommitteeSchema).default([]),
+  latestAchievements: z.array(partyAchievementSchema).default([]),
+  dataQuality: partyDataQualitySchema,
   contactEmail: z.string().email().nullable().optional(),
   status: z.enum(["active", "disabled", "draft"]).default("active"),
   isVerified: z.boolean().default(true),
@@ -59,17 +126,7 @@ export const partySchema = z.object({
   accountEmail: z.string().email().optional()
 });
 
-export const partyProfileUpdateSchema = partySchema
-  .pick({
-    shortDescription: true,
-    description: true,
-    foundedYear: true,
-    vision: true,
-    goals: true,
-    socialLinks: true,
-    contactEmail: true
-  })
-  .partial();
+export const partyProfileUpdateSchema = partySchema.partial();
 
 export const postCreateSchema = z.object({
   title: z.string().trim().max(180).nullable().optional(),
