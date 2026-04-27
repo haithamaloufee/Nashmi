@@ -18,6 +18,7 @@ import Law from "../src/models/Law";
 import PartyFollower from "../src/models/PartyFollower";
 import PollVote from "../src/models/PollVote";
 import { recalculateCounters } from "./recalculate-counters";
+import { demoLawCards } from "./demo-data";
 
 const password = "Password123!";
 
@@ -90,41 +91,43 @@ async function main() {
     parties.push(party);
   }
 
-  const laws = [
-    ["حق الانتخاب", "right-to-vote", "الحقوق السياسية", "يحق للمواطن المؤهل المشاركة في اختيار ممثليه وفق شروط القانون.", "عند بلوغ السن القانوني وتحقق الشروط، يستطيع المواطن التسجيل والمشاركة في يوم الاقتراع."],
-    ["حرية الرأي والتعبير", "freedom-expression", "الحقوق العامة", "حرية الرأي تعني قدرة الفرد على التعبير السلمي ضمن حدود القانون واحترام حقوق الآخرين.", "يمكن للمواطن نقد السياسات العامة دون إساءة أو تحريض."],
-    ["حق تشكيل الأحزاب", "party-formation", "الأحزاب", "تشكيل الأحزاب حق منظم بالقانون بهدف المشاركة السياسية السلمية.", "مجموعة مواطنين يمكنهم اتباع المتطلبات الرسمية لتأسيس حزب."],
-    ["مبدأ المساواة أمام القانون", "equality-before-law", "المبادئ الدستورية", "المساواة أمام القانون تعني تطبيق القواعد العامة دون تمييز غير مشروع.", "تتعامل الجهات الرسمية مع الطلبات وفق شروط معلنة ومتماثلة."],
-    ["دور الهيئة المستقلة", "iec-role", "الانتخابات", "تدير الهيئة العملية الانتخابية وتعمل على تنظيم الإجراءات ونشر التوعية.", "تنشر الهيئة التعليمات ومواقع الاقتراع والمواد التوعوية."],
-    ["آلية التصويت", "voting-process", "الانتخابات", "التصويت يمر بمراحل تحقق من الهوية واستلام الورقة والاقتراع السري ثم وضع الورقة في الصندوق.", "في مركز الاقتراع يتبع الناخب تعليمات اللجنة للحفاظ على سرية صوته."],
-    ["المشاركة السياسية للشباب", "youth-political-participation", "الشباب", "مشاركة الشباب تشمل التعلم والحوار والعمل الحزبي أو المدني السلمي ضمن القانون.", "يمكن للشباب حضور جلسات توعوية وقراءة برامج الأحزاب وطرح أسئلة محايدة."],
-    ["الفرق بين الانتخاب والترشح", "vote-vs-candidacy", "مفاهيم انتخابية", "الانتخاب هو اختيار مرشح أو قائمة، أما الترشح فهو التقدم للمنافسة وفق شروط محددة.", "قد يكون المواطن ناخبا فقط، أو مرشحا إذا استوفى شروط الترشح."]
-  ];
   const lawDocs = [];
-  for (const [title, slug, category, shortDescription, practicalExample] of laws) {
+  for (const demoLaw of demoLawCards) {
     const law = await Law.findOneAndUpdate(
-      { slug },
+      { slug: demoLaw.slug },
       {
-        $setOnInsert: {
-          title,
-          slug,
-          category,
-          sourceName: "مصدر توعوي تجريبي",
-          sourceType: "مادة توعوية",
-          articleNumber: null,
-          officialReferenceUrl: "https://www.iec.jo/",
-          originalText: null,
-          shortDescription,
-          simplifiedExplanation: `${shortDescription} هذا الشرح مبسط للتوعية العامة ولا يغني عن الرجوع إلى النصوص الرسمية أو الجهات المختصة.`,
-          practicalExample,
-          youtubeVideoId: slug === "voting-process" ? "dQw4w9WgXcQ" : null,
-          thumbnailUrl: null,
-          tags: [category, "انتخابات", "توعية"],
-          createdByUserId: iec._id,
+        $set: {
+          title: demoLaw.title,
+          category: demoLaw.category,
+          sourceName: demoLaw.sourceName,
+          sourceType: demoLaw.sourceType,
+          articleNumber: demoLaw.articleNumber,
+          officialReferenceUrl: demoLaw.officialReferenceUrl,
+          originalText: demoLaw.originalText,
+          shortDescription: demoLaw.shortDescription,
+          simplifiedExplanation: demoLaw.simplifiedExplanation,
+          practicalExample: demoLaw.practicalExample,
+          youtubeVideoId: demoLaw.youtubeVideoId,
+          thumbnailUrl: demoLaw.thumbnailUrl,
+          tags: demoLaw.tags,
+          updatedByUserId: iec._id,
           reviewedByUserId: iec._id,
           lastVerifiedAt: new Date(),
-          status: "published",
-          searchNormalized: createSearchText([title, category, shortDescription, practicalExample])
+          status: demoLaw.status,
+          searchNormalized: createSearchText([
+            demoLaw.title,
+            demoLaw.category,
+            demoLaw.shortDescription,
+            demoLaw.simplifiedExplanation,
+            demoLaw.originalText,
+            ...(demoLaw.tags || [])
+          ])
+        },
+        $setOnInsert: {
+          slug: demoLaw.slug,
+          createdByUserId: iec._id,
+          viewsCount: 0,
+          askedChatbotCount: 0
         }
       },
       { upsert: true, new: true }
