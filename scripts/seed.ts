@@ -21,7 +21,10 @@ import { recalculateCounters } from "./recalculate-counters";
 import { demoLawCards } from "./demo-data";
 import jordanProfiles from "./sharek-jordan-parties-and-iec-profiles.json";
 
-const password = "Password123!";
+const adminPassword = "AdminDemo!2026";
+const iecPassword = "IecDemo!2026";
+const citizenPassword = "CitizenDemo!2026";
+const partyPassword = "PartyDemo!2026";
 
 const placeholderPartySlugs = [
   "civil-renaissance",
@@ -96,7 +99,7 @@ function partySeedUpdate(party: JordanPartySeed) {
   };
 }
 
-async function upsertUser(email: string, role: string, name: string) {
+async function upsertUser(email: string, role: string, name: string, password: string) {
   const emailNormalized = normalizeEmail(email);
   let user = await User.findOne({ emailNormalized });
   if (!user) {
@@ -118,24 +121,22 @@ async function upsertUser(email: string, role: string, name: string) {
 async function main() {
   await connectToDatabase();
 
-  const superAdmin = await upsertUser("admin@sharek.demo", "super_admin", "مدير شارك");
-  const iec = await upsertUser("iec@sharek.demo", "iec", "الهيئة المستقلة");
-  const citizens = await Promise.all([
-    upsertUser("citizen1@sharek.demo", "citizen", "مواطنة تجريبية 1"),
-    upsertUser("citizen2@sharek.demo", "citizen", "مواطن تجريبي 2"),
-    upsertUser("citizen3@sharek.demo", "citizen", "مواطنة تجريبية 3")
-  ]);
-  await Promise.all(
-    [1, 2, 3, 4, 5].map((index) => upsertUser(`party${index}@sharek.demo`, "party", `Demo party account ${index}`))
-  );
+  const superAdmin = await upsertUser("admin@sharek.demo", "super_admin", "مدير شارك", adminPassword);
+  const iec = await upsertUser("iec@sharek.demo", "iec", "الهيئة المستقلة", iecPassword);
+  const citizen = await upsertUser("citizen@sharek.demo", "citizen", "مواطن تجريبي", citizenPassword);
 
   await archivePlaceholderParties();
 
+  // Upsert parties and create linked party accounts
   for (const partyData of jordanProfiles.parties) {
+    const partyUser = await upsertUser(`party.${partyData.slug}@sharek.demo`, "party", `${partyData.name} - حساب تجريبي`, partyPassword);
     await Party.findOneAndUpdate(
       { slug: partyData.slug },
       {
-        $set: partySeedUpdate(partyData),
+        $set: {
+          ...partySeedUpdate(partyData),
+          accountUserId: partyUser._id
+        },
         $setOnInsert: {
           createdByAdminId: superAdmin._id,
           followersCount: 0,
@@ -257,7 +258,7 @@ async function main() {
       await Comment.create({
         targetType: "post",
         targetId: targetPost._id,
-        authorUserId: citizens[index % citizens.length]._id,
+        authorUserId: citizen._id,
         authorRoleSnapshot: "citizen",
         partyId: null,
         content,
@@ -269,7 +270,7 @@ async function main() {
   for (let index = 0; index < polls.length; index += 1) {
     const poll = polls[index];
     const option = poll.options[0];
-    await PollVote.updateOne({ pollId: poll._id, userId: citizens[index % citizens.length]._id }, { $setOnInsert: { pollId: poll._id, userId: citizens[index % citizens.length]._id, optionId: option._id } }, { upsert: true });
+    await PollVote.updateOne({ pollId: poll._id, userId: citizen._id }, { $setOnInsert: { pollId: poll._id, userId: citizen._id, optionId: option._id } }, { upsert: true });
   }
 
   const reportTargets = [
@@ -280,12 +281,12 @@ async function main() {
   ] as const;
   for (let index = 0; index < reportTargets.length; index += 1) {
     const [targetType, targetId] = reportTargets[index];
-    const exists = await Report.findOne({ targetType, targetId, reporterUserId: citizens[index % citizens.length]._id });
+    const exists = await Report.findOne({ targetType, targetId, reporterUserId: citizen._id });
     if (!exists) {
       await Report.create({
         targetType,
         targetId,
-        reporterUserId: citizens[index % citizens.length]._id,
+        reporterUserId: citizen._id,
         reason: index % 2 === 0 ? "misinformation" : "other",
         details: "Demo report for the moderation flow.",
         status: "open"

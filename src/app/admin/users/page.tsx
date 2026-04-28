@@ -9,9 +9,8 @@ const links = [
   { href: "/admin", label: "الرئيسية" },
   { href: "/admin/users", label: "المستخدمون" },
   { href: "/admin/parties", label: "الأحزاب" },
-  { href: "/admin/reports", label: "البلاغات" },
-  { href: "/admin/laws", label: "القوانين" },
-  { href: "/admin/audit-logs", label: "سجل التدقيق" }
+  { href: "/admin/moderation", label: "الإشراف" },
+  { href: "/admin/logs", label: "سجل التدقيق" }
 ];
 
 export default async function AdminUsersPage() {

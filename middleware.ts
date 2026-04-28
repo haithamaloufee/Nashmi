@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { AUTH_COOKIE } from "@/lib/cookies";
+import { verifyAuthToken } from "@/lib/jwt";
 
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+function withSecurityHeaders(response: NextResponse) {
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
@@ -21,8 +22,73 @@ export function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
-  if (request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/party-dashboard") || request.nextUrl.pathname.startsWith("/iec-dashboard")) {
+  return response;
+}
+
+function isRoute(pathname: string, route: string) {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
+function isProtectedRoute(pathname: string) {
+  return isRoute(pathname, "/admin") || isRoute(pathname, "/party-dashboard") || isRoute(pathname, "/iec-dashboard");
+}
+
+function isPublicRoute(pathname: string) {
+  return (
+    pathname === "/" ||
+    isRoute(pathname, "/laws") ||
+    isRoute(pathname, "/parties") ||
+    isRoute(pathname, "/posts") ||
+    isRoute(pathname, "/polls") ||
+    isRoute(pathname, "/updates") ||
+    isRoute(pathname, "/iec") ||
+    pathname === "/login" ||
+    pathname === "/signup"
+  );
+}
+
+function redirectToLogin(request: NextRequest) {
+  return withSecurityHeaders(NextResponse.redirect(new URL("/login", request.url)));
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const response = withSecurityHeaders(NextResponse.next());
+
+  if (isProtectedRoute(pathname)) {
     response.headers.set("Cache-Control", "no-store");
+  }
+
+  if (isPublicRoute(pathname)) {
+    return response;
+  }
+
+  if (!isProtectedRoute(pathname)) {
+    return response;
+  }
+
+  const token = request.cookies.get(AUTH_COOKIE)?.value;
+  if (!token) {
+    return redirectToLogin(request);
+  }
+
+  try {
+    const payload = await verifyAuthToken(token);
+    const role = payload?.role;
+
+    if (isRoute(pathname, "/admin") && !["admin", "super_admin"].includes(role || "")) {
+      return redirectToLogin(request);
+    }
+
+    if (isRoute(pathname, "/party-dashboard") && role !== "party") {
+      return redirectToLogin(request);
+    }
+
+    if (isRoute(pathname, "/iec-dashboard") && role !== "iec") {
+      return redirectToLogin(request);
+    }
+  } catch {
+    return redirectToLogin(request);
   }
 
   return response;

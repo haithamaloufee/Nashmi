@@ -7,7 +7,7 @@ import { PartyProfileForm } from "@/components/dashboard/Forms";
 export const dynamic = "force-dynamic";
 const links = [
   { href: "/party-dashboard", label: "الرئيسية" },
-  { href: "/party-dashboard/profile", label: "ملف الحزب" },
+  { href: "/party-dashboard/profile", label: "تعديل الملف" },
   { href: "/party-dashboard/posts", label: "المنشورات" },
   { href: "/party-dashboard/polls", label: "التصويتات" }
 ];

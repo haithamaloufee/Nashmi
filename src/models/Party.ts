@@ -6,6 +6,8 @@ const PartySchema = new Schema(
     slug: { type: String, required: true, trim: true, lowercase: true },
     logoMediaId: { type: Schema.Types.ObjectId, ref: "MediaAsset", default: null },
     coverMediaId: { type: Schema.Types.ObjectId, ref: "MediaAsset", default: null },
+    logoUrl: { type: String, default: null },
+    coverUrl: { type: String, default: null },
     shortDescription: { type: String, required: true },
     description: { type: String, required: true },
     foundedYear: { type: Number, default: null },

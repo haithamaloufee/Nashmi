@@ -18,6 +18,10 @@ const AuthorityProfileSchema = new Schema(
     vision: { type: String, default: null },
     mission: { type: String, default: null },
     goals: [{ type: String }],
+    logoMediaId: { type: Schema.Types.ObjectId, ref: "MediaAsset", default: null },
+    coverMediaId: { type: Schema.Types.ObjectId, ref: "MediaAsset", default: null },
+    logoUrl: { type: String, default: null },
+    coverUrl: { type: String, default: null },
     contact: {
       poBox: { type: String, default: null },
       email: { type: String, default: null },

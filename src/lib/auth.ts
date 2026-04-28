@@ -1,15 +1,10 @@
 import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
 import type { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { AUTH_COOKIE } from "@/lib/cookies";
-import { getJwtSecret } from "./env";
+import { verifyAuthToken } from "@/lib/jwt";
 import { canMutateStatus, type Role } from "@/lib/permissions";
 import User from "@/models/User";
-
-function authSecret() {
-  return new TextEncoder().encode(getJwtSecret());
-}
 
 export type SafeUser = {
   id: string;
@@ -42,21 +37,6 @@ export function safeUser(user: {
     bio: user.bio || null,
     language: user.language || "ar"
   };
-}
-
-export async function signAuthToken(user: { _id: Types.ObjectId; role: Role }) {
-  return new SignJWT({ role: user.role })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject(user._id.toString())
-    .setIssuedAt()
-    .setExpirationTime("7d")
-    .sign(authSecret());
-}
-
-export async function verifyAuthToken(token: string) {
-  const { payload } = await jwtVerify(token, authSecret());
-  if (!payload.sub) return null;
-  return { userId: payload.sub, role: payload.role as Role | undefined };
 }
 
 export async function getCurrentUser() {

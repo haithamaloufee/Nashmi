@@ -11,6 +11,11 @@ import AuditLog from "@/models/AuditLog";
 import Comment from "@/models/Comment";
 import PartyFollower from "@/models/PartyFollower";
 import AuthorityProfile from "@/models/AuthorityProfile";
+import PostReaction from "@/models/PostReaction";
+import PollReaction from "@/models/PollReaction";
+import PollVote from "@/models/PollVote";
+import ChatSession from "@/models/ChatSession";
+import ChatMessage from "@/models/ChatMessage";
 
 function logSafeDataError(error: unknown) {
   if (!(error instanceof Error)) {
@@ -129,35 +134,105 @@ export async function getLawBySlug(slug: string) {
   });
 }
 
-export async function getAdminStats() {
+type AdminStats = {
+  users: number;
+  activeUsers: number;
+  citizens: number;
+  partyAccounts: number;
+  iecAccounts: number;
+  adminAccounts: number;
+  parties: number;
+  verifiedParties: number;
+  posts: number;
+  polls: number;
+  comments: number;
+  postReactions: number;
+  pollReactions: number;
+  pollVotes: number;
+  partyFollowers: number;
+  chatSessions: number;
+  chatMessages: number;
+  auditLogs: number;
+  openReports: unknown[];
+  recentAuditLogs: unknown[];
+  postsList: unknown[];
+  reports: number;
+  laws: number;
+};
+
+export async function getAdminStats(): Promise<AdminStats> {
   return safeData(
-    { users: 0, parties: 0, reports: 0, laws: 0, openReports: [] as unknown[], auditLogs: [] as unknown[] },
+    { users: 0, activeUsers: 0, citizens: 0, partyAccounts: 0, iecAccounts: 0, adminAccounts: 0, parties: 0, verifiedParties: 0, posts: 0, polls: 0, comments: 0, postReactions: 0, pollReactions: 0, pollVotes: 0, partyFollowers: 0, chatSessions: 0, chatMessages: 0, auditLogs: 0, openReports: [], recentAuditLogs: [], postsList: [], reports: 0, laws: 0 } as AdminStats,
     async () => {
-      const [users, parties, reports, laws, openReports, auditLogs] = await Promise.all([
+      const [users, activeUsers, citizens, partyAccounts, iecAccounts, adminAccounts, parties, verifiedParties, posts, polls, comments, postReactions, pollReactions, pollVotes, partyFollowers, chatSessions, chatMessages, auditLogsCount, openReports, auditLogs, postsList, reports, laws] = await Promise.all([
         User.countDocuments(),
+        User.countDocuments({ status: "active" }),
+        User.countDocuments({ role: "citizen" }),
+        User.countDocuments({ role: "party" }),
+        User.countDocuments({ role: "iec" }),
+        User.countDocuments({ role: { $in: ["admin", "super_admin"] } }),
         Party.countDocuments(),
-        Report.countDocuments(),
-        Law.countDocuments(),
+        Party.countDocuments({ isVerified: true }),
+        Post.countDocuments(),
+        Poll.countDocuments(),
+        Comment.countDocuments(),
+        PostReaction.countDocuments(),
+        PollReaction.countDocuments(),
+        PollVote.countDocuments(),
+        PartyFollower.countDocuments(),
+        ChatSession.countDocuments(),
+        ChatMessage.countDocuments(),
+        AuditLog.countDocuments(),
         Report.find({ status: "open" }).sort({ createdAt: -1 }).limit(8).lean(),
-        AuditLog.find({}).sort({ createdAt: -1 }).limit(8).lean()
+        AuditLog.find({}).sort({ createdAt: -1 }).limit(8).lean(),
+        Post.find({}).sort({ createdAt: -1 }).limit(10).lean(),
+        Report.countDocuments(),
+        Law.countDocuments()
       ]);
-      return { users, parties, reports, laws, openReports: serialize(openReports), auditLogs: serialize(auditLogs) };
+      return { 
+        users, 
+        activeUsers, 
+        citizens, 
+        partyAccounts, 
+        iecAccounts, 
+        adminAccounts, 
+        parties, 
+        verifiedParties, 
+        posts, 
+        polls, 
+        comments, 
+        postReactions, 
+        pollReactions, 
+        pollVotes, 
+        partyFollowers, 
+        chatSessions, 
+        chatMessages, 
+        auditLogs: auditLogsCount, 
+        openReports: serialize(openReports), 
+        recentAuditLogs: serialize(auditLogs),
+        postsList: serialize(postsList),
+        reports,
+        laws
+      };
     }
   );
 }
 
 export async function getDashboardLists() {
   return safeData(
-    { users: [] as unknown[], parties: [] as unknown[], reports: [] as unknown[], laws: [] as unknown[], auditLogs: [] as unknown[] },
+    { users: [] as unknown[], parties: [] as unknown[], reports: [] as unknown[], laws: [] as unknown[], auditLogs: [] as unknown[], postsList: [] as unknown[], comments: [] as unknown[], polls: [] as unknown[] },
     async () => {
-      const [users, parties, reports, laws, auditLogs] = await Promise.all([
+      const [users, parties, reports, laws, auditLogs, postsList, comments, polls] = await Promise.all([
         User.find({}).select("-passwordHash").sort({ createdAt: -1 }).limit(100).lean(),
         Party.find({}).sort({ createdAt: -1 }).limit(100).lean(),
         Report.find({}).sort({ createdAt: -1 }).limit(100).lean(),
         Law.find({}).sort({ createdAt: -1 }).limit(100).lean(),
-        AuditLog.find({}).sort({ createdAt: -1 }).limit(100).lean()
+        AuditLog.find({}).sort({ createdAt: -1 }).limit(100).lean(),
+        Post.find({}).sort({ createdAt: -1 }).limit(10).lean(),
+        Comment.find({}).sort({ createdAt: -1 }).limit(10).lean(),
+        Poll.find({}).sort({ createdAt: -1 }).limit(10).lean()
       ]);
-      return { users: serialize(users), parties: serialize(parties), reports: serialize(reports), laws: serialize(laws), auditLogs: serialize(auditLogs) };
+      return { users: serialize(users), parties: serialize(parties), reports: serialize(reports), laws: serialize(laws), auditLogs: serialize(auditLogs), postsList: serialize(postsList), comments: serialize(comments), polls: serialize(polls) };
     }
   );
 }

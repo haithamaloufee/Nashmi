@@ -80,20 +80,100 @@ export function PartyProfileForm({ party }: { party: any }) {
               .split("\n")
               .map((goal) => goal.trim())
               .filter(Boolean),
-            contactEmail: formData.get("contactEmail") || null
+            contact: {
+              phones: String(formData.get("phones") || "").split(",").map(p => p.trim()).filter(Boolean),
+              email: formData.get("email") || null,
+              website: formData.get("website") || null,
+              headquarters: formData.get("headquarters") || null,
+              branches: String(formData.get("branches") || "").split("\n").map(b => b.trim()).filter(Boolean)
+            },
+            socialLinks: {
+              website: formData.get("website") || null,
+              facebook: formData.get("facebook") || null,
+              x: formData.get("x") || null,
+              instagram: formData.get("instagram") || null,
+              youtube: formData.get("youtube") || null
+            },
+            latestAchievements: String(formData.get("latestAchievements") || "").split("\n").map(line => {
+              const [title, date] = line.split(" - ");
+              return { title: title?.trim(), date: date ? new Date(date.trim()) : null };
+            }).filter(a => a.title),
+            logoUrl: formData.get("logoUrl") || null,
+            coverUrl: formData.get("coverUrl") || null
           },
           "PATCH"
         )
       }
-      className="card space-y-3 p-5"
+      className="card space-y-4 p-5"
     >
       <h2 className="text-xl font-bold">تعديل ملف الحزب</h2>
-      <input name="shortDescription" defaultValue={party.shortDescription} className="w-full rounded border-line" required />
-      <textarea name="description" defaultValue={party.description} className="w-full rounded border-line" rows={5} required />
-      <textarea name="vision" defaultValue={party.vision} className="w-full rounded border-line" rows={3} required />
-      <textarea name="goals" defaultValue={(party.goals || []).join("\n")} className="w-full rounded border-line" rows={4} />
-      <input name="contactEmail" defaultValue={party.contactEmail || ""} className="w-full rounded border-line" placeholder="بريد التواصل" />
-      <button className="rounded bg-civic px-4 py-2 text-white">حفظ</button>
+      <label className="block">
+        <span>الوصف المختصر</span>
+        <textarea name="shortDescription" defaultValue={party.shortDescription} className="mt-1 w-full rounded border-line" rows={3} required />
+      </label>
+      <label className="block">
+        <span>الوصف الكامل</span>
+        <textarea name="description" defaultValue={party.description} className="mt-1 w-full rounded border-line" rows={5} required />
+      </label>
+      <label className="block">
+        <span>الرؤية</span>
+        <textarea name="vision" defaultValue={party.vision} className="mt-1 w-full rounded border-line" rows={3} required />
+      </label>
+      <label className="block">
+        <span>الأهداف</span>
+        <textarea name="goals" defaultValue={(party.goals || []).join("\n")} className="mt-1 w-full rounded border-line" rows={4} />
+      </label>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block">
+          <span>الهواتف</span>
+          <input name="phones" defaultValue={(party.contact?.phones || []).join(", ")} className="mt-1 w-full rounded border-line" />
+        </label>
+        <label className="block">
+          <span>البريد الإلكتروني</span>
+          <input name="email" type="email" defaultValue={party.contact?.email} className="mt-1 w-full rounded border-line" />
+        </label>
+      </div>
+      <label className="block">
+        <span>الموقع الإلكتروني</span>
+        <input name="website" type="url" defaultValue={party.contact?.website} className="mt-1 w-full rounded border-line" />
+      </label>
+      <div className="grid gap-4 md:grid-cols-3">
+        <label className="block">
+          <span>فيسبوك</span>
+          <input name="facebook" defaultValue={party.socialLinks?.facebook} className="mt-1 w-full rounded border-line" />
+        </label>
+        <label className="block">
+          <span>تويتر</span>
+          <input name="x" defaultValue={party.socialLinks?.x} className="mt-1 w-full rounded border-line" />
+        </label>
+        <label className="block">
+          <span>إنستغرام</span>
+          <input name="instagram" defaultValue={party.socialLinks?.instagram} className="mt-1 w-full rounded border-line" />
+        </label>
+      </div>
+      <label className="block">
+        <span>المقر الرئيسي</span>
+        <input name="headquarters" defaultValue={party.contact?.headquarters} className="mt-1 w-full rounded border-line" />
+      </label>
+      <label className="block">
+        <span>الفروع</span>
+        <textarea name="branches" defaultValue={(party.contact?.branches || []).join("\n")} className="mt-1 w-full rounded border-line" rows={3} />
+      </label>
+      <label className="block">
+        <span>الإنجازات الأخيرة</span>
+        <textarea name="latestAchievements" defaultValue={(party.latestAchievements || []).map((a: {title: string; date: string}) => `${a.title} - ${a.date}`).join("\n")} className="mt-1 w-full rounded border-line" rows={4} />
+      </label>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block">
+          <span>رابط الشعار</span>
+          <input name="logoUrl" defaultValue={party.logoUrl} className="mt-1 w-full rounded border-line" placeholder="/images/parties/logos/..." />
+        </label>
+        <label className="block">
+          <span>رابط الغلاف</span>
+          <input name="coverUrl" defaultValue={party.coverUrl} className="mt-1 w-full rounded border-line" placeholder="/images/parties/covers/..." />
+        </label>
+      </div>
+      <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ التغييرات</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
