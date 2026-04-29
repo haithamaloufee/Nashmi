@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Globe, Mail, Phone, ShieldCheck, Building2, CheckCircle2 } from "lucide-react";
 import { notFound } from "next/navigation";
+import SafeImage from "@/components/ui/SafeImage";
+import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 import { getAuthorityProfileBySlug } from "@/lib/serverData";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +14,9 @@ export default async function IecPage() {
   const contact = authority.contact || {};
   const socialLinks = authority.socialLinks || {};
   const officialLinks = authority.officialLinks || [];
+  const mediaUrl = typeof authority.logoMediaId === "object" && authority.logoMediaId ? authority.logoMediaId.url : null;
+  const logoUrl = normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(authority.logoUrl, { localPrefixes: ["/images/"] });
+  const logoFallback = <div className="grid h-20 w-20 shrink-0 place-items-center rounded bg-civic text-2xl font-black text-white">هـ</div>;
 
   const linkItems = [
     { label: "رابط سجل الأحزاب", url: contact.partyRegistryUrl },
@@ -23,12 +28,15 @@ export default async function IecPage() {
     <main className="container-page py-8">
       <section className="mb-8 rounded border border-line bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <SafeImage src={logoUrl} alt={authority.name} className="h-20 w-20 shrink-0 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
+            <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-civic/10 px-3 py-1 text-sm text-civic">
               <ShieldCheck className="h-4 w-4" /> الهيئة المستقلة
             </div>
             <h1 className="text-3xl font-black">{authority.name}</h1>
             <p className="mt-3 max-w-4xl leading-8 text-ink/75">{authority.shortDescription}</p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2 text-sm text-ink/70">
             {authority.establishedYear ? <span>منشأة عام {authority.establishedYear}</span> : null}

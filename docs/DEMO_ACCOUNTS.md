@@ -76,3 +76,12 @@ Every listed party account exists, is linked to a party record, and validates wi
 - Admin dashboard: `/admin`
 - Party dashboard: `/party-dashboard`
 - IEC dashboard: `/iec-dashboard`
+
+## Profile Images And Logos
+
+- Party accounts update official party logos at `/party-dashboard/profile`.
+- IEC updates its official logo at `/iec-dashboard/profile`.
+- Any logged-in user updates their personal avatar and name at `/account`.
+- Apply the provided IEC party logo JSON with `npm run logos:apply` after placing it at `scripts/parties.json`.
+- `User.avatarUrl`, `Party.logoUrl`, and `AuthorityProfile.logoUrl` are separate fields. Cover images are intentionally postponed.
+- Local avatar uploads under `public/uploads/avatars/` are demo-only; use external storage before production deployment.

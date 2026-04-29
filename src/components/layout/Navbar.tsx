@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Menu, MessageCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import LogoutButton from "@/components/layout/LogoutButton";
+import UserMenu from "@/components/layout/UserMenu";
 
 const links = [
   { href: "/", label: "الرئيسية" },
@@ -41,10 +41,7 @@ export default async function Navbar() {
             اسأل المساعد
           </Link>
           {user ? (
-            <>
-              <span className="hidden text-sm text-ink/70 md:inline">{user.name}</span>
-              <LogoutButton />
-            </>
+            <UserMenu user={user} />
           ) : (
             <Link href="/login" className="rounded bg-civic px-4 py-2 text-sm font-semibold text-white">
               دخول

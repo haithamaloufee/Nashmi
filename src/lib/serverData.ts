@@ -11,6 +11,7 @@ import AuditLog from "@/models/AuditLog";
 import Comment from "@/models/Comment";
 import PartyFollower from "@/models/PartyFollower";
 import AuthorityProfile from "@/models/AuthorityProfile";
+import "@/models/MediaAsset";
 import PostReaction from "@/models/PostReaction";
 import PollReaction from "@/models/PollReaction";
 import PollVote from "@/models/PollVote";
@@ -60,14 +61,14 @@ export async function getPublicParties(search?: string) {
   return safeData([] as unknown[], async () => {
     const regex = search ? searchRegex(search) : null;
     const query = regex ? { status: "active", searchNormalized: regex } : { status: "active" };
-    const parties = await Party.find(query).sort({ slug: 1 }).lean();
+    const parties = await Party.find(query).populate({ path: "logoMediaId", select: "url status" }).sort({ slug: 1 }).lean();
     return serialize(parties);
   });
 }
 
 export async function getPartyBySlug(slug: string, viewerUserId?: string) {
   return safeData(null as unknown, async () => {
-    const party = await Party.findOne({ slug, status: "active" }).lean();
+    const party = await Party.findOne({ slug, status: "active" }).populate({ path: "logoMediaId", select: "url status" }).lean();
     if (!party) return null;
     const [posts, polls, follow] = await Promise.all([
       Post.find({ partyId: party._id, status: "published" }).sort({ publishedAt: -1 }).limit(10).lean(),
@@ -80,7 +81,7 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
 
 export async function getAuthorityProfileBySlug(slug: string) {
   return safeData(null as unknown, async () => {
-    const authority = await AuthorityProfile.findOne({ slug, status: "active" }).lean();
+    const authority = await AuthorityProfile.findOne({ slug, status: "active" }).populate({ path: "logoMediaId", select: "url status" }).lean();
     return authority ? serialize(authority) : null;
   });
 }
@@ -257,5 +258,12 @@ export async function getIecDashboardData() {
       Law.find({}).sort({ updatedAt: -1 }).limit(50).lean()
     ]);
     return { posts: serialize(posts), laws: serialize(laws) };
+  });
+}
+
+export async function getIecProfileData() {
+  return safeData(null as unknown, async () => {
+    const authority = await AuthorityProfile.findOne({ slug: "independent-election-commission" }).populate({ path: "logoMediaId", select: "url status" }).lean();
+    return authority ? serialize(authority) : null;
   });
 }

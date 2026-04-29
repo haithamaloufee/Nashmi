@@ -13,6 +13,7 @@ export type SafeUser = {
   role: Role;
   status: string;
   image: string | null;
+  avatarUrl: string | null;
   bio: string | null;
   language: "ar" | "en";
 };
@@ -24,6 +25,7 @@ export function safeUser(user: {
   role: Role;
   status: string;
   image?: string | null;
+  avatarUrl?: string | null;
   bio?: string | null;
   language?: "ar" | "en";
 }): SafeUser {
@@ -34,6 +36,7 @@ export function safeUser(user: {
     role: user.role,
     status: user.status,
     image: user.image || null,
+    avatarUrl: user.avatarUrl || null,
     bio: user.bio || null,
     language: user.language || "ar"
   };

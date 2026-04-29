@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Globe, Users } from "lucide-react";
+import SafeImage from "@/components/ui/SafeImage";
+import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 
 type Party = {
   _id: string;
@@ -8,16 +10,25 @@ type Party = {
   shortDescription: string;
   followersCount: number;
   isVerified: boolean;
+  logoUrl?: string | null;
+  logoMediaId?: { url?: string | null; status?: string | null } | string | null;
   foundedYear?: number | null;
   statistics?: { branchesCount?: number | null };
   socialLinks?: { website?: string | null };
 };
 
+function getPartyLogoSrc(party: Party) {
+  const mediaUrl = typeof party.logoMediaId === "object" && party.logoMediaId ? party.logoMediaId.url : null;
+  return normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(party.logoUrl, { localPrefixes: ["/images/"] });
+}
+
 export default function PartyCard({ party }: { party: Party }) {
+  const fallback = <div className="grid h-12 w-12 shrink-0 place-items-center rounded bg-civic/10 text-lg font-bold text-civic">{party.name.slice(0, 1)}</div>;
+
   return (
     <article className="card flex h-full flex-col p-5">
       <div className="mb-4 flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded bg-civic/10 text-lg font-bold text-civic">{party.name.slice(0, 1)}</div>
+        <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="h-12 w-12 shrink-0 rounded object-contain ring-1 ring-line" fallback={fallback} />
         <div>
           <h3 className="font-bold">{party.name}</h3>
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink/60">

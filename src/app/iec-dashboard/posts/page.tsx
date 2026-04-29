@@ -8,6 +8,7 @@ import PostCard from "@/components/posts/PostCard";
 export const dynamic = "force-dynamic";
 const links = [
   { href: "/iec-dashboard", label: "الرئيسية" },
+  { href: "/iec-dashboard/profile", label: "ملف الهيئة" },
   { href: "/iec-dashboard/posts", label: "منشورات الهيئة" },
   { href: "/iec-dashboard/laws", label: "القوانين" }
 ];

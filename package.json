@@ -12,6 +12,7 @@
     "db:test": "tsx scripts/db-test.ts",
     "verify": "npm run env:check && npm run lint && npm run build",
     "seed": "tsx scripts/seed.ts",
+    "logos:apply": "tsx scripts/apply-party-logos.ts",
     "seed-memory": "tsx scripts/seed-memory.ts",
     "sync-indexes": "tsx scripts/sync-indexes.ts",
     "recalculate-counters": "tsx scripts/recalculate-counters.ts"

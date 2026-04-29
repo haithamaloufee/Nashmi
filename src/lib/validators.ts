@@ -2,6 +2,7 @@ import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { roles } from "@/lib/permissions";
 import { isValidYoutubeVideoId } from "@/lib/youtube";
+import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 
 export const objectIdSchema = z.string().refine((value) => isValidObjectId(value), "معرف غير صالح");
 export const emailSchema = z.string().email("البريد الإلكتروني غير صالح").max(254);
@@ -9,6 +10,18 @@ export const passwordSchema = z.string().min(8, "كلمة المرور يجب أ
 export const textSchema = z.string().trim().min(1).max(5000);
 export const shortTextSchema = z.string().trim().min(1).max(200);
 export const optionalUrlSchema = z.string().url("الرابط غير صالح").optional().nullable().or(z.literal(""));
+export const optionalSafeLogoUrlSchema = z
+  .union([z.string().max(2048), z.null()])
+  .optional()
+  .transform((value, context) => {
+    if (value === undefined) return undefined;
+    const normalized = normalizeSafeImageUrl(value, { localPrefixes: ["/images/"] });
+    if (value && !normalized) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "رابط الصورة غير آمن أو غير مدعوم" });
+      return z.NEVER;
+    }
+    return normalized;
+  });
 
 export const signupSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -119,6 +132,7 @@ export const partySchema = z.object({
   committees: z.array(partyCommitteeSchema).default([]),
   latestAchievements: z.array(partyAchievementSchema).default([]),
   dataQuality: partyDataQualitySchema,
+  logoUrl: optionalSafeLogoUrlSchema,
   contactEmail: z.string().email().nullable().optional(),
   status: z.enum(["active", "disabled", "draft"]).default("active"),
   isVerified: z.boolean().default(true),
@@ -127,6 +141,10 @@ export const partySchema = z.object({
 });
 
 export const partyProfileUpdateSchema = partySchema.partial();
+
+export const authorityLogoUpdateSchema = z.object({
+  logoUrl: optionalSafeLogoUrlSchema
+});
 
 export const postCreateSchema = z.object({
   title: z.string().trim().max(180).nullable().optional(),

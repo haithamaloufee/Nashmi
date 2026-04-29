@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getIecDashboardData } from "@/lib/serverData";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
-import StatCard from "@/components/ui/StatCard";
+import { IecProfileForm } from "@/components/dashboard/Forms";
+import { getCurrentUser } from "@/lib/auth";
+import { getIecProfileData } from "@/lib/serverData";
 
 export const dynamic = "force-dynamic";
+
 const links = [
   { href: "/iec-dashboard", label: "الرئيسية" },
   { href: "/iec-dashboard/profile", label: "ملف الهيئة" },
@@ -12,16 +13,15 @@ const links = [
   { href: "/iec-dashboard/laws", label: "القوانين" }
 ];
 
-export default async function IecDashboardPage() {
+export default async function IecProfilePage() {
   const user = await getCurrentUser();
   if (!user || user.role !== "iec") redirect("/login");
-  const data = await getIecDashboardData();
+  const authority = await getIecProfileData();
+  if (!authority) redirect("/iec-dashboard");
+
   return (
     <DashboardNav title="لوحة الهيئة" links={links}>
-      <div className="grid gap-4 md:grid-cols-2">
-        <StatCard label="منشورات رسمية" value={(data.posts as any[]).length} />
-        <StatCard label="مواد قانونية" value={(data.laws as any[]).length} />
-      </div>
+      <IecProfileForm authority={authority} />
     </DashboardNav>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import SafeImage from "@/components/ui/SafeImage";
 
 function useApiMessage() {
   const router = useRouter();
@@ -67,6 +68,8 @@ export function PollCreateForm() {
 
 export function PartyProfileForm({ party }: { party: any }) {
   const api = useApiMessage();
+  const [logoPreview, setLogoPreview] = useState(party.logoUrl || "");
+  const logoFallback = <div className="grid h-16 w-16 place-items-center rounded bg-civic/10 text-xl font-bold text-civic">{party.name?.slice(0, 1) || "ح"}</div>;
   return (
     <form
       action={(formData) =>
@@ -98,8 +101,7 @@ export function PartyProfileForm({ party }: { party: any }) {
               const [title, date] = line.split(" - ");
               return { title: title?.trim(), date: date ? new Date(date.trim()) : null };
             }).filter(a => a.title),
-            logoUrl: formData.get("logoUrl") || null,
-            coverUrl: formData.get("coverUrl") || null
+            logoUrl: formData.get("logoUrl") || null
           },
           "PATCH"
         )
@@ -163,18 +165,62 @@ export function PartyProfileForm({ party }: { party: any }) {
         <span>الإنجازات الأخيرة</span>
         <textarea name="latestAchievements" defaultValue={(party.latestAchievements || []).map((a: {title: string; date: string}) => `${a.title} - ${a.date}`).join("\n")} className="mt-1 w-full rounded border-line" rows={4} />
       </label>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="block">
-          <span>رابط الشعار</span>
-          <input name="logoUrl" defaultValue={party.logoUrl} className="mt-1 w-full rounded border-line" placeholder="/images/parties/logos/..." />
-        </label>
-        <label className="block">
-          <span>رابط الغلاف</span>
-          <input name="coverUrl" defaultValue={party.coverUrl} className="mt-1 w-full rounded border-line" placeholder="/images/parties/covers/..." />
-        </label>
-      </div>
+      <label className="block">
+        <span>رابط شعار الحزب</span>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <SafeImage src={logoPreview} alt={party.name || "شعار الحزب"} className="h-16 w-16 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
+          <div className="flex-1">
+            <input name="logoUrl" type="url" value={logoPreview} onChange={(event) => setLogoPreview(event.target.value)} className="w-full rounded border-line" placeholder="https://parties.iec.jo/storage/example.png" />
+            <p className="mt-1 text-sm text-ink/60">ضع رابط صورة الشعار من مصدر موثوق. صورة الغلاف مؤجلة حاليًا.</p>
+          </div>
+        </div>
+      </label>
       <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ التغييرات</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
+    </form>
+  );
+}
+
+export function IecProfileForm({ authority }: { authority: any }) {
+  const api = useApiMessage();
+  const [logoPreview, setLogoPreview] = useState(authority.logoUrl || "");
+  const logoFallback = <div className="grid h-16 w-16 place-items-center rounded bg-civic/10 text-xl font-bold text-civic">هـ</div>;
+
+  return (
+    <form
+      action={(formData) => api.submit("/api/iec/profile", { logoUrl: formData.get("logoUrl") || null }, "PATCH")}
+      className="card space-y-4 p-5"
+    >
+      <h2 className="text-xl font-bold">ملف الهيئة</h2>
+      <label className="block">
+        <span>رابط شعار الهيئة</span>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <SafeImage src={logoPreview} alt={authority.name || "شعار الهيئة"} className="h-16 w-16 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
+          <div className="flex-1">
+            <input name="logoUrl" type="url" value={logoPreview} onChange={(event) => setLogoPreview(event.target.value)} className="w-full rounded border-line" placeholder="https://..." />
+            <p className="mt-1 text-sm text-ink/60">ضع رابط شعار الهيئة من مصدر موثوق. صورة الغلاف مؤجلة حاليًا.</p>
+          </div>
+        </div>
+      </label>
+      <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ</button>
+      {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
+    </form>
+  );
+}
+
+export function AdminPartyLogoForm({ party }: { party: any }) {
+  const api = useApiMessage();
+  const [logoPreview, setLogoPreview] = useState(party.logoUrl || "");
+  const logoFallback = <div className="grid h-10 w-10 place-items-center rounded bg-civic/10 text-sm font-bold text-civic">{party.name?.slice(0, 1) || "ح"}</div>;
+
+  return (
+    <form action={(formData) => api.submit(`/api/admin/parties/${party._id}`, { logoUrl: formData.get("logoUrl") || null }, "PATCH")} className="mt-3 grid gap-2">
+      <div className="flex items-center gap-2">
+        <SafeImage src={logoPreview} alt={party.name || "شعار الحزب"} className="h-10 w-10 shrink-0 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
+        <input name="logoUrl" type="url" value={logoPreview} onChange={(event) => setLogoPreview(event.target.value)} className="min-w-0 flex-1 rounded border-line text-sm" placeholder="https://parties.iec.jo/storage/example.png" />
+        <button className="rounded border border-line px-3 py-2 text-sm hover:border-civic">حفظ</button>
+      </div>
+      {api.message ? <p className="text-xs text-ink/60">{api.message}</p> : null}
     </form>
   );
 }

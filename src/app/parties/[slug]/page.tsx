@@ -5,13 +5,20 @@ import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
 import ReportButton from "@/components/reports/ReportButton";
 import Alert from "@/components/ui/Alert";
+import SafeImage from "@/components/ui/SafeImage";
 import { getCurrentUser } from "@/lib/auth";
+import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 import { getPartyBySlug } from "@/lib/serverData";
 
 export const dynamic = "force-dynamic";
 
 function safeUrl(value: unknown) {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getPartyLogoSrc(party: any) {
+  const mediaUrl = typeof party.logoMediaId === "object" && party.logoMediaId ? party.logoMediaId.url : null;
+  return normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(party.logoUrl, { localPrefixes: ["/images/"] });
 }
 
 function ContactButton({ href, label }: { href: string; label: string }) {
@@ -40,13 +47,14 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
   const branches = Array.isArray(party.contact?.branches) ? party.contact.branches : [];
   const committees = Array.isArray(party.committees) ? party.committees : [];
   const achievements = Array.isArray(party.latestAchievements) ? party.latestAchievements : [];
+  const logoFallback = <div className="-mt-16 mb-4 grid h-24 w-24 place-items-center rounded border-4 border-white bg-civic text-4xl font-black text-white">{party.name.slice(0, 1)}</div>;
 
   return (
     <main className="container-page py-8">
       <section className="card overflow-hidden">
         <div className="h-44 bg-[linear-gradient(135deg,#126b6f,#e8eee7)]" />
         <div className="p-6">
-          <div className="-mt-16 mb-4 grid h-24 w-24 place-items-center rounded border-4 border-white bg-civic text-4xl font-black text-white">{party.name.slice(0, 1)}</div>
+          <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="-mt-16 mb-4 h-24 w-24 rounded border-4 border-white bg-white object-contain shadow-sm" fallback={logoFallback} />
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div>
               <h1 className="text-3xl font-black">{party.name}</h1>

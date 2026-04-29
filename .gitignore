@@ -6,6 +6,9 @@ dist
 coverage
 public/uploads/*
 !public/uploads/.gitkeep
+!public/uploads/avatars/
+public/uploads/avatars/*
+!public/uploads/avatars/.gitkeep
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

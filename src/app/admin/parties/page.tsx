@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getDashboardLists } from "@/lib/serverData";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
-import { PartyCreateForm } from "@/components/dashboard/Forms";
+import { AdminPartyLogoForm, PartyCreateForm } from "@/components/dashboard/Forms";
 
 export const dynamic = "force-dynamic";
 const links = [
@@ -23,7 +23,7 @@ export default async function AdminPartiesPage() {
         <PartyCreateForm />
         <div className="card p-5">
           <h1 className="mb-4 text-2xl font-bold">الأحزاب</h1>
-          <div className="space-y-3">{(data.parties as any[]).map((party) => <div key={party._id} className="rounded border border-line p-3"><b>{party.name}</b><p className="text-sm text-ink/60">{party.status} - {party.followersCount} متابع</p></div>)}</div>
+          <div className="space-y-3">{(data.parties as any[]).map((party) => <div key={party._id} className="rounded border border-line p-3"><b>{party.name}</b><p className="text-sm text-ink/60">{party.status} - {party.followersCount} متابع</p><AdminPartyLogoForm party={party} /></div>)}</div>
         </div>
       </div>
     </DashboardNav>
