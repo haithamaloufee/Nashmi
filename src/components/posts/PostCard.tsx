@@ -1,6 +1,7 @@
 import ReportButton from "@/components/reports/ReportButton";
 import CommentBox from "@/components/comments/CommentBox";
 import ReactionButtons from "@/components/ui/ReactionButtons";
+import InlineModerationActions from "@/components/admin/InlineModerationActions";
 
 type Post = {
   _id: string;
@@ -22,7 +23,10 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
           <span className="rounded bg-olive/10 px-2 py-1 text-xs text-olive">{post.authorType === "iec" ? "الهيئة المستقلة" : post.authorType === "party" ? "حزب" : "إدارة"}</span>
           {post.title ? <h3 className="mt-3 text-lg font-bold">{post.title}</h3> : null}
         </div>
-        <ReportButton targetType="post" targetId={post._id} />
+        <div className="flex flex-wrap items-center gap-2">
+          <InlineModerationActions targetType="post" targetId={post._id} />
+          <ReportButton targetType="post" targetId={post._id} />
+        </div>
       </div>
       <p className="whitespace-pre-line leading-8 text-ink/80">{post.content}</p>
       {post.tags?.length ? <div className="mt-3 flex flex-wrap gap-2">{post.tags.map((tag) => <span key={tag} className="rounded border border-line px-2 py-1 text-xs">{tag}</span>)}</div> : null}

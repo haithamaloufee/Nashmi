@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import ReportButton from "@/components/reports/ReportButton";
+import InlineModerationActions from "@/components/admin/InlineModerationActions";
 
 type Comment = {
   _id: string;
@@ -61,7 +62,10 @@ export default function CommentBox({ targetType, targetId }: { targetType: "post
               <p className="whitespace-pre-line text-sm leading-7 text-ink/75">{comment.content}</p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <span className="text-xs text-ink/45">{comment.createdAt ? new Date(comment.createdAt).toLocaleDateString("ar-JO") : ""}</span>
-                <ReportButton targetType="comment" targetId={comment._id} />
+                <div className="flex items-center gap-2">
+                  <InlineModerationActions targetType="comment" targetId={comment._id} />
+                  <ReportButton targetType="comment" targetId={comment._id} />
+                </div>
               </div>
             </div>
           ))}

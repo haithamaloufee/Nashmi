@@ -4,6 +4,7 @@ import FollowButton from "@/components/parties/FollowButton";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
 import ReportButton from "@/components/reports/ReportButton";
+import PartyVerificationActions from "@/components/admin/PartyVerificationActions";
 import Alert from "@/components/ui/Alert";
 import SafeImage from "@/components/ui/SafeImage";
 import { getCurrentUser } from "@/lib/auth";
@@ -63,6 +64,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
             <div className="flex flex-col items-start gap-2 sm:items-end">
               <FollowButton partyId={party._id} initialFollowed={isFollowing} />
               <ReportButton targetType="party" targetId={party._id} />
+              <PartyVerificationActions partyId={party._id} initialVerified={party.isVerified} />
             </div>
           </div>
           <div className="mt-6">

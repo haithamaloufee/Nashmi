@@ -18,6 +18,14 @@ import PollVote from "@/models/PollVote";
 import ChatSession from "@/models/ChatSession";
 import ChatMessage from "@/models/ChatMessage";
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function compactSearch(value: string | null | undefined) {
+  return String(value || "").trim().slice(0, 120);
+}
+
 function logSafeDataError(error: unknown) {
   if (!(error instanceof Error)) {
     console.error({ name: "UnknownError" });
@@ -169,14 +177,14 @@ export async function getAdminStats(): Promise<AdminStats> {
         User.countDocuments(),
         User.countDocuments({ status: "active" }),
         User.countDocuments({ role: "citizen" }),
-        User.countDocuments({ role: "party" }),
+        User.countDocuments({ role: "party", status: "active" }),
         User.countDocuments({ role: "iec" }),
         User.countDocuments({ role: { $in: ["admin", "super_admin"] } }),
-        Party.countDocuments(),
-        Party.countDocuments({ isVerified: true }),
-        Post.countDocuments(),
-        Poll.countDocuments(),
-        Comment.countDocuments(),
+        Party.countDocuments({ status: "active" }),
+        Party.countDocuments({ status: "active", isVerified: true }),
+        Post.countDocuments({ status: { $ne: "deleted" } }),
+        Poll.countDocuments({ status: { $ne: "deleted" } }),
+        Comment.countDocuments({ status: { $ne: "deleted" } }),
         PostReaction.countDocuments(),
         PollReaction.countDocuments(),
         PollVote.countDocuments(),
@@ -214,6 +222,97 @@ export async function getAdminStats(): Promise<AdminStats> {
         postsList: serialize(postsList),
         reports,
         laws
+      };
+    }
+  );
+}
+
+type AdminPartyFilters = {
+  status?: string;
+  verified?: string;
+  q?: string;
+};
+
+export async function getAdminParties(filters: AdminPartyFilters = {}) {
+  return safeData({ parties: [] as unknown[], count: 0 }, async () => {
+    const status = filters.status || "active";
+    const query: Record<string, unknown> = {};
+    if (status !== "all") query.status = status;
+    if (filters.verified === "true") query.isVerified = true;
+    if (filters.verified === "false") query.isVerified = false;
+
+    const search = compactSearch(filters.q);
+    if (search) {
+      const rawRegex = new RegExp(escapeRegex(search), "i");
+      const normalizedRegex = searchRegex(search);
+      query.$or = [
+        { name: rawRegex },
+        { slug: rawRegex },
+        ...(normalizedRegex ? [{ searchNormalized: normalizedRegex }] : [])
+      ];
+    }
+
+    const parties = await Party.find(query)
+      .populate({ path: "accountUserId", select: "email status role" })
+      .sort({ status: 1, slug: 1 })
+      .limit(100)
+      .lean();
+    return { parties: serialize(parties), count: parties.length };
+  });
+}
+
+type AdminModerationFilters = {
+  type?: string;
+  q?: string;
+  status?: string;
+};
+
+export async function getAdminModerationData(filters: AdminModerationFilters = {}) {
+  return safeData(
+    { posts: [] as unknown[], comments: [] as unknown[], polls: [] as unknown[], reports: [] as unknown[] },
+    async () => {
+      const type = filters.type || "posts";
+      const search = compactSearch(filters.q);
+      const normalizedRegex = search ? searchRegex(search) : null;
+      const rawRegex = search ? new RegExp(escapeRegex(search), "i") : null;
+      const status = compactSearch(filters.status);
+
+      const postQuery: Record<string, unknown> = {};
+      const commentQuery: Record<string, unknown> = {};
+      const pollQuery: Record<string, unknown> = {};
+      const reportQuery: Record<string, unknown> = {};
+
+      if (status) {
+        postQuery.status = status;
+        commentQuery.status = status;
+        pollQuery.status = status;
+        reportQuery.status = status;
+      }
+      if (rawRegex || normalizedRegex) {
+        postQuery.$or = [
+          ...(rawRegex ? [{ title: rawRegex }, { content: rawRegex }] : []),
+          ...(normalizedRegex ? [{ searchNormalized: normalizedRegex }] : [])
+        ];
+        commentQuery.content = rawRegex;
+        pollQuery.$or = [
+          ...(rawRegex ? [{ question: rawRegex }, { description: rawRegex }] : []),
+          ...(normalizedRegex ? [{ searchNormalized: normalizedRegex }] : [])
+        ];
+        reportQuery.$or = rawRegex ? [{ reason: rawRegex }, { details: rawRegex }, { targetType: rawRegex }] : [];
+      }
+
+      const [posts, comments, polls, reports] = await Promise.all([
+        type === "posts" ? Post.find(postQuery).sort({ createdAt: -1 }).limit(50).lean() : Promise.resolve([]),
+        type === "comments" ? Comment.find(commentQuery).sort({ createdAt: -1 }).limit(50).lean() : Promise.resolve([]),
+        type === "polls" ? Poll.find(pollQuery).sort({ createdAt: -1 }).limit(50).lean() : Promise.resolve([]),
+        type === "reports" ? Report.find(reportQuery).sort({ createdAt: -1 }).limit(50).lean() : Promise.resolve([])
+      ]);
+
+      return {
+        posts: serialize(posts),
+        comments: serialize(comments),
+        polls: serialize(polls),
+        reports: serialize(reports)
       };
     }
   );

@@ -15,7 +15,9 @@
     "logos:apply": "tsx scripts/apply-party-logos.ts",
     "seed-memory": "tsx scripts/seed-memory.ts",
     "sync-indexes": "tsx scripts/sync-indexes.ts",
-    "recalculate-counters": "tsx scripts/recalculate-counters.ts"
+    "recalculate-counters": "tsx scripts/recalculate-counters.ts",
+    "audit-demo-content": "tsx scripts/audit-demo-content.ts",
+    "reset-demo-content": "tsx scripts/reset-demo-content.ts"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.10",

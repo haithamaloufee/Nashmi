@@ -85,3 +85,8 @@ Every listed party account exists, is linked to a party record, and validates wi
 - Apply the provided IEC party logo JSON with `npm run logos:apply` after placing it at `scripts/parties.json`.
 - `User.avatarUrl`, `Party.logoUrl`, and `AuthorityProfile.logoUrl` are separate fields. Cover images are intentionally postponed.
 - Local avatar uploads under `public/uploads/avatars/` are demo-only; use external storage before production deployment.
+
+## Demo maintenance scripts
+
+- `npm run audit-demo-content`: reviews legacy English demo posts, polls, and comments.
+- `npm run reset-demo-content`: removes old English demo content and seeds a fresh Arabic IEC demo set.

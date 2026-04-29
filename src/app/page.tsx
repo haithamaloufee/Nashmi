@@ -43,7 +43,7 @@ export default async function HomePage() {
           <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
             <div className="rounded border border-white/20 bg-white/12 p-4 backdrop-blur">
               <span className="block text-3xl font-black">{data.partiesCount}</span>
-              <span className="text-sm text-white/75">أحزاب تجريبية</span>
+              <span className="text-sm text-white/75">أحزاب نشطة</span>
             </div>
             <div className="rounded border border-white/20 bg-white/12 p-4 backdrop-blur">
               <span className="block text-3xl font-black">{data.lawsCount}</span>

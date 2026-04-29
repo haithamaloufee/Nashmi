@@ -193,22 +193,43 @@ async function main() {
   }
 
   const posts = [];
-  for (let index = 0; index < 4; index += 1) {
-    const title = `IEC awareness notice ${index + 1}`;
-    let post = await Post.findOne({ title, authorType: "iec" });
+  const postSeeds = [
+    {
+      title: "دعوة للمشاركة المدنية المسؤولة",
+      content: "ندعو المواطنين إلى التحقق من المعلومات الرسمية قبل نشرها أو المشاركة بها، وأن يكون الحوار عبر وسائل التواصل مسؤولاً ومفتوحاً للجميع.",
+      tags: ["مشاركة", "وعي", "الانتخابات"]
+    },
+    {
+      title: "هل تعرف حقوقك الانتخابية؟",
+      content: "اطلع على آليات التسجيل والتصويت، وتأكد من بياناتك في جداول الناخبين قبل يوم الاقتراع.",
+      tags: ["حقوق", "انتخاب", "دستور"]
+    },
+    {
+      title: "كيف نميّز المعلومة الصحيحة؟",
+      content: "راجع المصدر الرسمي وتأكد من صحة الخبر قبل إعادة نشره؛ المرأة والشباب لهم دور في نشر ثقافة الحريات المدنية بوعي.",
+      tags: ["معلومات", "توعية", "مصداقية"]
+    },
+    {
+      title: "التواصل المسؤول مع الأحزاب والمؤسسات",
+      content: "شارك في الحوار الوطني عبر المنصات الرسمية، واطلب من الأحزاب شرح برامجها بشكل واضح.",
+      tags: ["حوار", "أحزاب", "مسؤولية"]
+    }
+  ];
+  for (let index = 0; index < postSeeds.length; index += 1) {
+    const seed = postSeeds[index];
+    let post = await Post.findOne({ title: seed.title, authorType: "iec" });
     if (!post) {
-      const content = "The commission encourages citizens to check official sources before participating.";
       post = await Post.create({
         authorType: "iec",
         authorUserId: iec._id,
         partyId: null,
-        title,
-        content,
+        title: seed.title,
+        content: seed.content,
         mediaIds: [],
-        tags: ["awareness", "participation"],
+        tags: seed.tags,
         status: "published",
         publishedAt: new Date(Date.now() - index * 3600_000),
-        searchNormalized: createSearchText([title, content, "awareness participation"])
+        searchNormalized: createSearchText([seed.title, seed.content, ...seed.tags])
       });
     }
     posts.push(post);
@@ -216,14 +237,14 @@ async function main() {
 
   const pollSeeds = [
     {
-      question: "Which topic should Sharek cover most?",
-      description: "A neutral platform engagement poll.",
-      options: ["Parties", "Laws", "Elections"]
+      question: "ما هو أهم موضوع يجب أن تتعامل معه المنصة الآن؟",
+      description: "شارك برأيك لنتأكد أن المحتوى الوطني يلامس احتياجات المواطنين.",
+      options: ["التوعية الانتخابية", "حقوق المواطنة", "الشفافية الحكومية"]
     },
     {
-      question: "Which channel is best for civic awareness?",
-      description: "A neutral poll about user preferences.",
-      options: ["Platform", "Social media", "Field sessions"]
+      question: "ما هي أفضل وسيلة لتلقي معلومات الهيئة؟",
+      description: "اختيارك يساعد في تطوير أساليب النشر للمحتوى العام.",
+      options: ["مقالات قصيرة", "رسوم توضيحية", "فيديوهات تعليمية"]
     }
   ];
   const polls = [];
@@ -252,7 +273,7 @@ async function main() {
 
   for (let index = 0; index < 8; index += 1) {
     const targetPost = posts[index % posts.length];
-    const content = `Demo comment ${index + 1} about organized participation.`;
+    const content = [`شكراً للمبادرة، من المهم أن يعرف الجميع كيف يميز بين المصدر الرسمي والمحتوى المزيف.`, `لا بد من تثقيف الشباب حول واجبهم الانتخابي قبل الاقتراع.`, `هذه المنصة يمكن أن تكون نافذة جيدة لحوار بناء بين المواطنين والأحزاب.`, `هل هناك خطة لعرض معلومات عن مواعيد الدوائر الانتخابية؟`, `أحب أن يكون هناك شرح مبسط عن كيفية المشاركة في الانتخابات.`][index % 5];
     const exists = await Comment.findOne({ targetType: "post", targetId: targetPost._id, content });
     if (!exists) {
       await Comment.create({
@@ -288,7 +309,7 @@ async function main() {
         targetId,
         reporterUserId: citizen._id,
         reason: index % 2 === 0 ? "misinformation" : "other",
-        details: "Demo report for the moderation flow.",
+        details: "تقرير تجريبي لاختبار سير عمل الإشراف.",
         status: "open"
       });
     }
