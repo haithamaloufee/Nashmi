@@ -4,7 +4,7 @@ import { validateRuntimeEnv } from "../src/lib/env";
 loadEnv();
 
 try {
-  const result = validateRuntimeEnv({ requireDatabase: true, requireAuth: true });
+  const result = validateRuntimeEnv({ requireDatabase: true, requireAuth: true, requireGemini: true });
   if (!result.ok) {
     for (const variableName of result.missing) {
       console.error(`Missing required environment variable: ${variableName}`);

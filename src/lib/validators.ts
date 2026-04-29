@@ -225,6 +225,11 @@ export const chatSchema = z.object({
   lawId: objectIdSchema.optional()
 });
 
+export const chatMessageSchema = z.object({
+  message: z.string().trim().min(1, "الرسالة مطلوبة").max(1200, "الرسالة طويلة جدًا"),
+  lawId: objectIdSchema.optional()
+});
+
 export const chatSessionSchema = z.object({
   title: z.string().trim().max(160).nullable().optional()
 });

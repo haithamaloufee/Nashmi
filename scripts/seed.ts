@@ -121,7 +121,7 @@ async function upsertUser(email: string, role: string, name: string, password: s
 async function main() {
   await connectToDatabase();
 
-  const superAdmin = await upsertUser("admin@sharek.demo", "super_admin", "مدير شارك", adminPassword);
+  const superAdmin = await upsertUser("admin@sharek.demo", "super_admin", "مدير نشمي", adminPassword);
   const iec = await upsertUser("iec@sharek.demo", "iec", "الهيئة المستقلة", iecPassword);
   const citizen = await upsertUser("citizen@sharek.demo", "citizen", "مواطن تجريبي", citizenPassword);
 

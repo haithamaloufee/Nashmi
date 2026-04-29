@@ -20,8 +20,8 @@ export default async function Navbar() {
     <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
       <div className="container-page flex min-h-16 items-center justify-between gap-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-bold text-civic">
-          <span className="grid h-10 w-10 place-items-center rounded bg-civic text-white">ش</span>
-          <span>شارك</span>
+          <span className="grid h-10 w-10 place-items-center rounded bg-civic text-white">ن</span>
+          <span>نشمي</span>
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-medium lg:flex">
           {links.map((link) => (

@@ -53,7 +53,7 @@ async function main() {
 
   await connectToDatabase();
 
-  const superAdmin = await upsertUser("admin@sharek.demo", "super_admin", "مدير شارك");
+  const superAdmin = await upsertUser("admin@sharek.demo", "super_admin", "مدير نشمي");
   const iec = await upsertUser("iec@sharek.demo", "iec", "الهيئة المستقلة");
   const citizens = await Promise.all([
     upsertUser("citizen1@sharek.demo", "citizen", "مواطنة تجريبية 1"),
@@ -82,7 +82,7 @@ async function main() {
         name,
         slug,
         shortDescription,
-        description: `${shortDescription} هذا وصف تجريبي محايد لا يتضمن توصية أو دعاية، ويهدف إلى إظهار طريقة عرض معلومات الأحزاب داخل منصة شارك.`,
+        description: `${shortDescription} هذا وصف تجريبي محايد لا يتضمن توصية أو دعاية، ويهدف إلى إظهار طريقة عرض معلومات الأحزاب داخل منصة نشمي.`,
         foundedYear: 2024 - index,
         vision: "تعزيز المشاركة العامة المنظمة واحترام سيادة القانون وتوسيع قنوات الحوار.",
         goals: ["تطوير التواصل مع المواطنين", "نشر الوعي السياسي", "دعم مشاركة الشباب", "تقديم معلومات واضحة عن البرامج العامة"],

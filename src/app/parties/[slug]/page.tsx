@@ -68,7 +68,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
             </div>
           </div>
           <div className="mt-6">
-            <Alert>عرض معلومات الحزب هنا للتوعية فقط. شارك لا تقارن ولا ترشح ولا تفضل أي حزب.</Alert>
+            <Alert>عرض معلومات الحزب هنا للتوعية فقط. نشمي لا تقارن ولا ترشح ولا تفضل أي حزب.</Alert>
           </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">

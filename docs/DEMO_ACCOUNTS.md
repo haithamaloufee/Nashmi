@@ -1,7 +1,9 @@
-# Sharek Demo Accounts
+# Nashmi Demo Accounts
 
 These accounts are for local testing and hackathon/demo use only.
 Change all demo passwords before any real deployment.
+
+ملاحظة: بعض حسابات الديمو تستخدم نطاق sharek.demo لأسباب توافقية في النسخة الحالية.
 
 The party accounts below were regenerated from the current seeded MongoDB users on 2026-04-28.
 Every listed party account exists, is linked to a party record, and validates with `PartyDemo!2026`.

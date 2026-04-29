@@ -23,10 +23,10 @@ export default async function HomePage() {
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(23,33,43,.88)_0%,rgba(23,33,43,.66)_43%,rgba(23,33,43,.2)_100%)]" />
         <div className="container-page flex min-h-[560px] flex-col justify-center py-14">
           <div className="max-w-3xl">
-            <p className="mb-3 font-semibold text-white/85">Sharek / شارك</p>
+            <p className="mb-3 font-semibold text-white/85">Nashmi / نشمي</p>
             <h1 className="text-4xl font-black leading-[1.25] md:text-6xl">منصة رقمية محايدة لتعزيز المشاركة السياسية</h1>
             <p className="mt-6 max-w-2xl text-lg leading-9 text-white/82">
-              شارك هو جسر رقمي محايد بين المواطن والأحزاب والهيئة المستقلة، يرفع الوعي السياسي، يسهل فهم القوانين، ويمنح الشباب مساحة آمنة ومنظمة للتفاعل وصناعة الرأي العام.
+              نشمي هو جسر رقمي محايد بين المواطن والأحزاب والهيئة المستقلة، يرفع الوعي السياسي، يسهل فهم القوانين، ويمنح الشباب مساحة آمنة ومنظمة للتفاعل وصناعة الرأي العام.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/parties" className="rounded bg-civic px-6 py-3 font-semibold text-white shadow-soft">

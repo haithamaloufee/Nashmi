@@ -4,7 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import FloatingAssistant from "@/components/layout/FloatingAssistant";
 
 export const metadata: Metadata = {
-  title: "Sharek / شارك",
+  title: "Nashmi / نشمي",
   description: "منصة رقمية محايدة لتعزيز المشاركة السياسية والتواصل المنظم بين المواطنين والأحزاب والهيئة المستقلة"
 };
 

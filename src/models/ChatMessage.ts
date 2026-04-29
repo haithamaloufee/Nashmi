@@ -7,6 +7,14 @@ const ChatMessageSchema = new Schema(
     role: { type: String, enum: ["user", "assistant"], required: true },
     content: { type: String, required: true },
     sourceLawIds: [{ type: Schema.Types.ObjectId, ref: "Law" }],
+    sourcePartyIds: [{ type: Schema.Types.ObjectId, ref: "Party" }],
+    groundingSources: [
+      {
+        title: { type: String, required: true },
+        url: { type: String, default: null },
+        sourceType: { type: String, default: "sharek_law" }
+      }
+    ],
     safetyFlags: [{ type: String }],
     tokensUsed: { type: Number, default: null },
     model: { type: String, default: null },

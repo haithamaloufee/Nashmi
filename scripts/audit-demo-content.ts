@@ -73,7 +73,7 @@ async function main() {
     Report.countDocuments({})
   ]);
 
-  console.log("=== Sharek Demo Content Audit ===\n");
+  console.log("=== Nashmi Demo Content Audit ===\n");
   console.log(`Total posts: ${posts.length}`);
   console.log(`  Arabic: ${postTotals.arabic}`);
   console.log(`  English: ${postTotals.english}`);

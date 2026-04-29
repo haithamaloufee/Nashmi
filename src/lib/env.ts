@@ -79,7 +79,29 @@ export function getMaxUploadSizeBytes() {
   return maxMb * 1024 * 1024;
 }
 
-export function validateRuntimeEnv(options: { requireDatabase?: boolean; requireAuth?: boolean } = {}) {
+export function getGeminiApiKey() {
+  return getRequiredEnv("GEMINI_API_KEY");
+}
+
+export function getGeminiBoolean(name: string, defaultValue: boolean) {
+  const raw = getOptionalEnv(name);
+  if (!raw) return defaultValue;
+  if (["true", "1", "yes"].includes(raw.toLowerCase())) return true;
+  if (["false", "0", "no"].includes(raw.toLowerCase())) return false;
+  throw new InvalidEnvError(name, "must be true or false");
+}
+
+export function getGeminiNumber(name: string, defaultValue: number, min: number, max: number) {
+  const raw = getOptionalEnv(name);
+  if (!raw) return defaultValue;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < min || value > max) {
+    throw new InvalidEnvError(name, `must be a number between ${min} and ${max}`);
+  }
+  return value;
+}
+
+export function validateRuntimeEnv(options: { requireDatabase?: boolean; requireAuth?: boolean; requireGemini?: boolean } = {}) {
   const missing: string[] = [];
   const invalid: string[] = [];
 
@@ -95,8 +117,13 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
 
   if (options.requireDatabase) check("MONGODB_URI", getMongoUri);
   if (options.requireAuth || process.env.NODE_ENV === "production") check("JWT_SECRET", getJwtSecret);
+  if (options.requireGemini) check("GEMINI_API_KEY", getGeminiApiKey);
   check("MONGODB_SERVER_SELECTION_TIMEOUT_MS", getServerSelectionTimeoutMs);
   check("MAX_UPLOAD_SIZE_MB", getMaxUploadSizeBytes);
+  check("GEMINI_ENABLE_GOOGLE_SEARCH", () => getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false));
+  check("GEMINI_MAX_HISTORY_MESSAGES", () => getGeminiNumber("GEMINI_MAX_HISTORY_MESSAGES", 30, 2, 80));
+  check("GEMINI_MAX_LAW_CONTEXT_RESULTS", () => getGeminiNumber("GEMINI_MAX_LAW_CONTEXT_RESULTS", 6, 0, 12));
+  check("GEMINI_TEMPERATURE", () => getGeminiNumber("GEMINI_TEMPERATURE", 0.3, 0, 1));
 
   return { ok: missing.length === 0 && invalid.length === 0, missing, invalid };
 }

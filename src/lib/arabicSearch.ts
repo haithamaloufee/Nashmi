@@ -1,10 +1,12 @@
 const tashkeel = /[\u064B-\u065F\u0670]/g;
+const tatweel = /\u0640/g;
 
 export function normalizeArabic(input: string | null | undefined) {
   return (input || "")
     .toLowerCase()
     .trim()
     .replace(tashkeel, "")
+    .replace(tatweel, "")
     .replace(/[إأآا]/g, "ا")
     .replace(/ى/g, "ي")
     .replace(/ؤ/g, "و")
