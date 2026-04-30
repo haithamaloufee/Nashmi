@@ -14,7 +14,9 @@ export const runtime = "nodejs";
 const allowedTypes: Record<string, readonly string[]> = {
   "image/jpeg": ["jpg", "jpeg"],
   "image/png": ["png"],
-  "image/webp": ["webp"]
+  "image/webp": ["webp"],
+  "video/mp4": ["mp4"],
+  "video/webm": ["webm"]
 };
 
 const executableExtensions = new Set([
@@ -36,14 +38,16 @@ function hasValidMagic(buffer: Buffer, mimeType: string) {
   if (mimeType === "image/jpeg") return buffer[0] === 0xff && buffer[1] === 0xd8;
   if (mimeType === "image/png") return buffer.subarray(0, 8).toString("hex") === "89504e470d0a1a0a";
   if (mimeType === "image/webp") return buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+  if (mimeType === "video/mp4") return buffer.subarray(4, 8).toString("ascii") === "ftyp";
+  if (mimeType === "video/webm") return buffer.subarray(0, 4).toString("hex") === "1a45dfa3";
   return false;
 }
 
-function validateUploadedImage(file: File) {
+function validateUploadedFile(file: File) {
   const mimeType = file.type.toLowerCase();
   const extensions = allowedTypes[mimeType];
   if (!extensions) {
-    return "الصور المسموحة فقط: jpg, jpeg, png, webp. SVG والملفات التنفيذية غير مسموحة.";
+    return "الملفات المسموحة: صور jpg, jpeg, png, webp أو فيديو mp4, webm. SVG والملفات التنفيذية غير مسموحة.";
   }
 
   const originalName = path.basename((file.name || "").split(/[\\/]/).pop() || "");
@@ -65,7 +69,13 @@ function validateUploadedImage(file: File) {
 function extensionForMimeType(mimeType: string) {
   if (mimeType === "image/png") return "png";
   if (mimeType === "image/webp") return "webp";
+  if (mimeType === "video/mp4") return "mp4";
+  if (mimeType === "video/webm") return "webm";
   return "jpg";
+}
+
+function assetTypeForMimeType(mimeType: string) {
+  return mimeType.startsWith("video/") ? "video" : "image";
 }
 
 function safeUploadPath(uploadDir: string, storageKey: string) {
@@ -85,7 +95,7 @@ export async function POST(request: Request) {
     const file = form.get("file");
     if (!(file instanceof File)) return fail("BAD_REQUEST", "الملف مطلوب", 400);
 
-    const validationError = validateUploadedImage(file);
+    const validationError = validateUploadedFile(file);
     if (validationError) return fail("BAD_REQUEST", validationError, 400);
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -110,7 +120,7 @@ export async function POST(request: Request) {
       sizeBytes: file.size,
       width: null,
       height: null,
-      type: "image",
+      type: assetTypeForMimeType(file.type.toLowerCase()),
       status: "active"
     });
     return ok({ asset: serialize(asset) }, { status: 201 });

@@ -1,21 +1,58 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BookOpen, Building2, Megaphone, MessageCircle } from "lucide-react";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
-import { getHomeData } from "@/lib/serverData";
+import { getHomeFeeds, getHomeStats } from "@/lib/serverData";
+import { HomeFeedsSkeleton, HomeStatsSkeleton } from "@/components/ui/Skeletons";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const data = await getHomeData();
-  const cards = [
-    { href: "/parties", label: "الأحزاب", icon: Building2, text: "بوابة منظمة للتعرف على الأحزاب النشطة بدون ترتيب شعبي أو توصية." },
-    { href: "/updates", label: "المستجدات", icon: Megaphone, text: "منشورات وتصويتات عامة من الأحزاب والهيئة في تغذية موحدة." },
-    { href: "/laws", label: "افهم قانونك", icon: BookOpen, text: "شرح مبسط للقوانين والمفاهيم الانتخابية مع مصادر وروابط رسمية." },
-    { href: "/chat", label: "المساعد الذكي", icon: MessageCircle, text: "مساعد توعوي محايد يرفض ترشيح الأحزاب أو توجيه التصويت." }
-  ];
+const cards = [
+  { href: "/parties", label: "الأحزاب", icon: Building2, text: "بوابة منظمة للتعرف على الأحزاب النشطة بدون ترتيب شعبي أو توصية." },
+  { href: "/updates", label: "المستجدات", icon: Megaphone, text: "منشورات وتصويتات عامة من الأحزاب والهيئة في تغذية موحدة." },
+  { href: "/laws", label: "افهم قانونك", icon: BookOpen, text: "شرح مبسط للقوانين والمفاهيم الانتخابية مع مصادر وروابط رسمية." },
+  { href: "/chat", label: "المساعد الذكي", icon: MessageCircle, text: "مساعد توعوي محايد يرفض ترشيح الأحزاب أو توجيه التصويت." }
+];
 
+async function HomeStats() {
+  const data = await getHomeStats();
+  return (
+    <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
+      <div className="rounded border border-white/20 bg-white/12 p-4 backdrop-blur">
+        <span className="block text-3xl font-black">{data.partiesCount}</span>
+        <span className="text-sm text-white/75">أحزاب نشطة</span>
+      </div>
+      <div className="rounded border border-white/20 bg-white/12 p-4 backdrop-blur">
+        <span className="block text-3xl font-black">{data.lawsCount}</span>
+        <span className="text-sm text-white/75">مواد قانونية</span>
+      </div>
+      <div className="rounded border border-white/20 bg-white/12 p-4 backdrop-blur">
+        <span className="block text-3xl font-black">{data.updatesCount}</span>
+        <span className="text-sm text-white/75">مستجدات منشورة</span>
+      </div>
+    </div>
+  );
+}
+
+async function HomeFeeds() {
+  const data = await getHomeFeeds();
+  return (
+    <section className="container-page grid gap-6 pb-14 lg:grid-cols-2">
+      <div>
+        <h2 className="mb-4 text-2xl font-bold">أحدث المنشورات</h2>
+        <div className="grid gap-4">{(data.latestPosts as any[]).map((post) => <PostCard key={post._id} post={post} compact />)}</div>
+      </div>
+      <div>
+        <h2 className="mb-4 text-2xl font-bold">تصويتات نشطة</h2>
+        <div className="grid gap-4">{(data.latestPolls as any[]).map((poll) => <PollCard key={poll._id} poll={poll} compact />)}</div>
+      </div>
+    </section>
+  );
+}
+
+export default function HomePage() {
   return (
     <main>
       <section className="relative isolate overflow-hidden border-b border-line bg-ink text-white">
@@ -29,10 +66,10 @@ export default async function HomePage() {
               نشمي هو جسر رقمي محايد بين المواطن والأحزاب والهيئة المستقلة، يرفع الوعي السياسي، يسهل فهم القوانين، ويمنح الشباب مساحة آمنة ومنظمة للتفاعل وصناعة الرأي العام.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/parties" className="rounded bg-civic px-6 py-3 font-semibold text-white shadow-soft">
+              <Link href="/parties" className="rounded bg-civic px-6 py-3 font-semibold text-white shadow-soft hover:bg-civic/90">
                 ابدأ المشاركة
               </Link>
-              <Link href="/laws" className="rounded border border-white/70 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur">
+              <Link href="/laws" className="rounded border border-white/70 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur hover:bg-white/18">
                 افهم قانونك
               </Link>
             </div>
@@ -40,20 +77,9 @@ export default async function HomePage() {
               المنصة لا ترشح ولا تفضل أي حزب.
             </div>
           </div>
-          <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
-            <div className="rounded border border-white/20 bg-white/12 p-4 backdrop-blur">
-              <span className="block text-3xl font-black">{data.partiesCount}</span>
-              <span className="text-sm text-white/75">أحزاب نشطة</span>
-            </div>
-            <div className="rounded border border-white/20 bg-white/12 p-4 backdrop-blur">
-              <span className="block text-3xl font-black">{data.lawsCount}</span>
-              <span className="text-sm text-white/75">مواد قانونية</span>
-            </div>
-            <div className="rounded border border-white/20 bg-white/12 p-4 backdrop-blur">
-              <span className="block text-3xl font-black">{data.updatesCount}</span>
-              <span className="text-sm text-white/75">مستجدات منشورة</span>
-            </div>
-          </div>
+          <Suspense fallback={<HomeStatsSkeleton />}>
+            <HomeStats />
+          </Suspense>
         </div>
       </section>
       <section className="container-page py-12">
@@ -61,7 +87,7 @@ export default async function HomePage() {
           {cards.map((card) => {
             const Icon = card.icon;
             return (
-              <Link key={card.href} href={card.href} className="card p-5 hover:border-civic">
+              <Link key={card.href} href={card.href} className="card card-hover p-5">
                 <Icon className="mb-4 h-7 w-7 text-civic" />
                 <h2 className="font-bold">{card.label}</h2>
                 <p className="mt-3 text-sm leading-7 text-ink/70">{card.text}</p>
@@ -70,16 +96,9 @@ export default async function HomePage() {
           })}
         </div>
       </section>
-      <section className="container-page grid gap-6 pb-14 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-4 text-2xl font-bold">أحدث المنشورات</h2>
-          <div className="grid gap-4">{(data.latestPosts as any[]).map((post) => <PostCard key={post._id} post={post} compact />)}</div>
-        </div>
-        <div>
-          <h2 className="mb-4 text-2xl font-bold">تصويتات نشطة</h2>
-          <div className="grid gap-4">{(data.latestPolls as any[]).map((poll) => <PollCard key={poll._id} poll={poll} compact />)}</div>
-        </div>
-      </section>
+      <Suspense fallback={<HomeFeedsSkeleton />}>
+        <HomeFeeds />
+      </Suspense>
     </main>
   );
 }

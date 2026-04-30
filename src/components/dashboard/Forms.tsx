@@ -2,33 +2,122 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ImagePlus, Trash2 } from "lucide-react";
 import SafeImage from "@/components/ui/SafeImage";
+import LoadingButton from "@/components/ui/LoadingButton";
+import { useToast } from "@/components/ui/ToastProvider";
 
 function useApiMessage() {
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   async function submit(url: string, payload: unknown, method = "POST") {
-    const response = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const json = await response.json().catch(() => ({}));
-    setMessage(json.ok ? "تم الحفظ" : json.error?.message || "تعذر الحفظ");
-    if (json.ok) router.refresh();
+    setLoading(true);
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await response.json().catch(() => ({}));
+      setLoading(false);
+      setMessage(json.ok ? "تم الحفظ" : json.error?.message || "تعذر الحفظ");
+      if (json.ok) router.refresh();
+      return json;
+    } catch {
+      setLoading(false);
+      setMessage("تعذر الاتصال بالخادم");
+      return { ok: false };
+    }
   }
-  return { message, submit };
+  return { message, submit, loading };
 }
 
 export function PostCreateForm() {
   const api = useApiMessage();
+  const { showToast } = useToast();
+  const [media, setMedia] = useState<{ id: string; url: string; type: "image" | "video"; mimeType?: string } | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function uploadFile(file: File) {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"];
+    if (!allowed.includes(file.type)) {
+      showToast("نوع الملف غير مدعوم. استخدم صورة jpg/png/webp أو فيديو mp4/webm.", "error");
+      return;
+    }
+    const maxMb = 10;
+    if (file.size > maxMb * 1024 * 1024) {
+      showToast(`حجم الملف يجب ألا يتجاوز ${maxMb}MB`, "error");
+      return;
+    }
+
+    setUploading(true);
+    const nextPreview = URL.createObjectURL(file);
+    setPreviewUrl(nextPreview);
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/uploads", { method: "POST", body: formData });
+    const json = await response.json().catch(() => ({}));
+    setUploading(false);
+    if (!json.ok) {
+      setPreviewUrl(null);
+      URL.revokeObjectURL(nextPreview);
+      showToast(json.error?.message || "تعذر رفع الملف", "error");
+      return;
+    }
+    setMedia({ id: json.data.asset._id, url: json.data.asset.url, type: json.data.asset.type, mimeType: json.data.asset.mimeType });
+    showToast("تم رفع الملف", "success");
+  }
+
+  function removeMedia() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setMedia(null);
+  }
+
   return (
-    <form action={(formData) => api.submit("/api/posts", { title: formData.get("title"), content: formData.get("content"), tags: String(formData.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean) })} className="card space-y-3 p-5">
+    <form
+      action={async (formData) => {
+        const json = await api.submit("/api/posts", {
+          title: formData.get("title"),
+          content: formData.get("content"),
+          tags: String(formData.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean),
+          mediaIds: media ? [media.id] : []
+        });
+        if (json?.ok) {
+          removeMedia();
+          showToast("تم نشر المنشور", "success");
+        }
+      }}
+      className="card space-y-3 p-5"
+    >
       <h2 className="text-xl font-bold">منشور جديد</h2>
       <input name="title" className="w-full rounded border-line" placeholder="عنوان اختياري" />
       <textarea name="content" className="w-full rounded border-line" rows={5} placeholder="نص المنشور" required />
       <input name="tags" className="w-full rounded border-line" placeholder="وسوم مفصولة بفواصل" />
-      <button className="rounded bg-civic px-4 py-2 text-white">نشر</button>
+      <div className="rounded border border-dashed border-line bg-paper/40 p-3">
+        {media && previewUrl ? (
+          <div className="space-y-3">
+            {media.type === "video" ? (
+              <video src={previewUrl} className="max-h-80 w-full rounded bg-black object-contain" controls />
+            ) : (
+              <img src={previewUrl} alt="معاينة المرفق" className="max-h-80 w-full rounded object-contain" />
+            )}
+            <button type="button" onClick={removeMedia} className="inline-flex items-center gap-2 rounded border border-line bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-50">
+              <Trash2 className="h-4 w-4" />
+              إزالة المرفق
+            </button>
+          </div>
+        ) : (
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded bg-white px-4 py-6 text-center text-sm text-ink/65 hover:border-civic hover:text-civic">
+            <ImagePlus className="h-6 w-6" />
+            <span>{uploading ? "جار رفع الملف..." : "إضافة صورة أو فيديو"}</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" className="sr-only" onChange={(event) => event.target.files?.[0] && uploadFile(event.target.files[0])} disabled={uploading} />
+          </label>
+        )}
+      </div>
+      <LoadingButton loading={api.loading || uploading} className="bg-civic px-4 py-2 text-white hover:bg-civic/90">نشر</LoadingButton>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );

@@ -66,6 +66,7 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
   const [loading, setLoading] = useState(false);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const activeSession = useMemo(() => sessions.find((session) => session._id === activeSessionId) || null, [sessions, activeSessionId]);
@@ -112,6 +113,7 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
 
   async function openSession(sessionId: string) {
     setError(null);
+    setLastFailedPrompt(null);
     setActiveSessionId(sessionId);
     const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, { cache: "no-store" });
     const json = await response.json().catch(() => ({}));
@@ -211,6 +213,7 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
     if (!response.ok || !json.ok) {
       const friendlyError = fallbackError(json);
       setError(friendlyError);
+      setLastFailedPrompt(clean);
       setMessages((items) => [...items, { role: "assistant", content: friendlyError }]);
       return;
     }
@@ -227,7 +230,7 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
 
   return (
     <div className="grid min-h-[620px] gap-4 lg:grid-cols-[280px_1fr]" dir="rtl">
-      <aside className="rounded border border-line bg-white">
+      <aside className="rounded border border-line bg-white/90 shadow-soft">
         <div className="flex items-center justify-between border-b border-line p-3">
           <h2 className="text-sm font-bold text-ink">المحادثات</h2>
           <button
@@ -275,11 +278,11 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
         </div>
       </aside>
 
-      <section className="rounded border border-line bg-white">
-        <div className="flex items-center justify-between border-b border-line p-4">
+      <section className="overflow-hidden rounded border border-line bg-white shadow-soft">
+        <div className="flex items-center justify-between border-b border-line bg-civic/5 p-4">
           <div>
             <h2 className="font-bold text-ink">{activeSession?.title || "محادثة جديدة"}</h2>
-            <p className="mt-1 text-xs text-ink/60">المساعد يقدم شرحًا توعويًا وليس استشارة قانونية.</p>
+            <p className="mt-1 text-xs text-civic">متصل وجاهز للمساعدة التوعوية</p>
           </div>
           {activeSessionId ? (
             <button
@@ -293,12 +296,21 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
           ) : null}
         </div>
 
-        {error ? <div className="mx-4 mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+        {error ? (
+          <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-2 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <span>{error}</span>
+            {lastFailedPrompt ? (
+              <button type="button" onClick={() => sendMessage(lastFailedPrompt)} className="rounded bg-white px-3 py-1.5 font-semibold text-red-700 hover:bg-red-100">
+                إعادة المحاولة
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
-        <div ref={scrollRef} className="h-[480px] space-y-4 overflow-auto bg-slate-50 p-4">
+        <div ref={scrollRef} className="h-[480px] space-y-4 overflow-auto bg-[#f4f7f4] p-4">
           {messages.map((item, index) => (
             <div key={item._id || `${item.role}-${index}`} className={`flex ${item.role === "user" ? "justify-start" : "justify-end"}`}>
-              <div className={`max-w-[88%] rounded p-3 leading-8 ${item.role === "user" ? "bg-ink text-white" : "border border-line bg-white text-ink"}`}>
+              <div className={`max-w-[88%] rounded-2xl p-3 leading-8 shadow-sm ${item.role === "user" ? "rounded-tr-sm bg-civic text-white" : "rounded-tl-sm border border-line bg-white text-ink"}`}>
                 {item.role === "assistant" ? <MarkdownMessage content={item.content} /> : <div className="whitespace-pre-wrap">{item.content}</div>}
                 {item.role === "assistant" && item.groundingSources?.length ? (
                   <div className="mt-3 border-t border-line pt-2 text-xs">
@@ -323,7 +335,7 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
           ))}
 
           {showSuggestions ? (
-            <div className="rounded border border-line bg-white p-3">
+            <div className="rounded border border-line bg-white p-3 shadow-sm">
               <p className="mb-3 text-sm font-bold text-ink/70">أسئلة مقترحة</p>
               <div className="flex flex-wrap gap-2">
                 {suggestedQuestions.map((question) => (
@@ -342,23 +354,25 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
 
           {loading ? (
             <div className="flex justify-end">
-              <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-civic">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-civic shadow-sm">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-civic" />
+                <span className="h-2 w-2 animate-pulse rounded-full bg-civic [animation-delay:120ms]" />
+                <span className="h-2 w-2 animate-pulse rounded-full bg-civic [animation-delay:240ms]" />
               </div>
             </div>
           ) : null}
         </div>
 
-        <form onSubmit={submit} className="flex gap-2 border-t border-line p-4">
+        <form onSubmit={submit} className="flex gap-2 border-t border-line bg-white p-4">
           <input
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            className="min-w-0 flex-1 rounded border-line"
+            className="min-w-0 flex-1 rounded-full border-line px-4 focus:border-civic focus:ring-civic"
             maxLength={1200}
             placeholder="اسأل عن قانون، انتخابات، أحزاب، أو طريقة استخدام المنصة"
             disabled={loading}
           />
-          <button disabled={loading || !message.trim()} className="inline-flex items-center justify-center rounded bg-civic px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60">
+          <button disabled={loading || !message.trim()} className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-civic text-white hover:bg-civic/90 disabled:cursor-not-allowed disabled:opacity-60">
             <Send className="h-4 w-4" />
           </button>
         </form>

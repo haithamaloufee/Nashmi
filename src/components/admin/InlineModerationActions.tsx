@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MoreHorizontal } from "lucide-react";
+import DropdownMenu from "@/components/ui/DropdownMenu";
+import { useToast } from "@/components/ui/ToastProvider";
 
 const actionLabels = {
   hide: "إخفاء",
@@ -42,7 +45,8 @@ type Props = {
 export default function InlineModerationActions({ targetType, targetId }: Props) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     let active = true;
@@ -65,7 +69,6 @@ export default function InlineModerationActions({ targetType, targetId }: Props)
     if (!window.confirm(confirmText[action])) return;
 
     setLoading(true);
-    setMessage(null);
 
     try {
       let response: Response;
@@ -107,34 +110,35 @@ export default function InlineModerationActions({ targetType, targetId }: Props)
 
       const json = await response.json().catch(() => ({}));
       if (response.ok && json.ok) {
-        setMessage("تم تنفيذ العملية بنجاح. سيُحدث العرض تلقائيًا بعد قليل.");
-        window.setTimeout(() => window.location.reload(), 800);
+        setDone(true);
+        showToast("تم تنفيذ العملية بنجاح", "success");
       } else {
-        setMessage(json.error?.message || "فشل تنفيذ العملية");
+        showToast(json.error?.message || "فشل تنفيذ العملية", "error");
       }
     } catch {
-      setMessage("حدث خطأ أثناء الاتصال بالخادم");
+      showToast("حدث خطأ أثناء الاتصال بالخادم", "error");
     } finally {
       setLoading(false);
     }
   }
 
-  if (!isAdmin) return null;
+  if (!isAdmin || done) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <DropdownMenu label="إجراءات الإدارة" trigger={<MoreHorizontal className="h-4 w-4" />}>
       {actionOptions[targetType].map((action) => (
         <button
           key={action}
           type="button"
           onClick={() => handleAction(action)}
           disabled={loading}
-          className="rounded border border-line bg-white px-3 py-1 text-xs text-ink hover:bg-ink/5 disabled:opacity-50"
+          className={`block w-full rounded px-3 py-2 text-right text-sm transition hover:bg-ink/5 disabled:opacity-50 ${
+            action === "delete" ? "text-red-700 hover:bg-red-50" : "text-ink"
+          }`}
         >
           {actionLabels[action]}
         </button>
       ))}
-      {message ? <span className="text-xs text-ink/60">{message}</span> : null}
-    </div>
+    </DropdownMenu>
   );
 }

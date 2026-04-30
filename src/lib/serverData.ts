@@ -57,10 +57,60 @@ export async function getHomeData() {
         Law.countDocuments({ status: "published" }),
         Post.countDocuments({ status: "published" }),
         Poll.countDocuments({ status: "active" }),
-        Post.find({ status: "published" }).sort({ publishedAt: -1 }).limit(3).lean(),
-        Poll.find({ status: "active" }).sort({ publishedAt: -1 }).limit(2).lean()
+        Post.find({ status: "published" })
+          .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+          .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+          .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+          .sort({ publishedAt: -1 })
+          .limit(3)
+          .lean(),
+        Poll.find({ status: "active" })
+          .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+          .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+          .sort({ publishedAt: -1 })
+          .limit(2)
+          .lean()
       ]);
       return { partiesCount, lawsCount, updatesCount: postsCount + pollsCount, latestPosts: serialize(latestPosts), latestPolls: serialize(latestPolls) };
+    }
+  );
+}
+
+export async function getHomeStats() {
+  return safeData(
+    { partiesCount: 0, lawsCount: 0, updatesCount: 0 },
+    async () => {
+      const [partiesCount, lawsCount, postsCount, pollsCount] = await Promise.all([
+        Party.countDocuments({ status: "active" }),
+        Law.countDocuments({ status: "published" }),
+        Post.countDocuments({ status: "published" }),
+        Poll.countDocuments({ status: "active" })
+      ]);
+      return { partiesCount, lawsCount, updatesCount: postsCount + pollsCount };
+    }
+  );
+}
+
+export async function getHomeFeeds() {
+  return safeData(
+    { latestPosts: [] as unknown[], latestPolls: [] as unknown[] },
+    async () => {
+      const [latestPosts, latestPolls] = await Promise.all([
+        Post.find({ status: "published" })
+          .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+          .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+          .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+          .sort({ publishedAt: -1 })
+          .limit(3)
+          .lean(),
+        Poll.find({ status: "active" })
+          .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+          .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+          .sort({ publishedAt: -1 })
+          .limit(2)
+          .lean()
+      ]);
+      return { latestPosts: serialize(latestPosts), latestPolls: serialize(latestPolls) };
     }
   );
 }
@@ -79,8 +129,19 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
     const party = await Party.findOne({ slug, status: "active" }).populate({ path: "logoMediaId", select: "url status" }).lean();
     if (!party) return null;
     const [posts, polls, follow] = await Promise.all([
-      Post.find({ partyId: party._id, status: "published" }).sort({ publishedAt: -1 }).limit(10).lean(),
-      Poll.find({ partyId: party._id, status: "active" }).sort({ publishedAt: -1 }).limit(10).lean(),
+      Post.find({ partyId: party._id, status: "published" })
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+        .sort({ publishedAt: -1 })
+        .limit(10)
+        .lean(),
+      Poll.find({ partyId: party._id, status: "active" })
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .sort({ publishedAt: -1 })
+        .limit(10)
+        .lean(),
       viewerUserId ? PartyFollower.exists({ partyId: party._id, userId: viewerUserId }) : null
     ]);
     return serialize({ party, posts, polls, isFollowing: Boolean(follow) });
@@ -108,8 +169,23 @@ export async function getUpdates(search?: string, filter = "all") {
       pollQuery.searchNormalized = regex;
     }
     const [posts, polls] = await Promise.all([
-      filter === "polls" ? [] : Post.find(postQuery).sort({ publishedAt: -1 }).limit(12).lean(),
-      filter === "posts" ? [] : Poll.find(pollQuery).sort({ publishedAt: -1 }).limit(12).lean()
+      filter === "polls"
+        ? []
+        : Post.find(postQuery)
+            .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+            .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+            .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+            .sort({ publishedAt: -1 })
+            .limit(12)
+            .lean(),
+      filter === "posts"
+        ? []
+        : Poll.find(pollQuery)
+            .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+            .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+            .sort({ publishedAt: -1 })
+            .limit(12)
+            .lean()
     ]);
     return serialize(
       [
@@ -342,7 +418,13 @@ export async function getPartyDashboardData(userId: string) {
     const party = await Party.findOne({ accountUserId: userId }).lean();
     if (!party) return null;
     const [posts, polls, comments] = await Promise.all([
-      Post.find({ partyId: party._id, status: { $ne: "deleted" } }).sort({ createdAt: -1 }).limit(50).lean(),
+      Post.find({ partyId: party._id, status: { $ne: "deleted" } })
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
       Poll.find({ partyId: party._id, status: { $ne: "deleted" } }).sort({ createdAt: -1 }).limit(50).lean(),
       Comment.countDocuments({ partyId: party._id, status: "published" })
     ]);
@@ -353,7 +435,13 @@ export async function getPartyDashboardData(userId: string) {
 export async function getIecDashboardData() {
   return safeData({ posts: [] as unknown[], laws: [] as unknown[] }, async () => {
     const [posts, laws] = await Promise.all([
-      Post.find({ authorType: "iec", status: { $ne: "deleted" } }).sort({ createdAt: -1 }).limit(50).lean(),
+      Post.find({ authorType: "iec", status: { $ne: "deleted" } })
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
       Law.find({}).sort({ updatedAt: -1 }).limit(50).lean()
     ]);
     return { posts: serialize(posts), laws: serialize(laws) };

@@ -9,6 +9,8 @@ import { cleanContent, readJson, requirePartyForUser, serialize } from "@/lib/ro
 import { writeAuditLog } from "@/lib/audit";
 import Post from "@/models/Post";
 import Party from "@/models/Party";
+import "@/models/MediaAsset";
+import "@/models/User";
 
 export async function GET(request: Request) {
   try {
@@ -23,7 +25,13 @@ export async function GET(request: Request) {
     if (partyId) query.partyId = partyId;
     if (filter === "iec") query.authorType = "iec";
     if (regex) query.searchNormalized = regex;
-    const posts = await Post.find(query).sort(newestSort).limit(limit).lean();
+    const posts = await Post.find(query)
+      .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+      .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+      .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+      .sort(newestSort)
+      .limit(limit)
+      .lean();
     return ok({ posts: serialize(posts) }, { nextCursor: getNextCursor(posts, limit) });
   } catch (error) {
     return handleApiError(error);
@@ -62,7 +70,12 @@ export async function POST(request: Request) {
     });
     if (partyId) await Party.updateOne({ _id: partyId }, { $inc: { postsCount: 1 } });
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "post.create", targetType: "post", targetId: post._id, metadata: { partyId }, request });
-    return ok({ post: serialize(post) }, { status: 201 });
+    const populated = await Post.findById(post._id)
+      .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+      .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+      .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+      .lean();
+    return ok({ post: serialize(populated || post) }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import FloatingAssistant from "@/components/layout/FloatingAssistant";
+import { ToastProvider } from "@/components/ui/ToastProvider";
+import RouteTransitionProvider from "@/components/navigation/RouteTransitionProvider";
 
 export const metadata: Metadata = {
   title: "Nashmi / نشمي",
@@ -12,9 +14,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <Navbar />
-        {children}
-        <FloatingAssistant />
+        <ToastProvider>
+          <Navbar />
+          <RouteTransitionProvider>{children}</RouteTransitionProvider>
+          <FloatingAssistant />
+        </ToastProvider>
       </body>
     </html>
   );

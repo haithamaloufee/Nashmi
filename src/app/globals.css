@@ -33,6 +33,20 @@ select {
   font: inherit;
 }
 
+button,
+a,
+input,
+textarea,
+select {
+  transition-duration: 150ms;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+}
+
+button:active,
+a:active {
+  transform: scale(0.99);
+}
+
 .container-page {
   width: min(1180px, calc(100% - 32px));
   margin-inline: auto;
@@ -43,6 +57,13 @@ select {
   background: rgba(255, 255, 255, 0.82);
   border-radius: 8px;
   box-shadow: 0 10px 28px rgba(23, 33, 43, 0.06);
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.card-hover:hover {
+  border-color: rgba(18, 107, 111, 0.35);
+  box-shadow: 0 16px 40px rgba(23, 33, 43, 0.09);
+  transform: translateY(-1px);
 }
 
 .focus-ring {
@@ -65,4 +86,25 @@ select {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #ebe7dc;
+}
+
+.skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: skeleton-shimmer 1.35s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(-100%);
+  }
 }

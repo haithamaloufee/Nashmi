@@ -21,16 +21,17 @@ export async function PUT(request: Request, context: Context) {
     const post = await Post.findOne({ _id: id, status: "published" });
     if (!post) throw new Error("NOT_FOUND");
     const existing = await PostReaction.findOne({ postId: id, userId: user.id });
+    let updatedPost = post;
     if (!existing) {
       await PostReaction.create({ postId: id, userId: user.id, type: input.type });
-      await Post.updateOne({ _id: id }, { $inc: { [counterFor(input.type)]: 1 } });
+      updatedPost = await Post.findByIdAndUpdate(id, { $inc: { [counterFor(input.type)]: 1 } }, { new: true }) || post;
     } else if (existing.type !== input.type) {
       const oldType = existing.type as "like" | "dislike";
       existing.type = input.type;
       await existing.save();
-      await Post.updateOne({ _id: id }, { $inc: { [counterFor(oldType)]: -1, [counterFor(input.type)]: 1 } });
+      updatedPost = await Post.findByIdAndUpdate(id, { $inc: { [counterFor(oldType)]: -1, [counterFor(input.type)]: 1 } }, { new: true }) || post;
     }
-    return ok({ reacted: true, type: input.type });
+    return ok({ reacted: true, type: input.type, likesCount: updatedPost.likesCount, dislikesCount: updatedPost.dislikesCount });
   } catch (error) {
     return handleApiError(error);
   }
@@ -43,8 +44,9 @@ export async function DELETE(_request: Request, context: Context) {
     const { id } = await context.params;
     await connectToDatabase();
     const existing = await PostReaction.findOneAndDelete({ postId: id, userId: user.id });
-    if (existing) await Post.updateOne({ _id: id, [counterFor(existing.type as "like" | "dislike")]: { $gt: 0 } }, { $inc: { [counterFor(existing.type as "like" | "dislike")]: -1 } });
-    return ok({ reacted: false });
+    let updatedPost = null;
+    if (existing) updatedPost = await Post.findOneAndUpdate({ _id: id, [counterFor(existing.type as "like" | "dislike")]: { $gt: 0 } }, { $inc: { [counterFor(existing.type as "like" | "dislike")]: -1 } }, { new: true });
+    return ok({ reacted: false, likesCount: updatedPost?.likesCount, dislikesCount: updatedPost?.dislikesCount });
   } catch (error) {
     return handleApiError(error);
   }

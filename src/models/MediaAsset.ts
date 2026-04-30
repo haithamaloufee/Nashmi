@@ -9,7 +9,7 @@ const MediaAssetSchema = new Schema(
     sizeBytes: { type: Number, required: true },
     width: { type: Number, default: null },
     height: { type: Number, default: null },
-    type: { type: String, enum: ["image", "document"], default: "image" },
+    type: { type: String, enum: ["image", "video", "document"], default: "image" },
     status: { type: String, enum: ["active", "deleted"], default: "active" }
   },
   { timestamps: { createdAt: true, updatedAt: false } }

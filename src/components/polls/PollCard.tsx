@@ -1,8 +1,13 @@
+"use client";
+
+import { useState } from "react";
+import { MessageCircle, Share2 } from "lucide-react";
 import PollVote from "@/components/polls/PollVote";
 import ReportButton from "@/components/reports/ReportButton";
 import CommentBox from "@/components/comments/CommentBox";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import InlineModerationActions from "@/components/admin/InlineModerationActions";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type Poll = {
   _id: string;
@@ -12,21 +17,66 @@ type Poll = {
   totalVotes: number;
   likesCount: number;
   dislikesCount: number;
+  commentsCount?: number;
 };
 
 export default function PollCard({ poll, compact = false }: { poll: Poll; compact?: boolean }) {
+  const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(poll.commentsCount || 0);
+  const { showToast } = useToast();
+
+  async function sharePoll() {
+    const url = `${window.location.origin}/updates?poll=${poll._id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: poll.question, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        showToast("تم نسخ رابط التصويت", "success");
+      }
+    } catch {
+      showToast("تعذر مشاركة التصويت", "error");
+    }
+  }
+
   return (
-    <article className="card p-5">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <span className="rounded bg-clay/10 px-2 py-1 text-xs text-clay">تصويت</span>
-        <div className="flex flex-wrap items-center gap-2">
+    <article className="card card-hover p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <span className="rounded-full bg-clay/10 px-2.5 py-1 text-xs font-semibold text-clay">تصويت</span>
+          <h3 className="mt-3 text-lg font-bold leading-8">{poll.question}</h3>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
           <InlineModerationActions targetType="poll" targetId={poll._id} />
-          <ReportButton targetType="poll" targetId={poll._id} />
+          <ReportButton targetType="poll" targetId={poll._id} compact />
         </div>
       </div>
       <PollVote poll={poll} />
-      <ReactionButtons targetType="polls" targetId={poll._id} likesCount={poll.likesCount} dislikesCount={poll.dislikesCount} />
-      {!compact ? <CommentBox targetType="polls" targetId={poll._id} /> : null}
+      <div className="mt-4 flex items-center justify-between border-y border-line py-1 text-sm text-ink/55">
+        <span>{commentsCount} تعليق</span>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <ReactionButtons targetType="polls" targetId={poll._id} likesCount={poll.likesCount} dislikesCount={poll.dislikesCount} />
+        {!compact ? (
+          <button
+            type="button"
+            onClick={() => setCommentsExpanded((value) => !value)}
+            className="inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 text-sm font-semibold text-ink/70 transition hover:bg-civic/10 hover:text-civic active:scale-95"
+          >
+            <MessageCircle className="h-4 w-4" />
+            تعليق
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={sharePoll}
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 text-sm font-semibold text-ink/70 transition hover:bg-civic/10 hover:text-civic active:scale-95"
+        >
+          <Share2 className="h-4 w-4" />
+          مشاركة
+        </button>
+      </div>
+      {!compact ? <CommentBox targetType="polls" targetId={poll._id} expanded={commentsExpanded} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>
   );
 }

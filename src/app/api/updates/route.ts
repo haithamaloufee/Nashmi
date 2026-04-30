@@ -8,6 +8,8 @@ import Party from "@/models/Party";
 import PartyFollower from "@/models/PartyFollower";
 import Post from "@/models/Post";
 import Poll from "@/models/Poll";
+import "@/models/MediaAsset";
+import "@/models/User";
 
 export async function GET(request: Request) {
   try {
@@ -47,8 +49,23 @@ export async function GET(request: Request) {
     }
 
     const [posts, polls] = await Promise.all([
-      filter === "polls" ? [] : Post.find(basePostQuery).sort({ publishedAt: -1 }).limit(limit).lean(),
-      filter === "posts" ? [] : Poll.find(basePollQuery).sort({ publishedAt: -1 }).limit(limit).lean()
+      filter === "polls"
+        ? []
+        : Post.find(basePostQuery)
+            .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+            .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+            .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+            .sort({ publishedAt: -1 })
+            .limit(limit)
+            .lean(),
+      filter === "posts"
+        ? []
+        : Poll.find(basePollQuery)
+            .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+            .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+            .sort({ publishedAt: -1 })
+            .limit(limit)
+            .lean()
     ]);
 
     const updates = [

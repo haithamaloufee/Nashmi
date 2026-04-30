@@ -20,16 +20,17 @@ export async function PUT(request: Request, context: Context) {
     const poll = await Poll.findOne({ _id: id, status: "active" });
     if (!poll) throw new Error("NOT_FOUND");
     const existing = await PollReaction.findOne({ pollId: id, userId: user.id });
+    let updatedPoll = poll;
     if (!existing) {
       await PollReaction.create({ pollId: id, userId: user.id, type: input.type });
-      await Poll.updateOne({ _id: id }, { $inc: { [counterFor(input.type)]: 1 } });
+      updatedPoll = await Poll.findByIdAndUpdate(id, { $inc: { [counterFor(input.type)]: 1 } }, { new: true }) || poll;
     } else if (existing.type !== input.type) {
       const oldType = existing.type as "like" | "dislike";
       existing.type = input.type;
       await existing.save();
-      await Poll.updateOne({ _id: id }, { $inc: { [counterFor(oldType)]: -1, [counterFor(input.type)]: 1 } });
+      updatedPoll = await Poll.findByIdAndUpdate(id, { $inc: { [counterFor(oldType)]: -1, [counterFor(input.type)]: 1 } }, { new: true }) || poll;
     }
-    return ok({ reacted: true, type: input.type });
+    return ok({ reacted: true, type: input.type, likesCount: updatedPoll.likesCount, dislikesCount: updatedPoll.dislikesCount });
   } catch (error) {
     return handleApiError(error);
   }
@@ -42,8 +43,9 @@ export async function DELETE(_request: Request, context: Context) {
     const { id } = await context.params;
     await connectToDatabase();
     const existing = await PollReaction.findOneAndDelete({ pollId: id, userId: user.id });
-    if (existing) await Poll.updateOne({ _id: id, [counterFor(existing.type as "like" | "dislike")]: { $gt: 0 } }, { $inc: { [counterFor(existing.type as "like" | "dislike")]: -1 } });
-    return ok({ reacted: false });
+    let updatedPoll = null;
+    if (existing) updatedPoll = await Poll.findOneAndUpdate({ _id: id, [counterFor(existing.type as "like" | "dislike")]: { $gt: 0 } }, { $inc: { [counterFor(existing.type as "like" | "dislike")]: -1 } }, { new: true });
+    return ok({ reacted: false, likesCount: updatedPoll?.likesCount, dislikesCount: updatedPoll?.dislikesCount });
   } catch (error) {
     return handleApiError(error);
   }
