@@ -3,6 +3,7 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import FollowButton from "@/components/parties/FollowButton";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
+import { JumpToPostsButton, ProfileAccordionCard } from "@/components/profile/ProfileInteractions";
 import ReportButton from "@/components/reports/ReportButton";
 import PartyVerificationActions from "@/components/admin/PartyVerificationActions";
 import Alert from "@/components/ui/Alert";
@@ -63,6 +64,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
               <FollowButton partyId={party._id} initialFollowed={isFollowing} />
+              <JumpToPostsButton label="عرض منشورات الحزب / View party posts" />
               <ReportButton targetType="party" targetId={party._id} />
               <PartyVerificationActions partyId={party._id} initialVerified={party.isVerified} />
             </div>
@@ -71,19 +73,16 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
             <Alert>عرض معلومات الحزب هنا للتوعية فقط. نشمي لا تقارن ولا ترشح ولا تفضل أي حزب.</Alert>
           </div>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <div className="rounded border border-line bg-slate-50 p-5">
-              <h2 className="mb-4 text-xl font-bold">نظرة عامة</h2>
+          <div className="mt-8 grid gap-4 lg:grid-cols-2">
+            <ProfileAccordionCard title="نظرة عامة" defaultOpen>
               <p className="text-ink/75 leading-8">{party.description}</p>
               <div className="mt-6 grid gap-3 text-sm text-ink/70">
                 {party.foundedYear ? <p><strong>سنة التأسيس:</strong> {party.foundedYear}</p> : null}
                 {party.officialRegistry?.foundingOrConferenceDate ? <p><strong>تاريخ المؤتمر/التأسيس:</strong> {new Date(party.officialRegistry.foundingOrConferenceDate).toLocaleDateString("ar-EG")}</p> : null}
-                {party.officialRegistry?.nationalNumber ? <p><strong>الرقم الوطني:</strong> {party.officialRegistry.nationalNumber}</p> : null}
                 {party.officialRegistry?.secretaryGeneral ? <p><strong>الأمين العام:</strong> {party.officialRegistry.secretaryGeneral}</p> : null}
               </div>
-            </div>
-            <div className="rounded border border-line bg-slate-50 p-5">
-              <h2 className="mb-4 text-xl font-bold">الرؤية والأهداف</h2>
+            </ProfileAccordionCard>
+            <ProfileAccordionCard title="الرؤية والأهداف">
               <div>
                 <p className="text-ink/75 leading-8">{party.vision}</p>
               </div>
@@ -97,12 +96,11 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
                   <p className="text-ink/60">لم يتم إدخال أهداف الحزب بعد.</p>
                 )}
               </div>
-            </div>
+            </ProfileAccordionCard>
           </div>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <div className="rounded border border-line bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-2xl font-bold">تواصل مع الحزب</h2>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <ProfileAccordionCard title="تواصل مع الحزب">
               <div className="grid gap-3">
                 {websiteUrl ? <ContactButton href={websiteUrl} label="الموقع الرسمي" /> : null}
                 {facebookUrl ? <ContactButton href={facebookUrl} label="فيسبوك" /> : null}
@@ -115,10 +113,9 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
                   <p className="text-ink/60">لا توجد بيانات اتصال إضافية متاحة حالياً.</p>
                 ) : null}
               </div>
-            </div>
+            </ProfileAccordionCard>
 
-            <div className="rounded border border-line bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-2xl font-bold">المقر والفروع</h2>
+            <ProfileAccordionCard title="المقر والفروع">
               <div className="space-y-3 text-ink/75">
                 {party.contact?.headquarters ? <p><strong>المقر الرئيسي:</strong> {party.contact.headquarters}</p> : <p className="text-ink/60">لم يتم إدخال مقر رئيسي بعد.</p>}
                 <div>
@@ -131,12 +128,11 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
                     <p className="text-ink/60">لم يتم إدخال بيانات الفروع بعد.</p>)}
                 </div>
               </div>
-            </div>
+            </ProfileAccordionCard>
           </div>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <div className="rounded border border-line bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-2xl font-bold">الإحصائيات</h2>
+          <div className="mt-4">
+            <ProfileAccordionCard title="الإحصائيات">
               <div className="grid gap-3 text-ink/75">
                 {party.statistics?.membersCount != null ? <p><strong>عدد المنتسبين:</strong> {party.statistics.membersCount}</p> : null}
                 {party.statistics?.womenMembersCount != null ? <p><strong>العضوات:</strong> {party.statistics.womenMembersCount}</p> : null}
@@ -148,27 +144,12 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
                   <p className="text-ink/60">لا توجد إحصائيات موثقة متاحة حالياً.</p>
                 ) : null}
               </div>
-            </div>
-
-            <div className="rounded border border-line bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-2xl font-bold">جودة البيانات</h2>
-              <div className="space-y-3 text-ink/75">
-                <p>{party.dataQuality?.registryDataVerified ? "بيانات التسجيل مثبتة من السجل الرسمي." : "التحقق من بيانات التسجيل ما زال قيد المراجعة."}</p>
-                <p>{party.dataQuality?.officialWebsiteVerified ? "الموقع الرسمي موثق." : "الموقع الرسمي لم يُوثق بعد."}</p>
-                <p>{party.dataQuality?.socialLinksNeedManualVerification ? "روابط التواصل تحتاج تحققًا يدويًا." : "روابط التواصل يمكن الاعتماد عليها."}</p>
-                <p>{party.dataQuality?.statisticsNeedManualVerification ? "الإحصائيات تحتاج تحققًا يدويًا." : "الإحصائيات موثقة."}</p>
-                <p>{party.dataQuality?.imagesDeferred ? "صور الحزب مؤجلة وتضاف لاحقاً من لوحة الإدارة." : "صور الحزب متاحة."}</p>
-                {party.officialRegistry?.registryUrl ? (
-                  <p className="text-sm text-ink/60">مصدر التسجيل: <a href={party.officialRegistry.registryUrl} target="_blank" rel="noopener noreferrer" className="text-civic">رابط السجل الرسمي</a></p>
-                ) : null}
-                {party.officialRegistry?.sourceCheckedAt ? <p className="text-sm text-ink/60">آخر تحقق: {new Date(party.officialRegistry.sourceCheckedAt).toLocaleDateString("ar-EG")}</p> : null}
-              </div>
-            </div>
+            </ProfileAccordionCard>
           </div>
 
-          <div className="mt-8 rounded border border-line bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-2xl font-bold">اللجان</h2>
-            {committees.length > 0 ? (
+          <div className="mt-4">
+            <ProfileAccordionCard title="اللجان">
+              {committees.length > 0 ? (
               <div className="space-y-4">
                 {committees.map((committee: any) => (
                   <div key={committee.name} className="rounded border border-line p-4">
@@ -181,12 +162,13 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
               </div>
             ) : (
               <p className="text-ink/60">لم يتم إدخال بيانات اللجان بعد.</p>
-            )}
+              )}
+            </ProfileAccordionCard>
           </div>
 
-          <div className="mt-8 rounded border border-line bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-2xl font-bold">آخر الإنجازات</h2>
-            {achievements.length > 0 ? (
+          <div className="mt-4">
+            <ProfileAccordionCard title="آخر الإنجازات">
+              {achievements.length > 0 ? (
               <div className="space-y-4">
                 {achievements.map((achievement: any) => (
                   <div key={achievement.title} className="rounded border border-line p-4">
@@ -204,12 +186,13 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
               </div>
             ) : (
               <p className="text-ink/60">لا توجد إنجازات مضافة حتى الآن.</p>
-            )}
+              )}
+            </ProfileAccordionCard>
           </div>
         </div>
       </section>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
+      <section id="profile-posts" className="scroll-mt-24 mt-8 grid gap-6 lg:grid-cols-2">
         <div>
           <h2 className="mb-4 text-2xl font-bold">منشورات الحزب</h2>
           <div className="grid gap-4">{posts.map((post: any) => <PostCard key={post._id} post={post} />)}</div>

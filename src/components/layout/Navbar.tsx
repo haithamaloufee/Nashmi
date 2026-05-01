@@ -3,14 +3,14 @@ import Link from "next/link";
 import { Menu, MessageCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import UserMenu from "@/components/layout/UserMenu";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 
 const links = [
   { href: "/", label: "الرئيسية" },
   { href: "/parties", label: "بوابة الأحزاب" },
   { href: "/iec", label: "الهيئة المستقلة" },
   { href: "/updates", label: "آخر المستجدات" },
-  { href: "/laws", label: "افهم قانونك" },
-  { href: "/chat", label: "المساعد الذكي" }
+  { href: "/laws", label: "افهم قانونك" }
 ];
 
 export default async function Navbar() {
@@ -25,7 +25,7 @@ export default async function Navbar() {
           : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-line bg-paper/95 backdrop-blur">
       <div className="container-page flex min-h-16 items-center justify-between gap-4 py-3">
         <Link href="/" className="focus-ring flex items-center gap-3 font-bold text-civic" aria-label="الانتقال إلى الصفحة الرئيسية">
           <Image src="/images/nashmi logo.png" alt="شعار منصة نشمي" width={56} height={56} priority unoptimized className="h-12 w-12 rounded-full object-contain" />
@@ -44,9 +44,10 @@ export default async function Navbar() {
           ) : null}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/chat" className="focus-ring hidden rounded border border-civic px-3 py-2 text-sm text-civic hover:bg-civic hover:text-white sm:flex">
+          <ThemeToggle />
+          <Link href="/chat" className="focus-ring inline-flex items-center rounded border border-civic px-3 py-2 text-sm text-civic hover:bg-civic hover:text-white" aria-label="المساعد الذكي">
             <MessageCircle className="ml-2 h-4 w-4" />
-            اسأل المساعد
+            <span className="hidden sm:inline">المساعد الذكي</span>
           </Link>
           {user ? (
             <UserMenu user={user} />

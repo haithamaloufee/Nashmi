@@ -8,12 +8,13 @@ function animateCounter(element: HTMLElement, target: number) {
   const start = performance.now();
   const decimals = Number(element.dataset.counterDecimals || "0");
   const suffix = element.dataset.counterSuffix || "";
+  const formatter = new Intl.NumberFormat("ar-JO", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
 
   function format(value: number) {
-    return `${new Intl.NumberFormat("ar-JO", {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    }).format(value)}${suffix}`;
+    return `${formatter.format(value)}${suffix}`;
   }
 
   if (!duration) {
@@ -34,12 +35,12 @@ function animateCounter(element: HTMLElement, target: number) {
 export default function LandingInteractions() {
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const revealItems = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
     const counterItems = Array.from(document.querySelectorAll<HTMLElement>("[data-counter]"));
     const donutItems = Array.from(document.querySelectorAll<HTMLElement>("[data-donut-value]"));
+    const counterSet = new Set(counterItems);
+    const donutSet = new Set(donutItems);
 
     if (prefersReducedMotion || !("IntersectionObserver" in window)) {
-      revealItems.forEach((item) => item.classList.add("is-visible"));
       counterItems.forEach((item) => {
         const target = Number(item.dataset.counter || "0");
         const decimals = Number(item.dataset.counterDecimals || "0");
@@ -53,52 +54,28 @@ export default function LandingInteractions() {
       return;
     }
 
-    const revealed = new IntersectionObserver(
+    const observed = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            revealed.unobserve(entry.target);
+            const element = entry.target as HTMLElement;
+            if (counterSet.has(element)) {
+              animateCounter(element, Number(element.dataset.counter || "0"));
+            }
+            if (donutSet.has(element)) {
+              element.style.setProperty("--donut-progress", `${element.dataset.donutValue || "0"}%`);
+            }
+            observed.unobserve(element);
           }
         });
       },
       { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
     );
 
-    const counted = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const element = entry.target as HTMLElement;
-            animateCounter(element, Number(element.dataset.counter || "0"));
-            counted.unobserve(element);
-          }
-        });
-      },
-      { threshold: 0.35 }
-    );
-
-    const donutAnimated = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const element = entry.target as HTMLElement;
-            element.style.setProperty("--donut-progress", `${element.dataset.donutValue || "0"}%`);
-            donutAnimated.unobserve(element);
-          }
-        });
-      },
-      { threshold: 0.35 }
-    );
-
-    revealItems.forEach((item) => revealed.observe(item));
-    counterItems.forEach((item) => counted.observe(item));
-    donutItems.forEach((item) => donutAnimated.observe(item));
+    new Set([...counterItems, ...donutItems]).forEach((item) => observed.observe(item));
 
     return () => {
-      revealed.disconnect();
-      counted.disconnect();
-      donutAnimated.disconnect();
+      observed.disconnect();
     };
   }, []);
 

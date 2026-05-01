@@ -15,28 +15,6 @@ export function HomeStatsSkeleton() {
   );
 }
 
-export function HomeFeedsSkeleton() {
-  return (
-    <section className="container-page grid gap-6 pb-14 lg:grid-cols-2">
-      <div>
-        <SkeletonLine className="mb-4 h-8 w-40" />
-        <div className="grid gap-4">
-          <PostCardSkeleton compact />
-          <PostCardSkeleton compact />
-          <PostCardSkeleton compact />
-        </div>
-      </div>
-      <div>
-        <SkeletonLine className="mb-4 h-8 w-40" />
-        <div className="grid gap-4">
-          <PollCardSkeleton />
-          <PollCardSkeleton />
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function HomePageSkeleton() {
   return (
     <main>
@@ -64,7 +42,6 @@ export function HomePageSkeleton() {
           ))}
         </div>
       </section>
-      <HomeFeedsSkeleton />
     </main>
   );
 }

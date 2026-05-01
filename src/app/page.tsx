@@ -23,11 +23,9 @@ import {
 import ElectionStatsSection from "@/components/landing/ElectionStatsSection";
 import LandingInteractions from "@/components/landing/LandingInteractions";
 import RelatedSitesSection from "@/components/landing/RelatedSitesSection";
-import PostCard from "@/components/posts/PostCard";
-import PollCard from "@/components/polls/PollCard";
-import { HomeFeedsSkeleton, HomeStatsSkeleton } from "@/components/ui/Skeletons";
+import { HomeStatsSkeleton } from "@/components/ui/Skeletons";
 import { getCurrentUser } from "@/lib/auth";
-import { getHomeFeeds, getHomeStats } from "@/lib/serverData";
+import { getHomeStats } from "@/lib/serverData";
 
 export const dynamic = "force-dynamic";
 
@@ -127,24 +125,6 @@ async function PlatformStats() {
   );
 }
 
-async function HomeFeeds() {
-  const data = await getHomeFeeds();
-  return (
-    <section className="container-page grid gap-6 pb-14 lg:grid-cols-2" aria-labelledby="latest-content">
-      <div className="reveal-on-scroll" data-reveal>
-        <h2 id="latest-content" className="mb-4 text-2xl font-bold">
-          أحدث المنشورات
-        </h2>
-        <div className="grid gap-4">{(data.latestPosts as any[]).map((post) => <PostCard key={post._id} post={post} compact />)}</div>
-      </div>
-      <div className="reveal-on-scroll" data-reveal>
-        <h2 className="mb-4 text-2xl font-bold">تصويتات نشطة</h2>
-        <div className="grid gap-4">{(data.latestPolls as any[]).map((poll) => <PollCard key={poll._id} poll={poll} compact />)}</div>
-      </div>
-    </section>
-  );
-}
-
 export default async function HomePage() {
   const user = await getCurrentUser();
   const showAdminAccess = user?.role === "admin" || user?.role === "super_admin";
@@ -190,7 +170,7 @@ export default async function HomePage() {
       <LandingInteractions />
 
       <section className="relative isolate overflow-hidden border-b border-line bg-ink text-white" aria-labelledby="hero-title">
-        <Image src="/images/sharek-hero.png" alt="" fill priority unoptimized sizes="100vw" className="absolute inset-0 -z-20 object-cover" />
+        <Image src="/images/sharek-hero.png" alt="" fill priority unoptimized sizes="100vw" className="pointer-events-none absolute inset-0 -z-20 object-cover" />
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(23,33,43,.9)_0%,rgba(18,107,111,.72)_46%,rgba(23,33,43,.22)_100%)]" />
         <div className="container-page flex min-h-[560px] flex-col justify-center py-14">
           <div className="max-w-3xl">
@@ -251,7 +231,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="reveal-on-scroll relative min-h-[340px] overflow-hidden rounded border border-line bg-ink shadow-soft" data-reveal>
-          <Image src="/images/sharek-hero.png" alt="واجهة رمزية لمنصة نشمي" fill unoptimized sizes="(min-width: 1024px) 44vw, 100vw" className="object-cover opacity-75" />
+          <Image src="/images/sharek-hero.png" alt="واجهة رمزية لمنصة نشمي" fill unoptimized sizes="(min-width: 1024px) 44vw, 100vw" className="pointer-events-none object-cover opacity-75" />
           <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(23,33,43,.86),rgba(18,107,111,.15))]" />
           <div className="absolute inset-x-5 bottom-5 rounded border border-white/20 bg-white/12 p-5 text-white backdrop-blur">
             <Sparkles className="mb-3 h-7 w-7 text-emerald-200" />
@@ -325,10 +305,6 @@ export default async function HomePage() {
       </section>
 
       <RelatedSitesSection />
-
-      <Suspense fallback={<HomeFeedsSkeleton />}>
-        <HomeFeeds />
-      </Suspense>
 
       <footer className="footer-pattern bg-[#263f48] pb-28 pt-14 text-white lg:pb-16" id="footer" aria-labelledby="footer-title">
         <div className="container-page grid gap-9 md:grid-cols-2 xl:grid-cols-[1.1fr_0.8fr_1fr_1fr]">

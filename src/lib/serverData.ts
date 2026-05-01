@@ -104,30 +104,6 @@ export async function getHomeStats() {
   );
 }
 
-export async function getHomeFeeds() {
-  return safeData(
-    { latestPosts: [] as unknown[], latestPolls: [] as unknown[] },
-    async () => {
-      const [latestPosts, latestPolls] = await Promise.all([
-        Post.find({ status: "published" })
-          .populate({ path: "authorUserId", select: "name avatarUrl image role" })
-          .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-          .populate({ path: "mediaIds", select: "url mimeType type width height status" })
-          .sort({ publishedAt: -1 })
-          .limit(3)
-          .lean(),
-        Poll.find({ status: "active" })
-          .populate({ path: "authorUserId", select: "name avatarUrl image role" })
-          .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-          .sort({ publishedAt: -1 })
-          .limit(2)
-          .lean()
-      ]);
-      return { latestPosts: serialize(latestPosts), latestPolls: serialize(latestPolls) };
-    }
-  );
-}
-
 export async function getPublicParties(search?: string) {
   return safeData([] as unknown[], async () => {
     const regex = search ? searchRegex(search) : null;
@@ -165,6 +141,29 @@ export async function getAuthorityProfileBySlug(slug: string) {
   return safeData(null as unknown, async () => {
     const authority = await AuthorityProfile.findOne({ slug, status: "active" }).populate({ path: "logoMediaId", select: "url status" }).lean();
     return authority ? serialize(authority) : null;
+  });
+}
+
+export async function getAuthorityProfilePageData(slug: string) {
+  return safeData(null as unknown, async () => {
+    const authority = await AuthorityProfile.findOne({ slug, status: "active" }).populate({ path: "logoMediaId", select: "url status" }).lean();
+    if (!authority) return null;
+    const [posts, polls] = await Promise.all([
+      Post.find({ authorType: "iec", status: "published" })
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+        .sort({ publishedAt: -1 })
+        .limit(10)
+        .lean(),
+      Poll.find({ authorType: "iec", status: "active" })
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .sort({ publishedAt: -1 })
+        .limit(10)
+        .lean()
+    ]);
+    return serialize({ authority, posts, polls });
   });
 }
 
