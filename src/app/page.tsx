@@ -77,6 +77,10 @@ function ExternalAnchor({ href, children, className, ariaLabel }: { href: string
   );
 }
 
+function formatMetricValue(value: number, available: boolean) {
+  return available ? new Intl.NumberFormat("ar-JO").format(value) : "غير متاح";
+}
+
 async function HomeStats() {
   const data = await getHomeStats();
   return (
@@ -99,6 +103,7 @@ async function HomeStats() {
 
 async function PlatformStats() {
   const data = await getHomeStats();
+  const dataAvailable = data.available !== false;
   const stats = [
     { label: "عدد المنشورات", value: data.postsCount, icon: Newspaper },
     { label: "عدد التصويتات", value: data.pollsCount, icon: Vote },
@@ -114,8 +119,8 @@ async function PlatformStats() {
         return (
           <div key={stat.label} className="reveal-on-scroll rounded border border-white/20 bg-white/10 p-5 text-white shadow-soft backdrop-blur" data-reveal>
             <Icon className="mb-4 h-8 w-8 text-emerald-200" />
-            <span className="block text-4xl font-black leading-none" data-counter={stat.value}>
-              0
+            <span className={`block font-black leading-none text-white drop-shadow-sm ${dataAvailable ? "text-4xl" : "text-2xl"}`}>
+              {formatMetricValue(stat.value, dataAvailable)}
             </span>
             <span className="mt-3 block text-sm font-semibold text-white/78">{stat.label}</span>
           </div>

@@ -3,7 +3,7 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import FollowButton from "@/components/parties/FollowButton";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
-import { JumpToPostsButton, ProfileAccordionCard } from "@/components/profile/ProfileInteractions";
+import { JumpToPostsButton, ProfileAccordionCard, ProfileTopScrollReset } from "@/components/profile/ProfileInteractions";
 import ReportButton from "@/components/reports/ReportButton";
 import PartyVerificationActions from "@/components/admin/PartyVerificationActions";
 import Alert from "@/components/ui/Alert";
@@ -53,6 +53,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
 
   return (
     <main className="container-page py-8">
+      <ProfileTopScrollReset />
       <section className="card overflow-hidden">
         <div className="h-44 bg-[linear-gradient(135deg,#126b6f,#e8eee7)]" />
         <div className="p-6">
@@ -61,10 +62,12 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
             <div>
               <h1 className="text-3xl font-black">{party.name}</h1>
               <p className="mt-3 max-w-3xl leading-8 text-ink/75">{party.shortDescription}</p>
+              <div className="mt-4">
+                <JumpToPostsButton label="عرض منشورات الحزب / View party posts" />
+              </div>
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
               <FollowButton partyId={party._id} initialFollowed={isFollowing} />
-              <JumpToPostsButton label="عرض منشورات الحزب / View party posts" />
               <ReportButton targetType="party" targetId={party._id} />
               <PartyVerificationActions partyId={party._id} initialVerified={party.isVerified} />
             </div>

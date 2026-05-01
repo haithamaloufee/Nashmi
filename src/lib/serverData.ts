@@ -78,7 +78,7 @@ export async function getHomeData() {
 
 export async function getHomeStats() {
   return safeData(
-    { partiesCount: 0, lawsCount: 0, updatesCount: 0, postsCount: 0, pollsCount: 0, interactionsCount: 0, usersCount: 0 },
+    { partiesCount: 0, lawsCount: 0, updatesCount: 0, postsCount: 0, pollsCount: 0, interactionsCount: 0, usersCount: 0, available: false },
     async () => {
       const [partiesCount, lawsCount, postsCount, pollsCount, commentsCount, postReactionsCount, pollReactionsCount, pollVotesCount, usersCount] = await Promise.all([
         Party.countDocuments({ status: "active" }),
@@ -98,7 +98,8 @@ export async function getHomeStats() {
         pollsCount,
         usersCount,
         updatesCount: postsCount + pollsCount,
-        interactionsCount: commentsCount + postReactionsCount + pollReactionsCount + pollVotesCount
+        interactionsCount: commentsCount + postReactionsCount + pollReactionsCount + pollVotesCount,
+        available: true
       };
     }
   );

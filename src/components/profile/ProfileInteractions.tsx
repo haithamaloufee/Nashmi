@@ -1,8 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { ChevronDown } from "lucide-react";
+
+export function ProfileTopScrollReset() {
+  useEffect(() => {
+    const previousRestoration = window.history.scrollRestoration;
+    if (!window.location.hash) {
+      window.history.scrollRestoration = "manual";
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+    return () => {
+      window.history.scrollRestoration = previousRestoration;
+    };
+  }, []);
+
+  return null;
+}
 
 export function JumpToPostsButton({ label = "عرض المنشورات / View posts" }: { label?: string }) {
   function handleClick() {
@@ -13,7 +28,7 @@ export function JumpToPostsButton({ label = "عرض المنشورات / View po
     <button
       type="button"
       onClick={handleClick}
-      className="focus-ring inline-flex items-center justify-center rounded bg-civic px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-civic/90"
+      className="focus-ring inline-flex items-center justify-center rounded bg-civic px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-civic/90 dark:bg-emerald-200 dark:text-[#101820] dark:hover:bg-emerald-100"
     >
       {label}
     </button>
