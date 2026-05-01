@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Noto Naskh Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-sans: "Cairo", "IBM Plex Sans Arabic", "Tajawal", "Segoe UI", Tahoma, Arial, sans-serif;
   color-scheme: light;
 }
 
@@ -13,12 +13,17 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
   background: #f7f5ef;
   color: #17212b;
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -74,6 +79,166 @@ a:active {
   box-shadow: 0 0 0 3px rgba(18, 107, 111, 0.22);
 }
 
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 600ms ease, transform 600ms ease;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-pattern {
+  background-image:
+    radial-gradient(circle at 16% 24%, rgba(41, 156, 142, 0.16), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px);
+  background-size: auto, 28px 28px;
+}
+
+.footer-pattern {
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.045) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%);
+  background-position: 0 0, 14px 14px;
+  background-size: 28px 28px;
+}
+
+.election-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(18, minmax(34px, 1fr));
+  gap: 10px;
+  min-width: 760px;
+  min-height: 360px;
+  padding: 12px 6px 34px;
+  background:
+    linear-gradient(to top, rgba(11, 27, 69, 0.14) 1px, transparent 1px),
+    linear-gradient(#f4f8f8, #f4f8f8);
+  background-size: 100% 76px, 100% 100%;
+  border: 1px solid rgba(216, 212, 200, 0.78);
+}
+
+.election-bar-track {
+  position: relative;
+  width: 18px;
+  height: 230px;
+  overflow: hidden;
+  border-radius: 999px 999px 3px 3px;
+  background: rgba(11, 27, 69, 0.08);
+}
+
+.election-bar-fill {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 0;
+  border-radius: inherit;
+  background: #0b1b45;
+  transition: height 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.is-visible .election-bar-fill {
+  height: var(--bar-height);
+}
+
+.donut-chart {
+  --donut-progress: 0%;
+  display: grid;
+  width: min(250px, 70vw);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 999px;
+  background: conic-gradient(#2c4559 var(--donut-progress), #e5dfdf 0);
+  box-shadow: 0 14px 30px rgba(23, 33, 43, 0.16);
+  transition: background 900ms ease;
+}
+
+.donut-chart-inner {
+  display: grid;
+  width: 58%;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 999px;
+  background: #f7f7f7;
+  box-shadow: inset 0 0 0 1px rgba(23, 33, 43, 0.06), 0 8px 18px rgba(23, 33, 43, 0.13);
+  color: #2c4559;
+  font-size: clamp(1.8rem, 4vw, 2.35rem);
+  font-weight: 900;
+}
+
+.donut-chart-sm {
+  width: min(250px, 58vw);
+}
+
+.pie-chart {
+  --female-percent: 25%;
+  --male-percent: 75%;
+  position: relative;
+  width: min(280px, 70vw);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: conic-gradient(#a20f35 var(--female-percent), #0b1b45 0);
+  box-shadow: inset 0 0 0 2px #ffffff, 0 10px 22px rgba(23, 33, 43, 0.12);
+}
+
+.pie-label {
+  position: absolute;
+  border-top: 1px solid #0b1b45;
+  color: #17212b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pie-label-female {
+  left: -34px;
+  top: 16%;
+  padding-right: 38px;
+  transform: rotate(8deg);
+}
+
+.pie-label-male {
+  right: -34px;
+  bottom: 18%;
+  padding-left: 38px;
+  transform: rotate(-8deg);
+}
+
+@media (max-width: 640px) {
+  .election-chart-grid {
+    min-width: 0;
+    grid-template-columns: repeat(6, minmax(34px, 1fr));
+    gap: 8px;
+    min-height: auto;
+    padding-bottom: 44px;
+  }
+
+  .election-chart-grid > div {
+    min-height: 250px;
+  }
+
+  .election-bar-track {
+    height: 150px;
+    width: 14px;
+  }
+
+  .pie-label {
+    position: static;
+    display: block;
+    margin-top: 6px;
+    border: 0;
+    transform: none;
+    text-align: center;
+  }
+
+  .pie-chart {
+    display: grid;
+    align-content: end;
+    gap: 2px;
+  }
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -106,5 +271,33 @@ a:active {
 @keyframes skeleton-shimmer {
   100% {
     transform: translateX(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
+  }
+
+  .election-bar-fill {
+    height: var(--bar-height);
+  }
+
+  .donut-chart {
+    --donut-progress: 32.25%;
   }
 }

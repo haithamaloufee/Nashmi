@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">شعار الهيئة المستقلة للانتخاب</title>
+  <desc id="desc">رسم موضعي لاستخدامه كرابط إلى موقع الهيئة الرسمي، ويستبدل بالشعار الرسمي عند توفيره.</desc>
+  <rect width="120" height="120" rx="24" fill="#ffffff"/>
+  <path d="M36 84c18-4 35-17 48-42" fill="none" stroke="#126b6f" stroke-width="8" stroke-linecap="round"/>
+  <path d="M31 75c12 2 25 0 39-8" fill="none" stroke="#cf2e2e" stroke-width="8" stroke-linecap="round"/>
+  <path d="M42 91c11-13 20-30 26-52" fill="none" stroke="#1f8f5f" stroke-width="8" stroke-linecap="round"/>
+  <path d="M72 31l9 12 14-4-8 13 8 12-15-4-9 12-1-15-14-5 14-5 2-16z" fill="#d8b05f"/>
+  <text x="60" y="108" text-anchor="middle" font-family="Cairo, Tahoma, Arial, sans-serif" font-size="12" font-weight="800" fill="#263f48">IEC</text>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="24" fill="#f7f5ef"/>
+  <path d="M26 62c13-20 26-30 40-30 13 0 22 9 28 25-12-8-24-10-37-6-12 4-22 11-31 11z" fill="#126b6f"/>
+  <circle cx="80" cy="37" r="7" fill="#a85d3c"/>
+  <text x="60" y="105" text-anchor="middle" font-family="Cairo, Tahoma, Arial, sans-serif" font-size="12" font-weight="900" fill="#126b6f">ArabEMBs</text>
+</svg>

@@ -5,6 +5,8 @@ import { parseLimit, cursorFilter, getNextCursor } from "@/lib/pagination";
 import { serialize } from "@/lib/routeUtils";
 import Report from "@/models/Report";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     await requireActiveUser(["admin", "super_admin"]);

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="24" fill="#f3f7fb"/>
+  <path d="M31 70l18 18 42-51" fill="none" stroke="#126b6f" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="60" y="105" text-anchor="middle" font-family="Cairo, Tahoma, Arial, sans-serif" font-size="15" font-weight="900" fill="#126b6f">جاهز</text>
+</svg>

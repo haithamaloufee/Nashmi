@@ -15,8 +15,11 @@ export default async function IecPage() {
   const socialLinks = authority.socialLinks || {};
   const officialLinks = authority.officialLinks || [];
   const mediaUrl = typeof authority.logoMediaId === "object" && authority.logoMediaId ? authority.logoMediaId.url : null;
-  const logoUrl = normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(authority.logoUrl, { localPrefixes: ["/images/"] });
-  const logoFallback = <div className="grid h-20 w-20 shrink-0 place-items-center rounded bg-civic text-2xl font-black text-white">هـ</div>;
+  const logoUrl =
+    normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/", "/related/"] }) ||
+    normalizeSafeImageUrl(authority.logoUrl, { localPrefixes: ["/images/", "/related/"] }) ||
+    "/related/iec-logo.png";
+  const logoFallback = <img src="/related/iec-logo.png" alt="شعار الهيئة المستقلة للانتخاب" className="h-20 w-20 shrink-0 rounded bg-white object-contain p-1 ring-1 ring-line" loading="lazy" decoding="async" />;
 
   const linkItems = [
     { label: "رابط سجل الأحزاب", url: contact.partyRegistryUrl },
@@ -29,7 +32,7 @@ export default async function IecPage() {
       <section className="mb-8 rounded border border-line bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <SafeImage src={logoUrl} alt={authority.name} className="h-20 w-20 shrink-0 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
+            <SafeImage src={logoUrl} alt="شعار الهيئة المستقلة للانتخاب" className="h-20 w-20 shrink-0 rounded bg-white object-contain p-1 ring-1 ring-line" fallback={logoFallback} localPrefixes={["/images/", "/uploads/", "/related/"]} />
             <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-civic/10 px-3 py-1 text-sm text-civic">
               <ShieldCheck className="h-4 w-4" /> الهيئة المستقلة
