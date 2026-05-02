@@ -128,6 +128,12 @@ select:disabled {
   margin-inline: auto;
 }
 
+@media (max-width: 640px) {
+  .container-page {
+    width: min(100% - 24px, 1180px);
+  }
+}
+
 .card {
   border: 1px solid #d8d4c8;
   background: rgba(255, 255, 255, 0.82);
@@ -229,6 +235,58 @@ select:disabled {
 
 .focus-ring:focus-visible {
   box-shadow: 0 0 0 3px rgba(18, 107, 111, 0.22);
+}
+
+.assistant-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 107, 111, 0.38) transparent;
+}
+
+.assistant-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.mobile-rail {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 107, 111, 0.34) transparent;
+}
+
+.mobile-rail::-webkit-scrollbar {
+  height: 7px;
+}
+
+.mobile-rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mobile-rail::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(18, 107, 111, 0.24);
+}
+
+.dark .mobile-rail {
+  scrollbar-color: rgba(98, 211, 200, 0.38) transparent;
+}
+
+.dark .mobile-rail::-webkit-scrollbar-thumb {
+  background: rgba(98, 211, 200, 0.3);
+}
+
+.assistant-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.assistant-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(18, 107, 111, 0.28);
+}
+
+.dark .assistant-scrollbar {
+  scrollbar-color: rgba(98, 211, 200, 0.42) transparent;
+}
+
+.dark .assistant-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(98, 211, 200, 0.34);
 }
 
 .text-shadow-sm {

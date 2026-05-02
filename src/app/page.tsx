@@ -162,10 +162,9 @@ export default async function HomePage() {
           <div className="max-w-3xl text-shadow-sm">
             <p className="mb-5 text-lg font-black text-white">Nashmi / نشمي</p>
             <h1 id="hero-title" className="text-4xl font-black leading-[1.22] md:text-6xl">
-              منصة رقمية لتعزيز المشاركة المدنية الواعية
-            </h1>
+              نشمي…  أن تكون حاضرًا حين يُصنع القرار، لا مجرد شاهد عليه.</h1>
             <p className="mt-8 max-w-2xl text-xl leading-10 text-white/90 md:text-2xl md:leading-[2.9rem]">
-              نشمي مساحة تعليمية محايدة تساعد المواطنين والشباب على فهم المستجدات، متابعة الأحزاب، قراءة التشريعات، والمشاركة في حوار مسؤول دون ترشيح أو تفضيل أي جهة سياسية.
+              نشمي مساحة رقمية محايدة تساعد المواطنين والشباب على فهم المستجدات، متابعة الأحزاب، قراءة التشريعات، والمشاركة في حوار مسؤول دون ترشيح أو تفضيل أي جهة سياسية.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/parties" className="focus-ring rounded bg-civic px-6 py-3 font-semibold text-white shadow-soft hover:bg-civic/90">

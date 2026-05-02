@@ -34,14 +34,14 @@ export default function PartyCard({ party }: { party: Party }) {
           <h3 className="font-bold">{party.name}</h3>
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink/60">
             {party.isVerified ? (
-              <DelayedTooltipBadge tooltip="حزب موثق على منصة نشمي اعتمادًا على البيانات الرسمية المتاحة." className="rounded-full bg-olive/10 px-2 py-1 text-olive outline-none focus-visible:ring-2 focus-visible:ring-civic/25">
+              <DelayedTooltipBadge tooltip="حزب موثق على منصة نشمي اعتمادًا على البيانات الرسمية المتاحة." className="rounded-full border border-olive/20 bg-olive/10 px-2.5 py-1 font-bold text-olive shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-civic/25 dark:border-emerald-200/35 dark:bg-emerald-200/12 dark:text-emerald-100 dark:shadow-none">
                 موثق
               </DelayedTooltipBadge>
             ) : null}
-            {party.foundedYear ? <span className="rounded-full bg-slate-100 px-2 py-1">{party.foundedYear}</span> : null}
-            {party.statistics?.branchesCount ? <span className="rounded-full bg-slate-100 px-2 py-1">{party.statistics.branchesCount} فرع</span> : null}
+            {party.foundedYear ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-white/18 dark:bg-white/10 dark:text-white/85">{party.foundedYear}</span> : null}
+            {party.statistics?.branchesCount ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-white/18 dark:bg-white/10 dark:text-white/85">{party.statistics.branchesCount} فرع</span> : null}
             {party.socialLinks?.website ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-civic/10 px-2 py-1 text-civic">
+              <span className="inline-flex items-center gap-1 rounded-full border border-civic/15 bg-civic/10 px-2.5 py-1 font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">
                 <Globe className="h-3.5 w-3.5" /> موقع
               </span>
             ) : null}

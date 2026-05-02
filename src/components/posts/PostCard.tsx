@@ -133,11 +133,11 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
                 <h3 className="truncate font-bold text-ink">{author.name}</h3>
               )}
               {author.badgeTooltip ? (
-                <DelayedTooltipBadge tooltip={author.badgeTooltip} className="rounded bg-civic/10 px-2 py-0.5 text-xs font-semibold text-civic outline-none ring-civic/20 focus-visible:ring-2">
+                <DelayedTooltipBadge tooltip={author.badgeTooltip} className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic outline-none ring-civic/20 focus-visible:ring-2 dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">
                   {author.badge}
                 </DelayedTooltipBadge>
               ) : (
-                <span className="rounded bg-civic/10 px-2 py-0.5 text-xs font-semibold text-civic">{author.badge}</span>
+                <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{author.badge}</span>
               )}
             </div>
             <p className="mt-1 text-xs text-ink/50">{relativeTime(post.publishedAt || post.createdAt)}</p>
