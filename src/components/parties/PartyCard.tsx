@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Globe, Users } from "lucide-react";
 import SafeImage from "@/components/ui/SafeImage";
+import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 
 type Party = {
@@ -32,7 +33,11 @@ export default function PartyCard({ party }: { party: Party }) {
         <div>
           <h3 className="font-bold">{party.name}</h3>
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink/60">
-            {party.isVerified ? <span className="rounded-full bg-olive/10 px-2 py-1 text-olive">موثق</span> : null}
+            {party.isVerified ? (
+              <DelayedTooltipBadge tooltip="حزب موثق على منصة نشمي اعتمادًا على البيانات الرسمية المتاحة." className="rounded-full bg-olive/10 px-2 py-1 text-olive outline-none focus-visible:ring-2 focus-visible:ring-civic/25">
+                موثق
+              </DelayedTooltipBadge>
+            ) : null}
             {party.foundedYear ? <span className="rounded-full bg-slate-100 px-2 py-1">{party.foundedYear}</span> : null}
             {party.statistics?.branchesCount ? <span className="rounded-full bg-slate-100 px-2 py-1">{party.statistics.branchesCount} فرع</span> : null}
             {party.socialLinks?.website ? (

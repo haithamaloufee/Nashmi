@@ -56,9 +56,71 @@ select {
   transition-property: color, background-color, border-color, box-shadow, opacity, transform;
 }
 
-button:active,
-a:active {
-  transform: scale(0.99);
+button:not(:disabled):active,
+a:active,
+[role="button"]:active {
+  transform: scale(0.985);
+}
+
+button:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select) {
+  min-height: 2.75rem;
+  border-color: #d8d4c8;
+  border-radius: 0.625rem;
+  background-color: rgba(255, 255, 255, 0.92);
+  color: #17212b;
+  box-shadow: 0 1px 0 rgba(23, 33, 43, 0.02);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select):hover {
+  border-color: rgba(18, 107, 111, 0.42);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select):focus {
+  border-color: #126b6f;
+  box-shadow: 0 0 0 3px rgba(18, 107, 111, 0.18), 0 10px 24px rgba(23, 33, 43, 0.05);
+}
+
+:where(input, textarea)::placeholder {
+  color: rgba(23, 33, 43, 0.46);
+}
+
+:where(input, textarea, select)[aria-invalid="true"] {
+  border-color: rgba(220, 38, 38, 0.68);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.dark :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select) {
+  border-color: rgba(229, 223, 211, 0.18);
+  background-color: rgba(16, 24, 32, 0.88);
+  color: #eef3ef;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.dark :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select):hover {
+  border-color: rgba(98, 211, 200, 0.5);
+}
+
+.dark :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select):focus {
+  border-color: #62d3c8;
+  box-shadow: 0 0 0 3px rgba(98, 211, 200, 0.18), 0 12px 26px rgba(0, 0, 0, 0.22);
+}
+
+.dark :where(input, textarea)::placeholder {
+  color: rgba(238, 243, 239, 0.48);
+}
+
+.dark :where(input, textarea, select)[aria-invalid="true"] {
+  border-color: rgba(248, 113, 113, 0.72);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.14);
 }
 
 .container-page {
@@ -167,6 +229,10 @@ a:active {
 
 .focus-ring:focus-visible {
   box-shadow: 0 0 0 3px rgba(18, 107, 111, 0.22);
+}
+
+.text-shadow-sm {
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.32);
 }
 
 .reveal-on-scroll {

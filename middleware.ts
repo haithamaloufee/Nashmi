@@ -42,6 +42,7 @@ function isPublicRoute(pathname: string) {
     isRoute(pathname, "/polls") ||
     isRoute(pathname, "/updates") ||
     isRoute(pathname, "/iec") ||
+    isRoute(pathname, "/chat") ||
     pathname === "/login" ||
     pathname === "/signup"
   );

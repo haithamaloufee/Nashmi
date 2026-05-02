@@ -57,7 +57,7 @@ function sourceLabel(sourceType: string) {
   return "مصدر من نشمي";
 }
 
-export default function ChatClient({ lawId }: { lawId?: string }) {
+export default function ChatClient({ lawId, authenticated }: { lawId?: string; authenticated: boolean }) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([introMessage]);
@@ -75,6 +75,11 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
   useEffect(() => {
     let cancelled = false;
     async function loadSessions() {
+      if (!authenticated) {
+        setSessionsLoading(false);
+        setLoginOpen(true);
+        return;
+      }
       setSessionsLoading(true);
       const response = await fetch("/api/chat/sessions", { cache: "no-store" });
       const json = await response.json().catch(() => ({}));
@@ -96,7 +101,7 @@ export default function ChatClient({ lawId }: { lawId?: string }) {
     return () => {
       cancelled = true;
     };
-  }, [lawId]);
+  }, [lawId, authenticated]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

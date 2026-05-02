@@ -11,7 +11,21 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes
-  if (pathname === "/" || isRoute(pathname, "/laws") || isRoute(pathname, "/parties") || isRoute(pathname, "/posts") || isRoute(pathname, "/polls") || isRoute(pathname, "/updates") || isRoute(pathname, "/iec") || pathname === "/login" || pathname === "/signup") {
+  if (
+    pathname === "/" ||
+    isRoute(pathname, "/laws") ||
+    isRoute(pathname, "/parties") ||
+    isRoute(pathname, "/posts") ||
+    isRoute(pathname, "/polls") ||
+    isRoute(pathname, "/updates") ||
+    isRoute(pathname, "/iec") ||
+    isRoute(pathname, "/chat") ||
+    isRoute(pathname, "/images") ||
+    isRoute(pathname, "/related") ||
+    isRoute(pathname, "/uploads") ||
+    pathname === "/login" ||
+    pathname === "/signup"
+  ) {
     return NextResponse.next();
   }
 

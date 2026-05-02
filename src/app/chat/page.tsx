@@ -1,8 +1,10 @@
 import ChatClient from "@/components/chat/ChatClient";
 import Alert from "@/components/ui/Alert";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function ChatPage({ searchParams }: { searchParams: Promise<{ lawId?: string }> }) {
   const params = await searchParams;
+  const user = await getCurrentUser();
   return (
     <main className="container-page py-8">
       <div className="mb-6">
@@ -14,7 +16,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
           <Alert>المساعد لا يرشح أحزابًا أو مرشحين، ولا يقدم استشارة قانونية قطعية. استخدمه للفهم والمقارنة المحايدة والرجوع إلى المصادر الرسمية.</Alert>
         </div>
       </div>
-      <ChatClient lawId={params.lawId} />
+      <ChatClient lawId={params.lawId} authenticated={Boolean(user)} />
     </main>
   );
 }

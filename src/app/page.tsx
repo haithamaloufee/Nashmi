@@ -23,6 +23,7 @@ import {
 import ElectionStatsSection from "@/components/landing/ElectionStatsSection";
 import LandingInteractions from "@/components/landing/LandingInteractions";
 import RelatedSitesSection from "@/components/landing/RelatedSitesSection";
+import RoyalQuotesSection from "@/components/landing/RoyalQuotesSection";
 import { HomeStatsSkeleton } from "@/components/ui/Skeletons";
 import { getCurrentUser } from "@/lib/auth";
 import { getHomeStats } from "@/lib/serverData";
@@ -81,26 +82,6 @@ function formatMetricValue(value: number, available: boolean) {
   return available ? new Intl.NumberFormat("ar-JO").format(value) : "غير متاح";
 }
 
-async function HomeStats() {
-  const data = await getHomeStats();
-  return (
-    <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
-      <div className="rounded border border-white/20 bg-white/10 p-4 backdrop-blur">
-        <span className="block text-3xl font-black">{data.partiesCount}</span>
-        <span className="text-sm text-white/75">أحزاب نشطة</span>
-      </div>
-      <div className="rounded border border-white/20 bg-white/10 p-4 backdrop-blur">
-        <span className="block text-3xl font-black">{data.lawsCount}</span>
-        <span className="text-sm text-white/75">مواد قانونية</span>
-      </div>
-      <div className="rounded border border-white/20 bg-white/10 p-4 backdrop-blur">
-        <span className="block text-3xl font-black">{data.updatesCount}</span>
-        <span className="text-sm text-white/75">مستجدات منشورة</span>
-      </div>
-    </div>
-  );
-}
-
 async function PlatformStats() {
   const data = await getHomeStats();
   const dataAvailable = data.available !== false;
@@ -109,7 +90,7 @@ async function PlatformStats() {
     { label: "عدد التصويتات", value: data.pollsCount, icon: Vote },
     { label: "عدد الأحزاب", value: data.partiesCount, icon: Building2 },
     { label: "عدد التفاعلات", value: data.interactionsCount, icon: MessageCircle },
-    { label: "المستخدمون التجريبيون", value: data.usersCount, icon: Users }
+    { label: "عدد المستخدمين", value: data.usersCount, icon: Users }
   ];
 
   return (
@@ -176,14 +157,14 @@ export default async function HomePage() {
 
       <section className="relative isolate overflow-hidden border-b border-line bg-ink text-white" aria-labelledby="hero-title">
         <Image src="/images/sharek-hero.png" alt="" fill priority unoptimized sizes="100vw" className="pointer-events-none absolute inset-0 -z-20 object-cover" />
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(23,33,43,.9)_0%,rgba(18,107,111,.72)_46%,rgba(23,33,43,.22)_100%)]" />
-        <div className="container-page flex min-h-[560px] flex-col justify-center py-14">
-          <div className="max-w-3xl">
-            <p className="mb-3 font-semibold text-white/85">Nashmi / نشمي</p>
-            <h1 id="hero-title" className="text-4xl font-black leading-[1.25] md:text-6xl">
-              منصة رقمية تجريبية لتعزيز المشاركة المدنية الواعية
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(15,25,33,.92)_0%,rgba(18,107,111,.74)_48%,rgba(15,25,33,.34)_100%)]" />
+        <div className="container-page flex min-h-[560px] flex-col justify-center py-16 md:py-20">
+          <div className="max-w-3xl text-shadow-sm">
+            <p className="mb-5 text-lg font-black text-white">Nashmi / نشمي</p>
+            <h1 id="hero-title" className="text-4xl font-black leading-[1.22] md:text-6xl">
+              منصة رقمية لتعزيز المشاركة المدنية الواعية
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-9 text-white/84">
+            <p className="mt-8 max-w-2xl text-xl leading-10 text-white/90 md:text-2xl md:leading-[2.9rem]">
               نشمي مساحة تعليمية محايدة تساعد المواطنين والشباب على فهم المستجدات، متابعة الأحزاب، قراءة التشريعات، والمشاركة في حوار مسؤول دون ترشيح أو تفضيل أي جهة سياسية.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -198,11 +179,10 @@ export default async function HomePage() {
               المنصة مشروع تجريبي ولا ترشح أو تفضل أي حزب أو مرشح.
             </div>
           </div>
-          <Suspense fallback={<HomeStatsSkeleton />}>
-            <HomeStats />
-          </Suspense>
         </div>
       </section>
+
+      <RoyalQuotesSection />
 
       <section className="container-page py-6" aria-label="تنويه المشروع التجريبي">
         <div className="reveal-on-scroll flex flex-col gap-4 rounded border border-amber-200 bg-amber-50 p-5 text-amber-950 shadow-sm md:flex-row md:items-center md:justify-between" data-reveal>
@@ -271,10 +251,10 @@ export default async function HomePage() {
         <div className="container-page">
           <div className="reveal-on-scroll mb-8 flex flex-col justify-between gap-4 text-white md:flex-row md:items-end" data-reveal>
             <div>
-              <p className="mb-2 text-sm font-bold text-emerald-200">أرقام تجريبية</p>
+              <p className="mb-2 text-sm font-bold text-emerald-200">بيانات المنصة</p>
               <h2 id="stats-title" className="text-3xl font-black">مؤشرات المنصة</h2>
             </div>
-            <p className="max-w-xl leading-8 text-white/75">تستند هذه الأرقام إلى بيانات المنصة الحالية عند توفر قاعدة البيانات، وهي مؤشرات تجريبية وليست أرقامًا رسمية للانتخابات أو للهيئة.</p>
+            <p className="max-w-xl leading-8 text-white/75">تستند هذه المؤشرات إلى بيانات المنصة الحالية عند توفر قاعدة البيانات، وليست أرقامًا رسمية للانتخابات أو للهيئة.</p>
           </div>
           <Suspense fallback={<HomeStatsSkeleton />}>
             <PlatformStats />

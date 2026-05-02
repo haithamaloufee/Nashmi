@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import UserMenu from "@/components/layout/UserMenu";
 import ThemeToggle from "@/components/layout/ThemeToggle";
+import MobileNav from "@/components/layout/MobileNav";
 
 const links = [
   { href: "/", label: "الرئيسية" },
@@ -45,7 +46,7 @@ export default async function Navbar() {
         </nav>
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
-          <Link href="/chat" className="focus-ring inline-flex h-9 items-center rounded border border-civic/35 bg-white/70 px-3 text-sm font-semibold text-civic hover:border-civic hover:bg-civic hover:text-white dark:border-emerald-200/30 dark:bg-white/8 dark:text-emerald-200 dark:hover:border-emerald-200 dark:hover:bg-emerald-200 dark:hover:text-[#101820]" aria-label="المساعد الذكي">
+          <Link href="/chat" className="focus-ring inline-flex h-9 items-center rounded border border-civic/35 bg-white/70 px-3 text-sm font-semibold text-civic shadow-sm hover:border-civic hover:bg-civic hover:text-white active:scale-[0.98] dark:border-emerald-200/35 dark:bg-emerald-200/10 dark:text-emerald-100 dark:shadow-none dark:hover:border-emerald-200 dark:hover:bg-emerald-200/18 dark:hover:text-white" aria-label="المساعد الذكي">
             <MessageCircle className="ml-2 h-4 w-4" />
             <span className="hidden sm:inline">المساعد الذكي</span>
           </Link>
@@ -56,17 +57,8 @@ export default async function Navbar() {
               دخول
             </Link>
           )}
-          <button className="focus-ring inline-flex h-9 w-9 items-center justify-center rounded border border-line bg-white/70 text-ink hover:border-civic hover:text-civic dark:border-white/15 dark:bg-white/8 dark:text-white/85 dark:hover:border-emerald-200 dark:hover:text-emerald-200 lg:hidden" aria-label="القائمة">
-            <Menu className="h-5 w-5" />
-          </button>
+          <MobileNav links={links} dashboardHref={dashboardHref} />
         </div>
-      </div>
-      <div className="container-page flex gap-2 overflow-auto pb-3 text-sm font-semibold lg:hidden" aria-label="التنقل المختصر">
-        {links.map((link) => (
-          <Link key={link.href} href={link.href} className="focus-ring shrink-0 rounded border border-line bg-white/60 px-3 py-1.5 text-ink/78 hover:border-civic hover:text-civic dark:border-white/12 dark:bg-white/8 dark:text-white/78 dark:hover:border-emerald-200 dark:hover:text-emerald-200">
-            {link.label}
-          </Link>
-        ))}
       </div>
     </header>
   );

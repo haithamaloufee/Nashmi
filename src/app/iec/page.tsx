@@ -5,6 +5,7 @@ import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
 import { JumpToPostsButton, ProfileAccordionCard } from "@/components/profile/ProfileInteractions";
 import SafeImage from "@/components/ui/SafeImage";
+import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 import { getAuthorityProfilePageData } from "@/lib/serverData";
 
@@ -12,14 +13,14 @@ export const dynamic = "force-dynamic";
 
 function OfficialBadge() {
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full bg-civic/10 px-3 py-1 text-xs font-bold text-civic ring-1 ring-civic/20"
-      title="Official account of the Independent Election Commission"
-      aria-label="Official account of the Independent Election Commission"
+    <DelayedTooltipBadge
+      tooltip="الهيئة المستقلة للانتخاب جهة رسمية مستقلة وليست حزبًا سياسيًا، ولا تتبع لأي حزب أو جهة حزبية. دورها مرتبط بإدارة العملية الانتخابية والإشراف عليها رسميًا."
+      className="inline-flex items-center gap-1 rounded-full bg-civic/10 px-3 py-1 text-xs font-bold text-civic outline-none ring-1 ring-civic/20 focus-visible:ring-2"
+      ariaLabel="Official account of the Independent Election Commission"
     >
       <ShieldCheck className="h-4 w-4" aria-hidden="true" />
       حساب رسمي
-    </span>
+    </DelayedTooltipBadge>
   );
 }
 

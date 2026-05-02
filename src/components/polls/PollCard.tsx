@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { MessageCircle, Share2 } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import PollVote from "@/components/polls/PollVote";
 import ReportButton from "@/components/reports/ReportButton";
 import CommentBox from "@/components/comments/CommentBox";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import InlineModerationActions from "@/components/admin/InlineModerationActions";
-import { useToast } from "@/components/ui/ToastProvider";
+import ShareMenu from "@/components/ui/ShareMenu";
 
 type Poll = {
   _id: string;
@@ -23,21 +23,6 @@ type Poll = {
 export default function PollCard({ poll, compact = false }: { poll: Poll; compact?: boolean }) {
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [commentsCount, setCommentsCount] = useState(poll.commentsCount || 0);
-  const { showToast } = useToast();
-
-  async function sharePoll() {
-    const url = `${window.location.origin}/updates?poll=${poll._id}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: poll.question, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        showToast("تم نسخ رابط التصويت", "success");
-      }
-    } catch {
-      showToast("تعذر مشاركة التصويت", "error");
-    }
-  }
 
   return (
     <article className="card card-hover p-5">
@@ -67,14 +52,7 @@ export default function PollCard({ poll, compact = false }: { poll: Poll; compac
             تعليق
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={sharePoll}
-          className="inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 text-sm font-semibold text-ink/70 transition hover:bg-civic/10 hover:text-civic active:scale-95"
-        >
-          <Share2 className="h-4 w-4" />
-          مشاركة
-        </button>
+        <ShareMenu url={`/updates?poll=${poll._id}`} title={poll.question} text={poll.description || poll.question} />
       </div>
       {!compact ? <CommentBox targetType="polls" targetId={poll._id} expanded={commentsExpanded} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>

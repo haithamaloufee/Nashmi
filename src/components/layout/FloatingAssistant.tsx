@@ -1,18 +1,181 @@
+"use client";
+
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bot, Sparkles } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Bot, Loader2, Send, Sparkles, X } from "lucide-react";
+
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+const introMessage: Message = {
+  role: "assistant",
+  content: "مرحبا، أنا مساعد نشمي الذكي. اسألني عن القوانين أو الأحزاب أو طريقة استخدام المنصة."
+};
+
+function fallbackError(json: unknown) {
+  if (typeof json === "object" && json !== null && "error" in json) {
+    const message = (json as { error?: { message?: string } }).error?.message;
+    if (message) return message;
+  }
+  return "تعذر إرسال الرسالة الآن. حاول مرة أخرى بعد قليل.";
+}
 
 export default function FloatingAssistant() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([introMessage]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const messagesRef = useRef<HTMLDivElement | null>(null);
+
+  const hidden = pathname === "/chat" || pathname?.startsWith("/login") || pathname?.startsWith("/signup");
+
+  useEffect(() => {
+    if (!open) return;
+    setSessionId(null);
+    setMessages([introMessage]);
+    setInput("");
+    setError("");
+    window.setTimeout(() => inputRef.current?.focus(), 80);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
+  useEffect(() => {
+    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, loading]);
+
+  if (hidden) return null;
+
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const clean = input.trim();
+    if (!clean || loading) return;
+
+    setError("");
+    setInput("");
+    setMessages((items) => [...items, { role: "user", content: clean }]);
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: clean, sessionId: sessionId || undefined })
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.ok) {
+        const friendly = response.status === 401 ? "سجل الدخول لاستخدام المساعد الذكي من هذه النافذة." : fallbackError(json);
+        setError(friendly);
+        setMessages((items) => [...items, { role: "assistant", content: friendly }]);
+        return;
+      }
+      setSessionId(json.data.session?._id || null);
+      setMessages((items) => [...items, { role: "assistant", content: json.data.message?.content || "تم استلام رسالتك." }]);
+    } catch {
+      const friendly = "تعذر الاتصال بالمساعد. تحقق من الاتصال وحاول مجددا.";
+      setError(friendly);
+      setMessages((items) => [...items, { role: "assistant", content: friendly }]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <Link
-      href="/chat"
-      className="focus-ring fixed bottom-5 left-5 z-30 inline-flex items-center gap-2 rounded-full bg-civic px-4 py-3 font-semibold text-white shadow-soft ring-1 ring-white/25 transition hover:bg-civic/90 active:scale-95 print:hidden"
-      aria-label="المساعد الذكي"
-    >
-      <span className="relative grid h-9 w-9 place-items-center rounded-full bg-white/15">
-        <Bot className="h-5 w-5" />
-        <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-white" />
-      </span>
-      <span className="hidden text-sm sm:inline">المساعد الذكي</span>
-    </Link>
+    <div className="fixed bottom-5 left-5 z-40 print:hidden">
+      {open ? (
+        <section
+          className="flex h-[min(620px,calc(100vh-40px))] w-[min(380px,calc(100vw-32px))] flex-col overflow-hidden rounded border border-line bg-white text-ink shadow-soft dark:border-white/15 dark:bg-[#16242d] dark:text-white"
+          aria-label="المساعد الذكي المصغر"
+          dir="rtl"
+        >
+          <header className="flex items-center justify-between border-b border-line bg-civic px-4 py-3 text-white dark:border-white/10">
+            <div className="flex items-center gap-2">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-white/15">
+                <Bot className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-sm font-black">المساعد الذكي</h2>
+                <p className="text-xs text-white/75">محادثة جديدة</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-8 w-8 place-items-center rounded-full hover:bg-white/15" aria-label="إغلاق المساعد">
+              <X className="h-4 w-4" />
+            </button>
+          </header>
+
+          <div ref={messagesRef} className="flex-1 space-y-3 overflow-auto bg-paper p-3 dark:bg-[#101820]">
+            {messages.map((message, index) => (
+              <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-start" : "justify-end"}`}>
+                <div className={`max-w-[86%] rounded-2xl px-3 py-2 text-sm leading-7 shadow-sm ${message.role === "user" ? "rounded-tr-sm bg-civic text-white" : "rounded-tl-sm border border-line bg-white text-ink dark:border-white/12 dark:bg-white/8 dark:text-white"}`}>
+                  {message.content}
+                </div>
+              </div>
+            ))}
+            {loading ? (
+              <div className="flex justify-end">
+                <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-2 text-sm text-civic dark:border-white/12 dark:bg-white/8 dark:text-emerald-200">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  يكتب...
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {error ? (
+            <div className="border-t border-line bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-white/10 dark:bg-red-950/30 dark:text-red-200">
+              {error}{" "}
+              {error.includes("سجل الدخول") ? (
+                <Link href="/login" className="font-bold underline">
+                  تسجيل الدخول
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+
+          <form onSubmit={sendMessage} className="flex gap-2 border-t border-line bg-white p-3 dark:border-white/10 dark:bg-[#16242d]">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              className="min-w-0 flex-1 rounded-full border-line px-3 text-sm focus:border-civic focus:ring-civic dark:border-white/15 dark:bg-[#101820] dark:text-white"
+              placeholder="اكتب سؤالك..."
+              maxLength={1200}
+              disabled={loading}
+              aria-label="رسالة إلى المساعد الذكي"
+            />
+            <button type="submit" disabled={loading || !input.trim()} className="focus-ring grid h-10 w-10 place-items-center rounded-full bg-civic text-white hover:bg-civic/90 disabled:cursor-not-allowed disabled:opacity-60" aria-label="إرسال الرسالة">
+              <Send className="h-4 w-4" />
+            </button>
+          </form>
+        </section>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="focus-ring inline-flex items-center gap-2 rounded-full bg-civic px-4 py-3 font-semibold text-white shadow-soft ring-1 ring-white/25 transition hover:bg-civic/90 active:scale-95"
+          aria-label="فتح المساعد الذكي"
+        >
+          <span className="relative grid h-9 w-9 place-items-center rounded-full bg-white/15">
+            <Bot className="h-5 w-5" />
+            <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-white" />
+          </span>
+          <span className="hidden text-sm sm:inline">المساعد الذكي</span>
+        </button>
+      )}
+    </div>
   );
 }

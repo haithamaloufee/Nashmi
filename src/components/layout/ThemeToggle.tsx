@@ -6,10 +6,10 @@ import { Moon, Sun } from "lucide-react";
 const storageKey = "nashmi-theme";
 
 function getPreferredTheme() {
-  if (typeof window === "undefined") return "light";
+  if (typeof window === "undefined") return "dark";
   const saved = window.localStorage.getItem(storageKey);
   if (saved === "dark" || saved === "light") return saved;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "dark";
 }
 
 function applyTheme(theme: string) {
@@ -18,7 +18,7 @@ function applyTheme(theme: string) {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState("dark");
 
   useEffect(() => {
     const preferred = getPreferredTheme();

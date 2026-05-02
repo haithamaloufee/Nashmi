@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MessageCircle, Share2 } from "lucide-react";
+import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import ReportButton from "@/components/reports/ReportButton";
 import CommentBox from "@/components/comments/CommentBox";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import InlineModerationActions from "@/components/admin/InlineModerationActions";
 import SafeImage from "@/components/ui/SafeImage";
-import { useToast } from "@/components/ui/ToastProvider";
+import ShareMenu from "@/components/ui/ShareMenu";
+import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 
 type AuthorUser = {
   name?: string;
@@ -68,13 +70,24 @@ function authorInfo(post: Post) {
       name: party.name,
       image: party.logoUrl || user?.avatarUrl || user?.image || null,
       badge: party.isVerified ? "حزب موثق" : "حزب",
+      badgeTooltip: party.isVerified ? "حزب موثق على منصة نشمي اعتمادًا على البيانات الرسمية المتاحة." : "",
+      href: party.slug ? `/parties/${party.slug}` : null,
+      type: "party",
       fallback: party.name.slice(0, 1)
     };
   }
   if (post.authorType === "iec") {
-    return { name: user?.name || "الهيئة المستقلة للانتخاب", image: user?.avatarUrl || user?.image || null, badge: "جهة رسمية", fallback: "هـ" };
+    return {
+      name: user?.name || "الهيئة المستقلة للانتخاب",
+      image: user?.avatarUrl || user?.image || null,
+      badge: "جهة رسمية",
+      badgeTooltip: "الهيئة المستقلة للانتخاب جهة رسمية مستقلة وليست حزبًا سياسيًا، ولا تتبع لأي حزب أو جهة حزبية. دورها مرتبط بإدارة العملية الانتخابية والإشراف عليها رسميًا.",
+      href: "/iec",
+      type: "iec",
+      fallback: "هـ"
+    };
   }
-  return { name: user?.name || "نشمي", image: user?.avatarUrl || user?.image || null, badge: post.authorType === "admin" ? "إدارة" : "ناشر", fallback: "ن" };
+  return { name: user?.name || "نشمي", image: user?.avatarUrl || user?.image || null, badge: post.authorType === "admin" ? "إدارة" : "ناشر", badgeTooltip: "", href: null, type: "user", fallback: "ن" };
 }
 
 function mediaItems(post: Post) {
@@ -85,40 +98,47 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
   const [expandedText, setExpandedText] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
-  const { showToast } = useToast();
   const author = useMemo(() => authorInfo(post), [post]);
   const media = useMemo(() => mediaItems(post), [post]);
   const isLong = post.content.length > 360;
   const text = isLong && !expandedText ? `${post.content.slice(0, 360)}...` : post.content;
-
-  async function sharePost() {
-    const url = `${window.location.origin}/updates?post=${post._id}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: post.title || author.name, text: post.content.slice(0, 120), url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        showToast("تم نسخ رابط المنشور", "success");
-      }
-    } catch {
-      showToast("تعذر مشاركة المنشور", "error");
-    }
-  }
+  const shareUrl = `/updates?post=${post._id}`;
+  const avatar = (
+    <SafeImage
+      src={author.image}
+      alt={author.name}
+      className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:group-hover:ring-emerald-200/50"
+      fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic/10 text-lg font-bold text-civic ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:group-hover:ring-emerald-200/50">{author.fallback}</div>}
+    />
+  );
 
   return (
     <article className="card card-hover overflow-visible p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <SafeImage
-            src={author.image}
-            alt={author.name}
-            className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line"
-            fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic/10 text-lg font-bold text-civic">{author.fallback}</div>}
-          />
+          {author.href ? (
+            <Link href={author.href} className="focus-ring group shrink-0 cursor-pointer rounded-full" aria-label={`فتح صفحة ${author.name}`}>
+              {avatar}
+            </Link>
+          ) : (
+            <span className="shrink-0">{avatar}</span>
+          )}
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate font-bold text-ink">{author.name}</h3>
-              <span className="rounded bg-civic/10 px-2 py-0.5 text-xs font-semibold text-civic">{author.badge}</span>
+              {author.href ? (
+                <Link href={author.href} className="focus-ring min-w-0 cursor-pointer rounded text-ink hover:text-civic hover:underline dark:text-white dark:hover:text-emerald-200" aria-label={`فتح صفحة ${author.name}`}>
+                  <h3 className="truncate font-bold">{author.name}</h3>
+                </Link>
+              ) : (
+                <h3 className="truncate font-bold text-ink">{author.name}</h3>
+              )}
+              {author.badgeTooltip ? (
+                <DelayedTooltipBadge tooltip={author.badgeTooltip} className="rounded bg-civic/10 px-2 py-0.5 text-xs font-semibold text-civic outline-none ring-civic/20 focus-visible:ring-2">
+                  {author.badge}
+                </DelayedTooltipBadge>
+              ) : (
+                <span className="rounded bg-civic/10 px-2 py-0.5 text-xs font-semibold text-civic">{author.badge}</span>
+              )}
             </div>
             <p className="mt-1 text-xs text-ink/50">{relativeTime(post.publishedAt || post.createdAt)}</p>
           </div>
@@ -183,14 +203,7 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
             تعليق
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={sharePost}
-          className="inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 text-sm font-semibold text-ink/70 transition hover:bg-civic/10 hover:text-civic active:scale-95"
-        >
-          <Share2 className="h-4 w-4" />
-          مشاركة
-        </button>
+        <ShareMenu url={shareUrl} title={post.title || author.name} text={post.content.slice(0, 140)} />
       </div>
 
       {!compact ? <CommentBox targetType="posts" targetId={post._id} expanded={commentsExpanded} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
