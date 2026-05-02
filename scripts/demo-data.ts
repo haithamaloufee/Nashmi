@@ -46,7 +46,7 @@ export function describeMissingDemoData(counts: DemoDataCounts) {
 
 export const demoLawCards = [
   {
-    title: "المساواة أمام القانون وتكافؤ الفرص",
+    title: "المساواة أمام القانون  الفرص",
     slug: "equality-before-law-and-equal-opportunity",
     category: "الحقوق الدستورية",
     sourceName: "دستور المملكة الأردنية الهاشمية",
