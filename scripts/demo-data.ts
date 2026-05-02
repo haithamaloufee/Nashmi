@@ -58,7 +58,7 @@ export const demoLawCards = [
     simplifiedExplanation: "بأسلوب شبابي مبسط: كل المواطنين متساوون أمام القانون، والفرص العامة يجب أن تكون مبنية على العدالة لا على الخلفية الشخصية. لذلك هذه القاعدة مهمة لفكرة Nashmi لأنها تحول النص القانوني من مادة جامدة إلى معلومة عملية تساعد المواطن على المشاركة بوعي، سواء كان يقرأ عن الانتخابات أو الأحزاب أو حقوقه الدستورية.",
     practicalExample: "طالبان من محافظتين مختلفتين يتقدمان لنشاط عام ويعاملان وفق نفس الشروط.",
     youtubeVideoId: "https://youtu.be/zY2fYxO_Sp4?si=nEfAG_nH9pqkGPRt",
-    thumbnailUrl: null,
+    thumbnailUrl: "https://m7et.com/wp-content/uploads/2022/10/%D8%B9%D9%84%D9%85-%D8%A7%D9%84%D8%A3%D8%B1%D8%AF%D9%861.jpg\\" ,
     tags: ["الدستور", "مساواة", "تكافؤ الفرص", "حقوق"],
     status: "published",
   },
