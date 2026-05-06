@@ -16,24 +16,24 @@ export default async function LawDetailsPage({ params }: { params: Promise<{ slu
       <article className="card p-6">
         <span className="rounded bg-civic/10 px-3 py-1 text-sm text-civic">{law.category}</span>
         <h1 className="mt-4 text-3xl font-black">{law.title}</h1>
-        <p className="mt-3 leading-8 text-ink/70">{law.shortDescription}</p>
+        <p className="mt-3 leading-8 text-ink/70 dark:text-slate-200">{law.shortDescription}</p>
         <div className="mt-5"><Alert>شرح القوانين للتوعية العامة وليس استشارة قانونية رسمية.</Alert></div>
         <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
             {law.originalText ? (
               <div>
                 <h2 className="mb-2 text-xl font-bold">النص الأصلي</h2>
-                <p className="whitespace-pre-line leading-8 text-ink/75">{law.originalText}</p>
+                <p className="whitespace-pre-line leading-8 text-ink/75 dark:text-slate-200">{law.originalText}</p>
               </div>
             ) : null}
             <div>
               <h2 className="mb-2 text-xl font-bold">شرح مبسط</h2>
-              <p className="whitespace-pre-line leading-8 text-ink/80">{law.simplifiedExplanation}</p>
+              <p className="whitespace-pre-line leading-8 text-ink/80 dark:text-slate-200">{law.simplifiedExplanation}</p>
             </div>
             {law.practicalExample ? (
               <div>
                 <h2 className="mb-2 text-xl font-bold">مثال عملي</h2>
-                <p className="leading-8 text-ink/75">{law.practicalExample}</p>
+                <p className="leading-8 text-ink/75 dark:text-slate-200">{law.practicalExample}</p>
               </div>
             ) : null}
           </div>
@@ -48,7 +48,7 @@ export default async function LawDetailsPage({ params }: { params: Promise<{ slu
                 allowFullScreen
               />
             ) : null}
-            <div className="rounded border border-line p-4 text-sm leading-7 text-ink/70">
+            <div className="rounded border border-line p-4 text-sm leading-7 text-ink/70 dark:text-slate-300">
               <p>المصدر: {law.sourceName}</p>
               <p>نوع المصدر: {law.sourceType}</p>
               {law.articleNumber ? <p>المادة: {law.articleNumber}</p> : null}
