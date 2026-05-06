@@ -67,7 +67,9 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const latestAssistantRef = useRef<HTMLDivElement | null>(null);
 
   const activeSession = useMemo(() => sessions.find((session) => session._id === activeSessionId) || null, [sessions, activeSessionId]);
   const showSuggestions = !loading && messages.length === 1 && messages[0]?.role === "assistant";
@@ -104,8 +106,27 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
   }, [lawId, authenticated]);
 
   useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      setShowScrollToBottom(scrollTop + clientHeight < scrollHeight - 100);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (messages.length > 1 && messages[messages.length - 1].role === "assistant") {
+      latestAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [messages]);
+
+  const scrollToBottom = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+  };
 
   async function refreshSessions(selectedId?: string) {
     const response = await fetch("/api/chat/sessions", { cache: "no-store" });
@@ -312,10 +333,13 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
           </div>
         ) : null}
 
-        <div ref={scrollRef} className="h-[min(520px,calc(100vh-18rem))] space-y-4 overflow-auto bg-[#f4f7f4] p-4 dark:bg-[#071217]">
+        <div ref={scrollRef} className="relative h-[min(520px,calc(100vh-18rem))] space-y-4 overflow-auto bg-[#f4f7f4] p-4 dark:bg-[#071217]">
           {messages.map((item, index) => (
             <div key={item._id || `${item.role}-${index}`} className={`flex ${item.role === "user" ? "justify-start" : "justify-end"}`}>
-              <div className={`max-w-[88%] rounded-3xl p-4 leading-8 shadow-sm ${item.role === "user" ? "rounded-tr-3xl bg-civic text-white" : "rounded-tl-3xl border border-line bg-white text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}>
+              <div
+                ref={item.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
+                className={`max-w-[88%] rounded-3xl p-4 leading-8 shadow-sm ${item.role === "user" ? "rounded-tr-3xl bg-civic text-white" : "rounded-tl-3xl border border-line bg-white text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+              >
                 {item.role === "assistant" ? <MarkdownMessage content={item.content} /> : <div className="whitespace-pre-wrap text-ink dark:text-slate-100">{item.content}</div>}
                 {item.role === "assistant" && item.groundingSources?.length ? (
                   <div className="mt-3 border-t border-line pt-2 text-xs dark:border-slate-700">
@@ -366,6 +390,17 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
               </div>
             </div>
           ) : null}
+
+          {showScrollToBottom && (
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="absolute bottom-4 right-4 rounded-full bg-civic p-2 text-white shadow-lg hover:bg-civic/90 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+              aria-label="التمرير إلى الأسفل"
+            >
+              <Send className="h-4 w-4 rotate-90" />
+            </button>
+          )}
         </div>
 
         <form onSubmit={submit} className="flex gap-2 border-t border-line bg-white p-4 dark:border-slate-700 dark:bg-slate-950/95">

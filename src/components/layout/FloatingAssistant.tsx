@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bot, Loader2, Send, Sparkles, X } from "lucide-react";
+import MarkdownMessage from "@/components/chat/MarkdownMessage";
 
 type Message = {
   role: "user" | "assistant";
@@ -31,8 +32,10 @@ export default function FloatingAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
+  const latestAssistantRef = useRef<HTMLDivElement | null>(null);
 
   const hidden = pathname === "/chat" || pathname?.startsWith("/login") || pathname?.startsWith("/signup");
 
@@ -42,6 +45,7 @@ export default function FloatingAssistant() {
     setMessages([introMessage]);
     setInput("");
     setError("");
+    setShowScrollToBottom(false);
     window.setTimeout(() => inputRef.current?.focus(), 80);
   }, [open]);
 
@@ -55,8 +59,27 @@ export default function FloatingAssistant() {
   }, [open]);
 
   useEffect(() => {
+    const container = messagesRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      setShowScrollToBottom(scrollTop + clientHeight < scrollHeight - 100);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [open]);
+
+  useEffect(() => {
+    if (messages.length > 1 && messages[messages.length - 1].role === "assistant") {
+      latestAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [messages]);
+
+  const scrollToBottom = () => {
     messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+  };
 
   if (hidden) return null;
 
@@ -95,7 +118,7 @@ export default function FloatingAssistant() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 print:hidden">
+    <div className="fixed bottom-4 right-4 z-40 print:hidden sm:bottom-4 sm:right-4 sm:left-auto sm:inset-x-auto inset-x-2">
       {open ? (
         <section
           className="flex h-[min(640px,calc(100vh-3.5rem))] w-[min(410px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-line bg-white text-ink shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100"
@@ -117,11 +140,18 @@ export default function FloatingAssistant() {
             </button>
           </header>
 
-          <div ref={messagesRef} className="assistant-scrollbar flex-1 space-y-4 overflow-auto bg-paper p-4 dark:bg-[#101820]">
+          <div ref={messagesRef} className="assistant-scrollbar relative flex-1 space-y-4 overflow-auto bg-paper p-4 dark:bg-[#101820]">
             {messages.map((message, index) => (
               <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-start" : "justify-end"}`}>
-                <div className={`max-w-[90%] whitespace-pre-wrap rounded-3xl px-4 py-3 text-sm leading-8 shadow-sm ${message.role === "user" ? "rounded-tr-3xl bg-civic text-white dark:bg-[#1b8f89]" : "rounded-tl-3xl border border-line bg-white text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}>
-                  {message.content}
+                <div
+                  ref={message.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
+                  className={`max-w-[90%] whitespace-pre-wrap rounded-3xl px-4 py-3 text-sm leading-8 shadow-sm ${message.role === "user" ? "rounded-tr-3xl bg-civic text-white dark:bg-[#1b8f89]" : "rounded-tl-3xl border border-line bg-white text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+                >
+                  {message.role === "assistant" ? (
+                    <MarkdownMessage content={message.content} />
+                  ) : (
+                    message.content
+                  )}
                 </div>
               </div>
             ))}
@@ -133,6 +163,16 @@ export default function FloatingAssistant() {
                 </div>
               </div>
             ) : null}
+            {showScrollToBottom && (
+              <button
+                type="button"
+                onClick={scrollToBottom}
+                className="absolute bottom-4 right-4 rounded-full bg-civic p-2 text-white shadow-lg hover:bg-civic/90 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+                aria-label="التمرير إلى الأسفل"
+              >
+                <Send className="h-4 w-4 rotate-90" />
+              </button>
+            )}
           </div>
 
           {error ? (
