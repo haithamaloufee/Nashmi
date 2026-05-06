@@ -114,7 +114,7 @@ export default function RoyalQuotesSection() {
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-line bg-white shadow-soft dark:border-white/12 dark:bg-[#16242d]">
+        <div className="overflow-hidden rounded-lg border border-line bg-white shadow-soft dark:border-slate-700 dark:bg-slate-950/95">
           <div className="grid min-h-[360px] gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(320px,460px)] lg:[direction:ltr]">
             <div className="flex min-w-0 flex-col justify-center p-6 text-right [direction:rtl] sm:p-8 lg:p-10">
               <span className="mb-6 grid h-11 w-11 place-items-center rounded-full bg-civic/10 text-civic dark:bg-emerald-200/12 dark:text-emerald-200">
@@ -134,10 +134,10 @@ export default function RoyalQuotesSection() {
               </blockquote>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <button type="button" onClick={goToPrevious} className="focus-ring grid h-10 w-10 place-items-center rounded-full border border-line bg-white text-civic shadow-sm hover:border-civic hover:bg-civic/5 dark:border-white/15 dark:bg-white/8 dark:text-emerald-200 dark:hover:border-emerald-200" aria-label="الاقتباس السابق">
+                <button type="button" onClick={goToPrevious} className="focus-ring grid h-10 w-10 place-items-center rounded-full border border-line bg-white text-civic shadow-sm hover:border-civic hover:bg-civic/5 dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200 dark:hover:border-emerald-200" aria-label="الاقتباس السابق">
                   <ChevronRight className="h-5 w-5" />
                 </button>
-                <button type="button" onClick={goToNext} className="focus-ring grid h-10 w-10 place-items-center rounded-full border border-line bg-white text-civic shadow-sm hover:border-civic hover:bg-civic/5 dark:border-white/15 dark:bg-white/8 dark:text-emerald-200 dark:hover:border-emerald-200" aria-label="الاقتباس التالي">
+                <button type="button" onClick={goToNext} className="focus-ring grid h-10 w-10 place-items-center rounded-full border border-line bg-white text-civic shadow-sm hover:border-civic hover:bg-civic/5 dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200 dark:hover:border-emerald-200" aria-label="الاقتباس التالي">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <div className="flex items-center gap-2" aria-label="مؤشرات الاقتباسات">
@@ -146,7 +146,7 @@ export default function RoyalQuotesSection() {
                       key={`${quote.author}-${index}`}
                       type="button"
                       onClick={() => setActiveIndex(index)}
-                      className={`h-2.5 rounded-full transition-all ${index === activeIndex ? "w-7 bg-civic dark:bg-emerald-200" : "w-2.5 bg-ink/20 hover:bg-civic/50 dark:bg-white/24 dark:hover:bg-emerald-200/70"}`}
+                        className={`h-2.5 rounded-full transition-all ${index === activeIndex ? "w-7 bg-civic dark:bg-emerald-200" : "w-2.5 bg-ink/20 hover:bg-civic/50 dark:bg-slate-700/60 dark:hover:bg-emerald-200/70"}`}
                       aria-label={`عرض الاقتباس ${index + 1}`}
                       aria-current={index === activeIndex ? "true" : undefined}
                     />
@@ -157,7 +157,7 @@ export default function RoyalQuotesSection() {
 
             <div className="relative min-h-[280px] overflow-hidden bg-civic/8 lg:min-h-full">
               {imageFailed ? (
-                <div className="grid h-full min-h-[280px] place-items-center bg-civic/10 p-6 text-center text-sm font-semibold text-civic dark:bg-white/8 dark:text-emerald-200">
+                <div className="grid h-full min-h-[280px] place-items-center bg-civic/10 p-6 text-center text-sm font-semibold text-civic dark:bg-slate-900/70 dark:text-emerald-200">
                   صورة الاقتباس غير متاحة حالياً
                 </div>
               ) : (

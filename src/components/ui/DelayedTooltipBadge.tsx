@@ -34,7 +34,7 @@ export default function DelayedTooltipBadge({ children, tooltip, className = "",
       {open ? (
         <span
           role="tooltip"
-          className="absolute bottom-full right-0 z-40 mb-2 w-72 rounded-lg border border-line bg-white p-3 text-right text-xs font-medium leading-6 text-ink shadow-soft dark:border-white/12 dark:bg-[#16242d] dark:text-white"
+          className="absolute bottom-full right-0 z-40 mb-2 w-72 rounded-lg border border-line bg-white p-3 text-right text-xs font-medium leading-6 text-ink shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-white"
         >
           {tooltip}
         </span>

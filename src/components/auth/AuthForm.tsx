@@ -102,10 +102,10 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="card mx-auto mt-10 max-w-md space-y-4 p-6">
+    <form onSubmit={submit} noValidate className="card mx-auto mt-10 max-w-md space-y-5 p-5 sm:p-6">
       <div>
-        <h1 className="text-2xl font-bold">{mode === "login" ? "تسجيل الدخول" : "إنشاء حساب مواطن"}</h1>
-        <p className="mt-2 text-sm text-ink/60">يتم حفظ الجلسة في Cookie آمن HttpOnly ولا تستخدم المنصة localStorage للتوكنات.</p>
+        <h1 className="text-3xl font-black leading-tight">{mode === "login" ? "تسجيل الدخول" : "إنشاء حساب مواطن"}</h1>
+        <p className="mt-2 text-sm text-ink/70 dark:text-slate-300">يتم حفظ الجلسة في Cookie آمن HttpOnly ولا تستخدم المنصة localStorage للتوكنات.</p>
       </div>
       {mode === "signup" ? (
         <label className="block text-sm font-medium">
@@ -115,7 +115,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
             value={values.name}
             onChange={(event) => updateField("name", event.target.value)}
             onBlur={() => setTouched((current) => ({ ...current, name: true }))}
-            className="mt-1 w-full rounded border-line focus:border-civic focus:ring-civic"
+            className="mt-1 w-full rounded-xl border border-line bg-white/95 px-4 py-3 text-sm text-ink focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-[#101820] dark:text-white"
             aria-invalid={Boolean(touched.name && errors.name)}
             aria-describedby="name-error"
             autoComplete="name"
@@ -131,7 +131,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           value={values.email}
           onChange={(event) => updateField("email", event.target.value)}
           onBlur={() => setTouched((current) => ({ ...current, email: true }))}
-          className="mt-1 w-full rounded border-line focus:border-civic focus:ring-civic"
+          className="mt-1 w-full rounded-xl border border-line bg-white/95 px-4 py-3 text-sm text-ink focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-[#101820] dark:text-white"
           aria-invalid={Boolean(touched.email && errors.email)}
           aria-describedby="email-error"
           autoComplete="email"
@@ -148,7 +148,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
             value={values.password}
             onChange={(event) => updateField("password", event.target.value)}
             onBlur={() => setTouched((current) => ({ ...current, password: true }))}
-            className="w-full rounded border-line pe-11 focus:border-civic focus:ring-civic"
+            className="w-full rounded-xl border border-line bg-white/95 px-4 py-3 pe-14 text-sm text-ink focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-[#101820] dark:text-white"
             aria-invalid={Boolean(touched.password && errors.password)}
             aria-describedby="password-error"
             autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -156,7 +156,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <button
             type="button"
             onClick={() => setShowPassword((value) => !value)}
-            className="focus-ring absolute inset-y-1 left-1 grid w-9 place-items-center rounded-full text-ink/55 hover:bg-civic/10 hover:text-civic dark:text-white/62 dark:hover:text-emerald-200"
+            className="focus-ring absolute inset-y-0 end-3 grid h-full w-11 place-items-center rounded-full text-ink/55 hover:bg-civic/10 hover:text-civic dark:text-white/62 dark:hover:text-emerald-200"
             aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -164,8 +164,16 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </span>
         <span id="password-error">{fieldMessage("password")}</span>
       </label>
-      {error ? <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-      <button type="submit" disabled={loading || hasVisibleErrors} className="w-full rounded bg-civic px-4 py-2 font-semibold text-white shadow-sm hover:bg-civic/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-200 dark:text-[#101820] dark:hover:bg-emerald-100">
+      {error ? (
+        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/40 dark:bg-red-950/20 dark:text-red-200" role="alert" aria-live="polite">
+          {error}
+        </p>
+      ) : null}
+      <button
+        type="submit"
+        disabled={loading || hasVisibleErrors}
+        className="w-full rounded-2xl bg-civic px-4 py-3 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-200 dark:text-[#101820] dark:hover:bg-emerald-100"
+      >
         {loading ? "جار التنفيذ..." : mode === "login" ? "دخول" : "إنشاء الحساب"}
       </button>
     </form>

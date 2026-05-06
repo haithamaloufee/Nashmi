@@ -95,16 +95,16 @@ export default function FloatingAssistant() {
   }
 
   return (
-    <div className="fixed bottom-5 left-5 z-40 max-sm:inset-x-3 max-sm:bottom-3 print:hidden">
+    <div className="fixed bottom-4 right-4 z-40 print:hidden">
       {open ? (
         <section
-          className="flex h-[min(640px,calc(100vh-40px))] w-[min(410px,calc(100vw-24px))] flex-col overflow-hidden rounded-lg border border-line bg-white text-ink shadow-soft dark:border-white/15 dark:bg-[#16242d] dark:text-white max-sm:h-[min(620px,calc(100vh-24px))] max-sm:w-full"
+          className="flex h-[min(640px,calc(100vh-3.5rem))] w-[min(410px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-line bg-white text-ink shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100"
           aria-label="المساعد الذكي المصغر"
           dir="rtl"
         >
-          <header className="flex items-start justify-between gap-3 border-b border-line bg-civic px-4 py-3.5 text-white dark:border-white/10 dark:bg-[#126b6f]">
+          <header className="flex items-start justify-between gap-3 border-b border-line bg-civic px-4 py-3.5 text-white dark:border-slate-700 dark:bg-[#126b6f]">
             <div className="flex min-w-0 items-start gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15 ring-1 ring-white/20">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-900/80 ring-1 ring-slate-700">
                 <Bot className="h-5 w-5" />
               </span>
               <div className="min-w-0">
@@ -120,14 +120,14 @@ export default function FloatingAssistant() {
           <div ref={messagesRef} className="assistant-scrollbar flex-1 space-y-4 overflow-auto bg-paper p-4 dark:bg-[#101820]">
             {messages.map((message, index) => (
               <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-start" : "justify-end"}`}>
-                <div className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-8 shadow-sm ${message.role === "user" ? "rounded-tr-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-tl-md border border-line bg-white text-ink dark:border-white/14 dark:bg-white/9 dark:text-white"}`}>
+                <div className={`max-w-[90%] whitespace-pre-wrap rounded-3xl px-4 py-3 text-sm leading-8 shadow-sm ${message.role === "user" ? "rounded-tr-3xl bg-civic text-white dark:bg-[#1b8f89]" : "rounded-tl-3xl border border-line bg-white text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}>
                   {message.content}
                 </div>
               </div>
             ))}
             {loading ? (
               <div className="flex justify-end">
-                <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3.5 py-2 text-sm font-semibold text-civic shadow-sm dark:border-white/14 dark:bg-white/9 dark:text-emerald-200">
+                <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3.5 py-2 text-sm font-semibold text-civic shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   يكتب...
                 </div>
@@ -136,7 +136,7 @@ export default function FloatingAssistant() {
           </div>
 
           {error ? (
-            <div className="border-t border-line bg-red-50 px-4 py-3 text-sm leading-7 text-red-700 dark:border-white/10 dark:bg-red-950/30 dark:text-red-200">
+            <div className="border-t border-line bg-red-50 px-4 py-3 text-sm leading-7 text-red-700 dark:border-slate-700 dark:bg-red-950/30 dark:text-red-200">
               {error}{" "}
               {error.includes("سجل الدخول") ? (
                 <Link href="/login" className="font-bold underline">
@@ -146,12 +146,12 @@ export default function FloatingAssistant() {
             </div>
           ) : null}
 
-          <form onSubmit={sendMessage} className="flex items-end gap-2 border-t border-line bg-white p-3.5 dark:border-white/10 dark:bg-[#16242d]">
+          <form onSubmit={sendMessage} className="flex items-end gap-2 border-t border-line bg-white p-3.5 dark:border-slate-700 dark:bg-slate-950/95">
             <input
               ref={inputRef}
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              className="min-w-0 flex-1 rounded-full border-line px-4 text-sm leading-6 focus:border-civic focus:ring-civic dark:border-white/18 dark:bg-[#101820] dark:text-white"
+              className="min-w-0 flex-1 rounded-full border-line px-4 text-sm leading-6 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
               placeholder="اكتب سؤالك..."
               maxLength={1200}
               disabled={loading}
@@ -169,7 +169,7 @@ export default function FloatingAssistant() {
           className="focus-ring inline-flex items-center gap-2 rounded-full bg-civic px-4 py-3 font-semibold text-white shadow-soft ring-1 ring-white/25 transition hover:bg-civic/90 active:scale-95 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
           aria-label="فتح المساعد الذكي"
         >
-          <span className="relative grid h-9 w-9 place-items-center rounded-full bg-white/15">
+          <span className="relative grid h-9 w-9 place-items-center rounded-full bg-white/15 dark:bg-slate-900/80">
             <Bot className="h-5 w-5" />
             <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-white" />
           </span>

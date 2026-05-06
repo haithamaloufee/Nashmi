@@ -26,20 +26,22 @@ export default async function Navbar() {
           : null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-paper/95 text-ink shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#101820]/95 dark:text-white">
+    <header className="sticky top-0 z-50 border-b border-line bg-paper/95 text-ink shadow-sm backdrop-blur dark:border-slate-700 dark:bg-[#101820]/95 dark:text-white">
       <div className="container-page flex min-h-16 items-center justify-between gap-3 py-3">
         <Link href="/" className="focus-ring flex shrink-0 items-center gap-3 font-bold text-civic dark:text-emerald-200" aria-label="الانتقال إلى الصفحة الرئيسية">
-          <Image src="/images/nashmi logo.png" alt="شعار منصة نشمي" width={56} height={56} priority unoptimized className="h-12 w-12 rounded-full object-contain" />
-          <span className="hidden text-lg font-black sm:inline">نشمي</span>
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 ring-1 ring-transparent transition duration-200 dark:bg-slate-900/80 dark:drop-shadow-[0_0_12px_rgba(167,243,208,0.35)] dark:ring-slate-700 sm:h-14 sm:w-14">
+            <Image src="/images/nashmi logo.png" alt="شعار منصة نشمي" width={56} height={56} priority unoptimized className="h-10 w-10 object-contain sm:h-11 sm:w-11" />
+          </div>
+          <span className="hidden text-lg font-black sm:inline dark:text-emerald-200 dark:drop-shadow-sm">نشمي</span>
         </Link>
         <nav className="hidden items-center gap-1 text-sm font-semibold lg:flex" aria-label="التنقل الرئيسي">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className="focus-ring rounded px-3 py-2 text-ink/78 hover:bg-civic/5 hover:text-civic dark:text-white/78 dark:hover:bg-white/8 dark:hover:text-emerald-200">
+            <Link key={link.href} href={link.href} className="focus-ring rounded px-3 py-2 text-ink/78 hover:bg-civic/5 hover:text-civic dark:text-white/78 dark:hover:bg-slate-800 dark:hover:text-emerald-200">
               {link.label}
             </Link>
           ))}
           {dashboardHref ? (
-            <Link href={dashboardHref} className="focus-ring rounded px-3 py-2 text-ink/78 hover:bg-civic/5 hover:text-civic dark:text-white/78 dark:hover:bg-white/8 dark:hover:text-emerald-200">
+            <Link href={dashboardHref} className="focus-ring rounded px-3 py-2 text-ink/78 hover:bg-civic/5 hover:text-civic dark:text-white/78 dark:hover:bg-slate-800 dark:hover:text-emerald-200">
               لوحة التحكم
             </Link>
           ) : null}

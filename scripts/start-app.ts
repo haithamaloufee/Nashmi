@@ -22,6 +22,7 @@ function diagnoseMongoFailure(error: unknown) {
   if (message.includes("bad auth") || message.includes("authentication failed")) return "wrong credentials";
   if (message.includes("ip") && (message.includes("whitelist") || message.includes("access"))) return "MongoDB Atlas IP whitelist issue";
   if (code === "8000") return "wrong credentials or MongoDB Atlas IP whitelist issue";
+  if (message.includes("querytxt") && message.includes("etimeout")) return "DNS TXT lookup timed out for Atlas SRV; likely DNS/network issue";
   if (message.includes("querysrv") || message.includes("enotfound") || message.includes("eai_again")) return "network/DNS problem";
   if (message.includes("server selection timed out") || message.includes("timed out")) return "network, Atlas IP whitelist, or cluster availability";
   if (message.includes("invalid scheme") || message.includes("mongodb")) return "MongoDB connection string issue";

@@ -234,20 +234,20 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
   }
 
   return (
-    <div className="grid min-h-[620px] gap-4 lg:grid-cols-[280px_1fr]" dir="rtl">
-      <aside className="rounded border border-line bg-white/90 shadow-soft">
-        <div className="flex items-center justify-between border-b border-line p-3">
-          <h2 className="text-sm font-bold text-ink">المحادثات</h2>
+    <div className="grid min-h-[calc(100vh-10rem)] gap-4 lg:grid-cols-[280px_1fr]" dir="rtl">
+      <aside className="rounded-3xl border border-line bg-white/95 shadow-soft dark:border-slate-700 dark:bg-slate-950/95">
+        <div className="flex items-center justify-between border-b border-line p-3 dark:border-slate-700">
+          <h2 className="text-sm font-bold text-ink dark:text-white">المحادثات</h2>
           <button
             type="button"
             onClick={newConversation}
-            className="inline-flex h-9 w-9 items-center justify-center rounded border border-line text-civic hover:bg-civic/10"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-civic transition duration-200 hover:border-civic hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 dark:border-slate-700"
             title="محادثة جديدة"
           >
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        <div className="max-h-[520px] space-y-1 overflow-auto p-2">
+        <div className="max-h-[calc(100vh-16rem)] space-y-2 overflow-auto p-2">
           {sessionsLoading ? (
             <div className="flex items-center gap-2 p-3 text-sm text-ink/60">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -258,8 +258,8 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
           {sessions.map((session) => (
             <div
               key={session._id}
-              className={`group flex items-center gap-1 rounded hover:bg-civic/10 ${
-                session._id === activeSessionId ? "bg-civic/10 font-bold text-civic" : "text-ink"
+              className={`group flex items-center gap-1 rounded-xl px-1 transition duration-200 ${
+                session._id === activeSessionId ? "bg-civic/10 font-bold text-civic" : "text-ink hover:bg-civic/10"
               }`}
             >
               <button type="button" onClick={() => openSession(session._id)} className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-right text-sm">
@@ -283,8 +283,8 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
         </div>
       </aside>
 
-      <section className="overflow-hidden rounded border border-line bg-white shadow-soft">
-        <div className="flex items-center justify-between border-b border-line bg-civic/5 p-4">
+      <section className="overflow-hidden rounded-3xl border border-line bg-white shadow-soft dark:border-slate-700 dark:bg-slate-950/95">
+        <div className="flex flex-col gap-3 border-b border-line bg-civic/5 p-4 dark:border-slate-700">
           <div>
             <h2 className="font-bold text-ink">{activeSession?.title || "محادثة جديدة"}</h2>
             <p className="mt-1 text-xs text-civic">متصل وجاهز للمساعدة التوعوية</p>
@@ -312,14 +312,14 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
           </div>
         ) : null}
 
-        <div ref={scrollRef} className="h-[480px] space-y-4 overflow-auto bg-[#f4f7f4] p-4">
+        <div ref={scrollRef} className="h-[min(520px,calc(100vh-18rem))] space-y-4 overflow-auto bg-[#f4f7f4] p-4 dark:bg-[#071217]">
           {messages.map((item, index) => (
             <div key={item._id || `${item.role}-${index}`} className={`flex ${item.role === "user" ? "justify-start" : "justify-end"}`}>
-              <div className={`max-w-[88%] rounded-2xl p-3 leading-8 shadow-sm ${item.role === "user" ? "rounded-tr-sm bg-civic text-white" : "rounded-tl-sm border border-line bg-white text-ink"}`}>
-                {item.role === "assistant" ? <MarkdownMessage content={item.content} /> : <div className="whitespace-pre-wrap">{item.content}</div>}
+              <div className={`max-w-[88%] rounded-3xl p-4 leading-8 shadow-sm ${item.role === "user" ? "rounded-tr-3xl bg-civic text-white" : "rounded-tl-3xl border border-line bg-white text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}>
+                {item.role === "assistant" ? <MarkdownMessage content={item.content} /> : <div className="whitespace-pre-wrap text-ink dark:text-slate-100">{item.content}</div>}
                 {item.role === "assistant" && item.groundingSources?.length ? (
-                  <div className="mt-3 border-t border-line pt-2 text-xs">
-                    <p className="mb-1 font-bold text-ink/70">المصادر</p>
+                  <div className="mt-3 border-t border-line pt-2 text-xs dark:border-slate-700">
+                    <p className="mb-1 font-bold text-ink/70 dark:text-slate-300">المصادر</p>
                     <div className="space-y-1">
                       {item.groundingSources.map((source, sourceIndex) => (
                         <a
@@ -340,8 +340,8 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
           ))}
 
           {showSuggestions ? (
-            <div className="rounded border border-line bg-white p-3 shadow-sm">
-              <p className="mb-3 text-sm font-bold text-ink/70">أسئلة مقترحة</p>
+            <div className="rounded border border-line bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+              <p className="mb-3 text-sm font-bold text-ink/70 dark:text-slate-200">أسئلة مقترحة</p>
               <div className="flex flex-wrap gap-2">
                 {suggestedQuestions.map((question) => (
                   <button
@@ -359,7 +359,7 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
 
           {loading ? (
             <div className="flex justify-end">
-              <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-civic shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-civic shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-civic" />
                 <span className="h-2 w-2 animate-pulse rounded-full bg-civic [animation-delay:120ms]" />
                 <span className="h-2 w-2 animate-pulse rounded-full bg-civic [animation-delay:240ms]" />
@@ -368,16 +368,21 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
           ) : null}
         </div>
 
-        <form onSubmit={submit} className="flex gap-2 border-t border-line bg-white p-4">
+        <form onSubmit={submit} className="flex gap-2 border-t border-line bg-white p-4 dark:border-slate-700 dark:bg-slate-950/95">
           <input
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            className="min-w-0 flex-1 rounded-full border-line px-4 focus:border-civic focus:ring-civic"
+            className="min-w-0 flex-1 rounded-full border border-line bg-white/95 px-4 py-3 text-sm focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
             maxLength={1200}
             placeholder="اسأل عن قانون، انتخابات، أحزاب، أو طريقة استخدام المنصة"
             disabled={loading}
           />
-          <button disabled={loading || !message.trim()} className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-civic text-white hover:bg-civic/90 disabled:cursor-not-allowed disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={loading || !message.trim()}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-civic text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+            aria-label="إرسال الرسالة"
+          >
             <Send className="h-4 w-4" />
           </button>
         </form>

@@ -40,7 +40,7 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="focus-ring inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-civic/20 bg-civic/5 text-civic shadow-sm hover:border-civic/45 hover:bg-civic/10 dark:border-white/15 dark:bg-white/8 dark:text-emerald-200 dark:hover:border-emerald-200/45 dark:hover:bg-white/14"
+      className="focus-ring inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-civic/20 bg-civic/5 text-civic shadow-sm hover:border-civic/45 hover:bg-civic/10 dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200 dark:hover:border-emerald-200/45 dark:hover:bg-slate-800"
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       title={isDark ? "Light mode" : "Dark mode"}
     >

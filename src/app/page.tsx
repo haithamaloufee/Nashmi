@@ -98,7 +98,7 @@ async function PlatformStats() {
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <div key={stat.label} className="reveal-on-scroll rounded border border-white/20 bg-white/10 p-5 text-white shadow-soft backdrop-blur" data-reveal>
+          <div key={stat.label} className="reveal-on-scroll rounded border border-white/20 bg-white/10 p-5 text-white shadow-soft backdrop-blur dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 dark:shadow-black/20" data-reveal>
             <Icon className="mb-4 h-8 w-8 text-emerald-200" />
             <span className={`block font-black leading-none text-white drop-shadow-sm ${dataAvailable ? "text-4xl" : "text-2xl"}`}>
               {formatMetricValue(stat.value, dataAvailable)}
@@ -160,21 +160,22 @@ export default async function HomePage() {
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(15,25,33,.92)_0%,rgba(18,107,111,.74)_48%,rgba(15,25,33,.34)_100%)]" />
         <div className="container-page flex min-h-[560px] flex-col justify-center py-16 md:py-20">
           <div className="max-w-3xl text-shadow-sm">
-            <p className="mb-5 text-lg font-black text-white">Nashmi / نشمي</p>
-            <h1 id="hero-title" className="text-4xl font-black leading-[1.22] md:text-6xl">
-              نشمي…  أن تكون حاضرًا حين يُصنع القرار، لا مجرد شاهد عليه.</h1>
-            <p className="mt-8 max-w-2xl text-xl leading-10 text-white/90 md:text-2xl md:leading-[2.9rem]">
+            <p className="mb-5 text-base font-black uppercase tracking-[0.18em] text-white/80">Nashmi / نشمي</p>
+            <h1 id="hero-title" className="text-3xl font-black leading-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
+              نشمي… أن تكون حاضرًا حين يُصنع القرار، لا مجرد شاهد عليه.
+            </h1>
+            <p className="mt-7 max-w-2xl text-base leading-8 text-white/85 sm:text-xl sm:leading-9 md:text-2xl md:leading-[2.7rem]">
               نشمي مساحة رقمية محايدة تساعد المواطنين والشباب على فهم المستجدات، متابعة الأحزاب، قراءة التشريعات، والمشاركة في حوار مسؤول دون ترشيح أو تفضيل أي جهة سياسية.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/parties" className="focus-ring rounded bg-civic px-6 py-3 font-semibold text-white shadow-soft hover:bg-civic/90">
+              <Link href="/parties" className="focus-ring inline-flex items-center justify-center rounded-2xl bg-civic px-5 py-3 text-sm font-semibold text-white shadow-soft transition duration-200 hover:-translate-y-0.5 hover:bg-civic/90 active:scale-[0.98]">
                 ابدأ المشاركة
               </Link>
-              <Link href="/laws" className="focus-ring rounded border border-white/70 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur hover:bg-white/20">
+              <Link href="/laws" className="focus-ring inline-flex items-center justify-center rounded-2xl border border-white/70 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition duration-200 hover:bg-white/20 hover:text-white active:scale-[0.98]">
                 افهم قانونك
               </Link>
             </div>
-            <div className="mt-6 max-w-xl rounded border border-white/20 bg-white/10 p-4 text-sm leading-7 text-white/86 backdrop-blur">
+            <div className="mt-6 max-w-lg rounded-3xl border border-white/20 bg-white/15 p-4 text-sm leading-7 text-white/90 backdrop-blur sm:text-base">
               المنصة مشروع تجريبي ولا ترشح أو تفضل أي حزب أو مرشح.
             </div>
           </div>

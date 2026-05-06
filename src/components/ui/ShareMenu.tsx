@@ -100,7 +100,7 @@ export default function ShareMenu({ url, title, text, label = "مشاركة" }: 
       </button>
 
       {open ? (
-        <div className="absolute bottom-full left-0 z-30 mb-2 w-72 rounded-lg border border-line bg-white p-2 text-sm text-ink shadow-soft dark:border-white/12 dark:bg-[#16242d] dark:text-white" role="menu">
+        <div className="absolute bottom-full left-0 z-30 mb-2 w-72 rounded-lg border border-line bg-white p-2 text-sm text-ink shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-white" role="menu">
           <div className="mb-1 flex items-center justify-between px-2 py-1">
             <p className="font-bold">مشاركة المنشور</p>
             <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-7 w-7 place-items-center rounded-full text-ink/55 hover:bg-civic/10 hover:text-civic dark:text-white/64 dark:hover:text-emerald-200" aria-label="إغلاق خيارات المشاركة">

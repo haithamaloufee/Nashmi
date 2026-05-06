@@ -30,7 +30,7 @@ export default function ElectionStatsSection() {
           {electionNumbers.map((item) => {
             const Icon = item.icon;
             return (
-              <article key={item.label} className="reveal-on-scroll rounded border border-white/20 bg-white/10 p-5 shadow-soft backdrop-blur transition hover:-translate-y-1 hover:bg-white/15" data-reveal>
+              <article key={item.label} className="reveal-on-scroll rounded border border-white/20 bg-white/10 p-5 shadow-soft backdrop-blur transition hover:-translate-y-1 hover:bg-white/15 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 dark:hover:bg-slate-900/95" data-reveal>
                 <Icon className="mb-4 h-9 w-9 text-emerald-200" />
                 <h3 className="text-lg font-bold text-white/88">{item.label}</h3>
                 <p className="mt-4 text-4xl font-black" data-counter={item.value}>
@@ -48,14 +48,14 @@ export default function ElectionStatsSection() {
           </div>
 
           <div className="mt-8 flex justify-center">
-            <div className="rounded border border-white bg-white px-5 py-2 font-bold text-civic shadow-soft">
+            <div className="rounded border border-white bg-white px-5 py-2 font-bold text-civic shadow-soft dark:border-slate-700 dark:bg-slate-900 dark:text-white">
               نسب الانتخاب - 2024
             </div>
           </div>
 
           <div className="mt-8">
               <div className="grid gap-5 lg:grid-cols-[1fr_0.78fr]">
-                <article className="reveal-on-scroll min-w-0 rounded bg-white p-5 text-ink shadow-soft" data-reveal>
+                <article className="reveal-on-scroll min-w-0 rounded bg-white p-5 text-ink shadow-soft dark:bg-slate-950/95 dark:text-slate-100 dark:shadow-black/20" data-reveal>
                   <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                     <h3 className="text-xl font-black">نسبة المقترعين من الناخبين حسب الدائرة الانتخابية</h3>
                     <span className="rounded-full bg-civic/10 px-3 py-1 text-xs font-bold text-civic">قيم توضيحية من الصورة المرجعية</span>

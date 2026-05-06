@@ -38,8 +38,8 @@ export default function PartyCard({ party }: { party: Party }) {
                 موثق
               </DelayedTooltipBadge>
             ) : null}
-            {party.foundedYear ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-white/18 dark:bg-white/10 dark:text-white/85">{party.foundedYear}</span> : null}
-            {party.statistics?.branchesCount ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-white/18 dark:bg-white/10 dark:text-white/85">{party.statistics.branchesCount} فرع</span> : null}
+            {party.foundedYear ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">{party.foundedYear}</span> : null}
+            {party.statistics?.branchesCount ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">{party.statistics.branchesCount} فرع</span> : null}
             {party.socialLinks?.website ? (
               <span className="inline-flex items-center gap-1 rounded-full border border-civic/15 bg-civic/10 px-2.5 py-1 font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">
                 <Globe className="h-3.5 w-3.5" /> موقع
