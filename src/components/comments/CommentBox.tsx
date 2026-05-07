@@ -139,7 +139,7 @@ export default function CommentBox({ targetType, targetId, expanded, onCountChan
           className="min-h-11 flex-1 resize-y rounded border-line text-sm focus:border-civic focus:ring-civic"
           rows={2}
           maxLength={1000}
-          placeholder="اكتب تعليقًا محترمًا ومباشرًا"
+          placeholder="اكتب تعليقًا "
         />
         <button
           onClick={submit}
