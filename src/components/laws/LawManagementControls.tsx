@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Edit3, Loader2, Plus, X } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
+import MediaUploadField from "@/components/ui/MediaUploadField";
 
 type LawFormData = {
   _id?: string;
@@ -19,6 +20,7 @@ type LawFormData = {
   simplifiedExplanation?: string;
   practicalExample?: string | null;
   youtubeVideoId?: string | null;
+  youtubeUrl?: string | null;
   thumbnailUrl?: string | null;
   tags?: string[];
   status?: "published" | "draft" | "hidden";
@@ -40,6 +42,7 @@ function parseTags(value: FormDataEntryValue | null) {
 export default function LawManagementControls({ mode, law }: { mode: "create" | "edit"; law?: LawFormData }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState(law?.thumbnailUrl || "");
   const router = useRouter();
   const { showToast } = useToast();
   const isEdit = mode === "edit";
@@ -62,7 +65,8 @@ export default function LawManagementControls({ mode, law }: { mode: "create" | 
       simplifiedExplanation: formData.get("simplifiedExplanation"),
       practicalExample: formData.get("practicalExample") || null,
       youtubeVideoId: formData.get("youtubeVideoId") || null,
-      thumbnailUrl: formData.get("thumbnailUrl") || "",
+      youtubeUrl: formData.get("youtubeVideoId") || null,
+      thumbnailUrl: formData.get("thumbnailUrl") || thumbnailUrl || "",
       tags: parseTags(formData.get("tags")),
       status: formData.get("status"),
       changeReason: formData.get("changeReason") || undefined
@@ -149,8 +153,11 @@ export default function LawManagementControls({ mode, law }: { mode: "create" | 
                 <h3 className="mb-3 font-black">التصنيف والوسوم</h3>
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="grid gap-1 text-sm font-semibold">وسوم مفصولة بفواصل<input name="tags" defaultValue={defaultTags} className={inputClass} /></label>
-                  <label className="grid gap-1 text-sm font-semibold">YouTube ID<input name="youtubeVideoId" defaultValue={fieldValue(law?.youtubeVideoId)} className={inputClass} dir="ltr" /></label>
-                  <label className="grid gap-1 text-sm font-semibold md:col-span-2">رابط صورة مصغرة<input name="thumbnailUrl" defaultValue={fieldValue(law?.thumbnailUrl)} className={inputClass} dir="ltr" /></label>
+                  <label className="grid gap-1 text-sm font-semibold">رابط YouTube أو معرف الفيديو<input name="youtubeVideoId" defaultValue={fieldValue(law?.youtubeUrl || law?.youtubeVideoId)} className={inputClass} dir="ltr" /></label>
+                  <div className="md:col-span-2">
+                    <MediaUploadField label="رفع صورة القانون من الجهاز" value={thumbnailUrl} onUploaded={(asset) => setThumbnailUrl(asset.url)} onClear={() => setThumbnailUrl("")} />
+                  </div>
+                  <label className="grid gap-1 text-sm font-semibold md:col-span-2">رابط صورة خارجي<input name="thumbnailUrl" value={thumbnailUrl} onChange={(event) => setThumbnailUrl(event.target.value)} className={inputClass} dir="ltr" /></label>
                   {isEdit ? <label className="grid gap-1 text-sm font-semibold md:col-span-2">سبب التعديل<textarea name="changeReason" className={inputClass} rows={2} placeholder="مثال: تحديث صياغة الشرح أو إضافة مصدر رسمي" /></label> : null}
                 </div>
               </section>

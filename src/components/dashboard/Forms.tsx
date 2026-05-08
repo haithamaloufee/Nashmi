@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Trash2 } from "lucide-react";
-import SafeImage from "@/components/ui/SafeImage";
+import { Trash2 } from "lucide-react";
 import LoadingButton from "@/components/ui/LoadingButton";
+import MediaUploadField from "@/components/ui/MediaUploadField";
+import SafeImage from "@/components/ui/SafeImage";
 import { useToast } from "@/components/ui/ToastProvider";
 
 function useApiMessage() {
@@ -33,60 +34,30 @@ function useApiMessage() {
   return { message, submit, loading };
 }
 
+function splitLines(value: FormDataEntryValue | null) {
+  return String(value || "").split("\n").map((item) => item.trim()).filter(Boolean);
+}
+
+function splitComma(value: FormDataEntryValue | null) {
+  return String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
+}
+
 export function PostCreateForm() {
   const api = useApiMessage();
   const { showToast } = useToast();
-  const [media, setMedia] = useState<{ id: string; url: string; type: "image" | "video"; mimeType?: string } | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-
-  async function uploadFile(file: File) {
-    const allowed = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"];
-    if (!allowed.includes(file.type)) {
-      showToast("نوع الملف غير مدعوم. استخدم صورة jpg/png/webp أو فيديو mp4/webm.", "error");
-      return;
-    }
-    const maxMb = 10;
-    if (file.size > maxMb * 1024 * 1024) {
-      showToast(`حجم الملف يجب ألا يتجاوز ${maxMb}MB`, "error");
-      return;
-    }
-
-    setUploading(true);
-    const nextPreview = URL.createObjectURL(file);
-    setPreviewUrl(nextPreview);
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch("/api/uploads", { method: "POST", body: formData });
-    const json = await response.json().catch(() => ({}));
-    setUploading(false);
-    if (!json.ok) {
-      setPreviewUrl(null);
-      URL.revokeObjectURL(nextPreview);
-      showToast(json.error?.message || "تعذر رفع الملف", "error");
-      return;
-    }
-    setMedia({ id: json.data.asset._id, url: json.data.asset.url, type: json.data.asset.type, mimeType: json.data.asset.mimeType });
-    showToast("تم رفع الملف", "success");
-  }
-
-  function removeMedia() {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
-    setMedia(null);
-  }
+  const [media, setMedia] = useState<Array<{ id: string; url: string; type?: string; mimeType?: string }>>([]);
 
   return (
     <form
       action={async (formData) => {
         const json = await api.submit("/api/posts", {
-          title: formData.get("title"),
+          title: formData.get("title") || null,
           content: formData.get("content"),
-          tags: String(formData.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean),
-          mediaIds: media ? [media.id] : []
+          tags: splitComma(formData.get("tags")),
+          mediaIds: media.map((item) => item.id).filter(Boolean)
         });
         if (json?.ok) {
-          removeMedia();
+          setMedia([]);
           showToast("تم نشر المنشور", "success");
         }
       }}
@@ -94,30 +65,33 @@ export function PostCreateForm() {
     >
       <h2 className="text-xl font-bold">منشور جديد</h2>
       <input name="title" className="w-full rounded border-line" placeholder="عنوان اختياري" />
-      <textarea name="content" className="w-full rounded border-line" rows={5} placeholder="نص المنشور" required />
+      <textarea name="content" className="w-full rounded border-line" rows={5} placeholder="اكتب منشورًا..." required />
       <input name="tags" className="w-full rounded border-line" placeholder="وسوم مفصولة بفواصل" />
-      <div className="rounded border border-dashed border-line bg-paper/40 p-3">
-        {media && previewUrl ? (
-          <div className="space-y-3">
-            {media.type === "video" ? (
-              <video src={previewUrl} className="max-h-80 w-full rounded bg-black object-contain" controls />
-            ) : (
-              <img src={previewUrl} alt="معاينة المرفق" className="max-h-80 w-full rounded object-contain" />
-            )}
-            <button type="button" onClick={removeMedia} className="inline-flex items-center gap-2 rounded border border-line bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-50">
-              <Trash2 className="h-4 w-4" />
-              إزالة المرفق
-            </button>
-          </div>
-        ) : (
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded bg-white px-4 py-6 text-center text-sm text-ink/65 hover:border-civic hover:text-civic">
-            <ImagePlus className="h-6 w-6" />
-            <span>{uploading ? "جار رفع الملف..." : "إضافة صورة أو فيديو"}</span>
-            <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" className="sr-only" onChange={(event) => event.target.files?.[0] && uploadFile(event.target.files[0])} disabled={uploading} />
-          </label>
-        )}
-      </div>
-      <LoadingButton loading={api.loading || uploading} className="bg-civic px-4 py-2 text-white hover:bg-civic/90">نشر</LoadingButton>
+      <MediaUploadField
+        label="مرفقات المنشور"
+        imagesOnly={false}
+        helper="يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF، أو فيديو MP4/WEBM"
+        fallbackText="+"
+        onUploaded={(asset) => setMedia((current) => current.length >= 6 ? current : [...current, { id: asset._id, url: asset.url, type: asset.type, mimeType: asset.mimeType }])}
+      />
+      {media.length ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {media.map((item) => (
+            <div key={item.id || item.url} className="rounded border border-line p-2">
+              {item.type === "video" || item.mimeType?.startsWith("video/") ? (
+                <video src={item.url} className="h-32 w-full rounded bg-black object-contain" controls />
+              ) : (
+                <SafeImage src={item.url} alt="معاينة المرفق" className="h-32 w-full rounded object-contain" fallback={<div className="grid h-32 place-items-center text-sm text-ink/60">تعذر عرض الصورة</div>} localPrefixes={["/uploads/", "/images/", "/related/"]} />
+              )}
+              <button type="button" onClick={() => setMedia((current) => current.filter((mediaItem) => mediaItem.id !== item.id))} className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-red-700">
+                <Trash2 className="h-4 w-4" />
+                حذف
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <LoadingButton loading={api.loading} className="bg-civic px-4 py-2 text-white hover:bg-civic/90">نشر</LoadingButton>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
@@ -130,11 +104,8 @@ export function PollCreateForm() {
       action={(formData) =>
         api.submit("/api/polls", {
           question: formData.get("question"),
-          description: formData.get("description"),
-          options: String(formData.get("options") || "")
-            .split("\n")
-            .map((option) => option.trim())
-            .filter(Boolean),
+          description: formData.get("description") || null,
+          options: splitLines(formData.get("options")),
           resultsVisibility: formData.get("resultsVisibility") || "always"
         })
       }
@@ -145,7 +116,7 @@ export function PollCreateForm() {
       <textarea name="description" className="w-full rounded border-line" rows={2} placeholder="وصف اختياري" />
       <textarea name="options" className="w-full rounded border-line" rows={5} placeholder={"كل خيار في سطر\nمثال: أوافق\nلا أوافق"} required />
       <select name="resultsVisibility" className="rounded border-line">
-        <option value="always">النتائج دائما</option>
+        <option value="always">النتائج دائمًا</option>
         <option value="after_vote">بعد التصويت</option>
         <option value="after_close">بعد الإغلاق</option>
       </select>
@@ -157,8 +128,9 @@ export function PollCreateForm() {
 
 export function PartyProfileForm({ party }: { party: any }) {
   const api = useApiMessage();
-  const [logoPreview, setLogoPreview] = useState(party.logoUrl || "");
-  const logoFallback = <div className="grid h-16 w-16 place-items-center rounded bg-civic/10 text-xl font-bold text-civic">{party.name?.slice(0, 1) || "ح"}</div>;
+  const [logoUrl, setLogoUrl] = useState(party.logoUrl || "");
+  const [coverUrl, setCoverUrl] = useState(party.coverUrl || "");
+
   return (
     <form
       action={(formData) =>
@@ -168,16 +140,13 @@ export function PartyProfileForm({ party }: { party: any }) {
             shortDescription: formData.get("shortDescription"),
             description: formData.get("description"),
             vision: formData.get("vision"),
-            goals: String(formData.get("goals") || "")
-              .split("\n")
-              .map((goal) => goal.trim())
-              .filter(Boolean),
+            goals: splitLines(formData.get("goals")),
             contact: {
-              phones: String(formData.get("phones") || "").split(",").map(p => p.trim()).filter(Boolean),
+              phones: splitComma(formData.get("phones")),
               email: formData.get("email") || null,
               website: formData.get("website") || null,
               headquarters: formData.get("headquarters") || null,
-              branches: String(formData.get("branches") || "").split("\n").map(b => b.trim()).filter(Boolean)
+              branches: splitLines(formData.get("branches"))
             },
             socialLinks: {
               website: formData.get("website") || null,
@@ -186,11 +155,8 @@ export function PartyProfileForm({ party }: { party: any }) {
               instagram: formData.get("instagram") || null,
               youtube: formData.get("youtube") || null
             },
-            latestAchievements: String(formData.get("latestAchievements") || "").split("\n").map(line => {
-              const [title, date] = line.split(" - ");
-              return { title: title?.trim(), date: date ? new Date(date.trim()) : null };
-            }).filter(a => a.title),
-            logoUrl: formData.get("logoUrl") || null
+            logoUrl: formData.get("logoUrl") || logoUrl || null,
+            coverUrl: formData.get("coverUrl") || coverUrl || null
           },
           "PATCH"
         )
@@ -198,72 +164,27 @@ export function PartyProfileForm({ party }: { party: any }) {
       className="card space-y-4 p-5"
     >
       <h2 className="text-xl font-bold">تعديل ملف الحزب</h2>
-      <label className="block">
-        <span>الوصف المختصر</span>
-        <textarea name="shortDescription" defaultValue={party.shortDescription} className="mt-1 w-full rounded border-line" rows={3} required />
-      </label>
-      <label className="block">
-        <span>الوصف الكامل</span>
-        <textarea name="description" defaultValue={party.description} className="mt-1 w-full rounded border-line" rows={5} required />
-      </label>
-      <label className="block">
-        <span>الرؤية</span>
-        <textarea name="vision" defaultValue={party.vision} className="mt-1 w-full rounded border-line" rows={3} required />
-      </label>
-      <label className="block">
-        <span>الأهداف</span>
-        <textarea name="goals" defaultValue={(party.goals || []).join("\n")} className="mt-1 w-full rounded border-line" rows={4} />
-      </label>
+      <MediaUploadField label="شعار الحزب" value={logoUrl} fallbackText={party.name?.slice(0, 1) || "ح"} onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
+      <input name="logoUrl" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للشعار" />
+      <MediaUploadField label="غلاف الحزب" value={coverUrl} fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
+      <input name="coverUrl" type="url" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للغلاف" />
+      <label className="block"><span>الوصف المختصر</span><textarea name="shortDescription" defaultValue={party.shortDescription} className="mt-1 w-full rounded border-line" rows={3} required /></label>
+      <label className="block"><span>الوصف الكامل</span><textarea name="description" defaultValue={party.description} className="mt-1 w-full rounded border-line" rows={5} required /></label>
+      <label className="block"><span>الرؤية</span><textarea name="vision" defaultValue={party.vision} className="mt-1 w-full rounded border-line" rows={3} required /></label>
+      <label className="block"><span>الأهداف</span><textarea name="goals" defaultValue={(party.goals || []).join("\n")} className="mt-1 w-full rounded border-line" rows={4} /></label>
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="block">
-          <span>الهواتف</span>
-          <input name="phones" defaultValue={(party.contact?.phones || []).join(", ")} className="mt-1 w-full rounded border-line" />
-        </label>
-        <label className="block">
-          <span>البريد الإلكتروني</span>
-          <input name="email" type="email" defaultValue={party.contact?.email} className="mt-1 w-full rounded border-line" />
-        </label>
+        <label className="block"><span>الهواتف</span><input name="phones" defaultValue={(party.contact?.phones || []).join(", ")} className="mt-1 w-full rounded border-line" /></label>
+        <label className="block"><span>البريد الإلكتروني</span><input name="email" type="email" defaultValue={party.contact?.email} className="mt-1 w-full rounded border-line" /></label>
       </div>
-      <label className="block">
-        <span>الموقع الإلكتروني</span>
-        <input name="website" type="url" defaultValue={party.contact?.website} className="mt-1 w-full rounded border-line" />
-      </label>
+      <input name="website" type="url" defaultValue={party.contact?.website} className="w-full rounded border-line" placeholder="الموقع الإلكتروني" />
       <div className="grid gap-4 md:grid-cols-3">
-        <label className="block">
-          <span>فيسبوك</span>
-          <input name="facebook" defaultValue={party.socialLinks?.facebook} className="mt-1 w-full rounded border-line" />
-        </label>
-        <label className="block">
-          <span>تويتر</span>
-          <input name="x" defaultValue={party.socialLinks?.x} className="mt-1 w-full rounded border-line" />
-        </label>
-        <label className="block">
-          <span>إنستغرام</span>
-          <input name="instagram" defaultValue={party.socialLinks?.instagram} className="mt-1 w-full rounded border-line" />
-        </label>
+        <input name="facebook" defaultValue={party.socialLinks?.facebook} className="rounded border-line" placeholder="فيسبوك" />
+        <input name="x" defaultValue={party.socialLinks?.x} className="rounded border-line" placeholder="X" />
+        <input name="instagram" defaultValue={party.socialLinks?.instagram} className="rounded border-line" placeholder="إنستغرام" />
       </div>
-      <label className="block">
-        <span>المقر الرئيسي</span>
-        <input name="headquarters" defaultValue={party.contact?.headquarters} className="mt-1 w-full rounded border-line" />
-      </label>
-      <label className="block">
-        <span>الفروع</span>
-        <textarea name="branches" defaultValue={(party.contact?.branches || []).join("\n")} className="mt-1 w-full rounded border-line" rows={3} />
-      </label>
-      <label className="block">
-        <span>الإنجازات الأخيرة</span>
-        <textarea name="latestAchievements" defaultValue={(party.latestAchievements || []).map((a: {title: string; date: string}) => `${a.title} - ${a.date}`).join("\n")} className="mt-1 w-full rounded border-line" rows={4} />
-      </label>
-      <label className="block">
-        <span>رابط شعار الحزب</span>
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <SafeImage src={logoPreview} alt={party.name || "شعار الحزب"} className="h-16 w-16 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
-          <div className="flex-1">
-            <input name="logoUrl" type="url" value={logoPreview} onChange={(event) => setLogoPreview(event.target.value)} className="w-full rounded border-line" placeholder="https://parties.iec.jo/storage/example.png" />
-            <p className="mt-1 text-sm text-ink/60">ضع رابط صورة الشعار من مصدر موثوق. صورة الغلاف مؤجلة حاليًا.</p>
-          </div>
-        </div>
-      </label>
+      <input name="youtube" defaultValue={party.socialLinks?.youtube} className="w-full rounded border-line" placeholder="يوتيوب" />
+      <input name="headquarters" defaultValue={party.contact?.headquarters} className="w-full rounded border-line" placeholder="المقر الرئيسي" />
+      <textarea name="branches" defaultValue={(party.contact?.branches || []).join("\n")} className="w-full rounded border-line" rows={3} placeholder="الفروع، كل فرع في سطر" />
       <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ التغييرات</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
@@ -272,25 +193,16 @@ export function PartyProfileForm({ party }: { party: any }) {
 
 export function IecProfileForm({ authority }: { authority: any }) {
   const api = useApiMessage();
-  const [logoPreview, setLogoPreview] = useState(authority.logoUrl || "");
-  const logoFallback = <div className="grid h-16 w-16 place-items-center rounded bg-civic/10 text-xl font-bold text-civic">هـ</div>;
+  const [logoUrl, setLogoUrl] = useState(authority.logoUrl || "");
+  const [coverUrl, setCoverUrl] = useState(authority.coverUrl || "");
 
   return (
-    <form
-      action={(formData) => api.submit("/api/iec/profile", { logoUrl: formData.get("logoUrl") || null }, "PATCH")}
-      className="card space-y-4 p-5"
-    >
+    <form action={(formData) => api.submit("/api/iec/profile", { logoUrl: formData.get("logoUrl") || logoUrl || null, coverUrl: formData.get("coverUrl") || coverUrl || null }, "PATCH")} className="card space-y-4 p-5">
       <h2 className="text-xl font-bold">ملف الهيئة</h2>
-      <label className="block">
-        <span>رابط شعار الهيئة</span>
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <SafeImage src={logoPreview} alt={authority.name || "شعار الهيئة"} className="h-16 w-16 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
-          <div className="flex-1">
-            <input name="logoUrl" type="url" value={logoPreview} onChange={(event) => setLogoPreview(event.target.value)} className="w-full rounded border-line" placeholder="https://..." />
-            <p className="mt-1 text-sm text-ink/60">ضع رابط شعار الهيئة من مصدر موثوق. صورة الغلاف مؤجلة حاليًا.</p>
-          </div>
-        </div>
-      </label>
+      <MediaUploadField label="شعار الهيئة" value={logoUrl} fallbackText="هـ" onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
+      <input name="logoUrl" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للشعار" />
+      <MediaUploadField label="غلاف الهيئة" value={coverUrl} fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
+      <input name="coverUrl" type="url" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للغلاف" />
       <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
@@ -299,14 +211,14 @@ export function IecProfileForm({ authority }: { authority: any }) {
 
 export function AdminPartyLogoForm({ party }: { party: any }) {
   const api = useApiMessage();
-  const [logoPreview, setLogoPreview] = useState(party.logoUrl || "");
+  const [logoUrl, setLogoUrl] = useState(party.logoUrl || "");
   const logoFallback = <div className="grid h-10 w-10 place-items-center rounded bg-civic/10 text-sm font-bold text-civic">{party.name?.slice(0, 1) || "ح"}</div>;
 
   return (
     <form action={(formData) => api.submit(`/api/admin/parties/${party._id}`, { logoUrl: formData.get("logoUrl") || null }, "PATCH")} className="mt-3 grid gap-2">
       <div className="flex items-center gap-2">
-        <SafeImage src={logoPreview} alt={party.name || "شعار الحزب"} className="h-10 w-10 shrink-0 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
-        <input name="logoUrl" type="url" value={logoPreview} onChange={(event) => setLogoPreview(event.target.value)} className="min-w-0 flex-1 rounded border-line text-sm" placeholder="https://parties.iec.jo/storage/example.png" />
+        <SafeImage src={logoUrl} alt={party.name || "شعار الحزب"} className="h-10 w-10 shrink-0 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
+        <input name="logoUrl" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} className="min-w-0 flex-1 rounded border-line text-sm" placeholder="https://example.com/logo.png" />
         <button className="rounded border border-line px-3 py-2 text-sm hover:border-civic">حفظ</button>
       </div>
       {api.message ? <p className="text-xs text-ink/60">{api.message}</p> : null}
@@ -325,10 +237,7 @@ export function PartyCreateForm() {
           shortDescription: formData.get("shortDescription"),
           description: formData.get("description"),
           vision: formData.get("vision"),
-          goals: String(formData.get("goals") || "")
-            .split("\n")
-            .map((goal) => goal.trim())
-            .filter(Boolean),
+          goals: splitLines(formData.get("goals")),
           socialLinks: {},
           status: "active",
           isVerified: true,
@@ -355,6 +264,7 @@ export function PartyCreateForm() {
 
 export function LawCreateForm() {
   const api = useApiMessage();
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
   return (
     <form
       action={(formData) =>
@@ -369,7 +279,9 @@ export function LawCreateForm() {
           simplifiedExplanation: formData.get("simplifiedExplanation"),
           practicalExample: formData.get("practicalExample") || null,
           youtubeVideoId: formData.get("youtubeVideoId") || null,
-          tags: String(formData.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean),
+          youtubeUrl: formData.get("youtubeVideoId") || null,
+          thumbnailUrl: formData.get("thumbnailUrl") || thumbnailUrl || "",
+          tags: splitComma(formData.get("tags")),
           status: "published"
         })
       }
@@ -382,9 +294,11 @@ export function LawCreateForm() {
         <input name="category" className="rounded border-line" placeholder="التصنيف" required />
         <input name="sourceName" className="rounded border-line" placeholder="المصدر" required />
         <input name="sourceType" className="rounded border-line" placeholder="نوع المصدر" required />
-        <input name="youtubeVideoId" className="rounded border-line" placeholder="YouTube ID اختياري" />
+        <input name="youtubeVideoId" className="rounded border-line" placeholder="رابط YouTube أو معرف الفيديو" />
       </div>
       <input name="officialReferenceUrl" className="w-full rounded border-line" placeholder="رابط رسمي اختياري" />
+      <MediaUploadField label="رفع صورة القانون من الجهاز" value={thumbnailUrl} onUploaded={(asset) => setThumbnailUrl(asset.url)} onClear={() => setThumbnailUrl("")} />
+      <input name="thumbnailUrl" className="w-full rounded border-line" value={thumbnailUrl} onChange={(event) => setThumbnailUrl(event.target.value)} placeholder="أو أدخل رابط صورة خارجي" />
       <textarea name="shortDescription" className="w-full rounded border-line" rows={2} placeholder="وصف قصير" required />
       <textarea name="simplifiedExplanation" className="w-full rounded border-line" rows={5} placeholder="شرح مبسط" required />
       <textarea name="practicalExample" className="w-full rounded border-line" rows={2} placeholder="مثال عملي" />

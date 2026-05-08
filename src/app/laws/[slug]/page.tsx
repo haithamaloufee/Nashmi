@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import LawManagementControls from "@/components/laws/LawManagementControls";
 import Alert from "@/components/ui/Alert";
+import SafeImage from "@/components/ui/SafeImage";
 import { getCurrentUser } from "@/lib/auth";
 import { canManageLaws } from "@/lib/permissions";
 import { getLawBySlug } from "@/lib/serverData";
@@ -27,6 +28,11 @@ export default async function LawDetailsPage({ params }: { params: Promise<{ slu
           {canManage ? <LawManagementControls mode="edit" law={law} /> : null}
         </div>
         <p className="mt-3 leading-8 text-ink/70 dark:text-slate-200">{law.shortDescription}</p>
+        {law.thumbnailUrl ? (
+          <div className="mt-5 overflow-hidden rounded border border-line bg-slate-100">
+            <SafeImage src={law.thumbnailUrl} alt={law.title} className="max-h-[420px] w-full object-cover" fallback={<div className="grid aspect-video place-items-center text-sm text-ink/60">تعذر عرض صورة القانون</div>} localPrefixes={["/uploads/", "/images/", "/related/"]} />
+          </div>
+        ) : null}
         <div className="mt-5"><Alert>شرح القوانين للتوعية العامة وليس استشارة قانونية رسمية.</Alert></div>
         <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
@@ -49,14 +55,19 @@ export default async function LawDetailsPage({ params }: { params: Promise<{ slu
           </div>
           <aside className="space-y-4">
             {embedUrl ? (
-              <iframe
-                className="aspect-video w-full rounded border border-line"
-                src={embedUrl}
-                title={law.title}
-                sandbox="allow-scripts allow-same-origin allow-presentation"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              <div className="space-y-2">
+                <iframe
+                  className="aspect-video w-full rounded border border-line"
+                  src={embedUrl}
+                  title={law.title}
+                  sandbox="allow-scripts allow-same-origin allow-presentation"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+                <a href={law.youtubeUrl || `https://www.youtube.com/watch?v=${law.youtubeVideoId}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-civic">
+                  فتح الفيديو في تبويب جديد
+                </a>
+              </div>
             ) : null}
             <div className="rounded border border-line p-4 text-sm leading-7 text-ink/70 dark:text-slate-300">
               <p>المصدر: {law.sourceName}</p>

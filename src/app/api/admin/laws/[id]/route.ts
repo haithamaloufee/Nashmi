@@ -5,6 +5,7 @@ import { lawSchema } from "@/lib/validators";
 import { createSearchText } from "@/lib/arabicSearch";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
+import { normalizeYoutubeInput, youtubeThumbnailUrl } from "@/lib/youtube";
 import Law from "@/models/Law";
 import LawVersion from "@/models/LawVersion";
 
@@ -37,8 +38,13 @@ export async function PATCH(request: Request, context: Context) {
     const update: Record<string, unknown> = { ...input };
     delete update.changeReason;
     if (input.officialReferenceUrl !== undefined) update.officialReferenceUrl = input.officialReferenceUrl || null;
+    const youtube = normalizeYoutubeInput(input.youtubeUrl || input.youtubeVideoId || null);
+    if (input.youtubeVideoId !== undefined || input.youtubeUrl !== undefined) {
+      update.youtubeVideoId = youtube?.id || input.youtubeVideoId || null;
+      update.youtubeUrl = youtube?.url || input.youtubeUrl || null;
+      if (input.thumbnailUrl === undefined && youtube?.id) update.thumbnailUrl = youtubeThumbnailUrl(youtube.id);
+    }
     if (input.thumbnailUrl !== undefined) update.thumbnailUrl = input.thumbnailUrl || null;
-    if (input.youtubeVideoId !== undefined) update.youtubeVideoId = input.youtubeVideoId || null;
     update.updatedByUserId = user.id;
     update.reviewedByUserId = user.id;
     update.lastVerifiedAt = new Date();

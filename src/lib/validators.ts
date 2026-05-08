@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { roles } from "@/lib/permissions";
-import { isValidYoutubeVideoId } from "@/lib/youtube";
+import { normalizeYoutubeInput } from "@/lib/youtube";
 import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 
 export const objectIdSchema = z.string().refine((value) => isValidObjectId(value), "معرف غير صالح");
@@ -10,12 +10,31 @@ export const passwordSchema = z.string().min(8, "كلمة المرور يجب أ
 export const textSchema = z.string().trim().min(1).max(5000);
 export const shortTextSchema = z.string().trim().min(1).max(200);
 export const optionalUrlSchema = z.string().url("الرابط غير صالح").optional().nullable().or(z.literal(""));
+export const optionalSafeUrlSchema = z
+  .union([z.string().max(2048), z.null()])
+  .optional()
+  .transform((value, context) => {
+    if (value === undefined) return undefined;
+    const raw = (value || "").trim();
+    if (!raw) return null;
+    try {
+      const url = new URL(raw);
+      if (!["http:", "https:"].includes(url.protocol.toLowerCase()) || url.username || url.password) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "الرابط يجب أن يكون http أو https فقط" });
+        return z.NEVER;
+      }
+      return url.toString();
+    } catch {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "الرابط غير صالح" });
+      return z.NEVER;
+    }
+  });
 export const optionalSafeLogoUrlSchema = z
   .union([z.string().max(2048), z.null()])
   .optional()
   .transform((value, context) => {
     if (value === undefined) return undefined;
-    const normalized = normalizeSafeImageUrl(value, { localPrefixes: ["/images/"] });
+    const normalized = normalizeSafeImageUrl(value, { localPrefixes: ["/images/", "/uploads/", "/related/"] });
     if (value && !normalized) {
       context.addIssue({ code: z.ZodIssueCode.custom, message: "رابط الصورة غير آمن أو غير مدعوم" });
       return z.NEVER;
@@ -133,6 +152,7 @@ export const partySchema = z.object({
   latestAchievements: z.array(partyAchievementSchema).default([]),
   dataQuality: partyDataQualitySchema,
   logoUrl: optionalSafeLogoUrlSchema,
+  coverUrl: optionalSafeLogoUrlSchema,
   contactEmail: z.string().email().nullable().optional(),
   status: z.enum(["active", "disabled", "draft"]).default("active"),
   isVerified: z.boolean().default(true),
@@ -143,7 +163,8 @@ export const partySchema = z.object({
 export const partyProfileUpdateSchema = partySchema.partial();
 
 export const authorityLogoUpdateSchema = z.object({
-  logoUrl: optionalSafeLogoUrlSchema
+  logoUrl: optionalSafeLogoUrlSchema,
+  coverUrl: optionalSafeLogoUrlSchema
 });
 
 export const postCreateSchema = z.object({
@@ -190,7 +211,7 @@ export const lawSchema = z.object({
   sourceName: shortTextSchema,
   sourceType: z.string().trim().min(2).max(120),
   articleNumber: z.string().trim().max(80).nullable().optional(),
-  officialReferenceUrl: optionalUrlSchema,
+  officialReferenceUrl: optionalSafeUrlSchema,
   originalText: z.string().trim().max(10000).nullable().optional(),
   shortDescription: z.string().trim().min(5).max(500),
   simplifiedExplanation: z.string().trim().min(10).max(5000),
@@ -200,8 +221,18 @@ export const lawSchema = z.object({
     .trim()
     .nullable()
     .optional()
-    .refine((value) => isValidYoutubeVideoId(value || null), "معرف يوتيوب غير صالح"),
-  thumbnailUrl: optionalUrlSchema,
+    .transform((value, context) => {
+      const raw = (value || "").trim();
+      if (!raw) return null;
+      const normalized = normalizeYoutubeInput(raw);
+      if (!normalized) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "رابط أو معرف YouTube غير صالح" });
+        return z.NEVER;
+      }
+      return normalized.id;
+    }),
+  youtubeUrl: optionalSafeUrlSchema,
+  thumbnailUrl: optionalSafeLogoUrlSchema,
   tags: z.array(z.string().trim().min(1).max(60)).max(12).default([]),
   status: z.enum(["published", "draft", "hidden"]).default("published"),
   changeReason: z.string().trim().max(500).optional()

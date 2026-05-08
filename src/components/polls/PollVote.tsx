@@ -63,36 +63,33 @@ export default function PollVote({ poll }: { poll: Poll }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="mt-3 space-y-3">
       {current.description ? <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">{current.description}</p> : null}
       <div className="space-y-2">
         {current.options.map((option) => {
           const percentage = current.totalVotes > 0 ? Math.round((option.votesCount / current.totalVotes) * 100) : 0;
           return (
             <label key={option._id} className="block rounded border border-slate-200 bg-white p-3 text-slate-900 transition hover:border-civic/45 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-100 dark:hover:border-emerald-300/60">
-              <div className="flex items-center gap-2">
-                <input type="radio" name={`poll-${current._id}`} value={option._id} checked={selected === option._id} onChange={() => setSelected(option._id)} disabled={voted || loading} className="ml-1 text-civic focus:ring-civic" />
-                <span className="font-semibold">{option.text}</span>
+              <div className="flex items-start gap-2">
+                <input type="radio" name={`poll-${current._id}`} value={option._id} checked={selected === option._id} onChange={() => setSelected(option._id)} disabled={voted || loading} className="mt-1 text-civic focus:ring-civic" />
+                <span className="min-w-0 flex-1 break-words font-semibold">{option.text}</span>
+                <span className="shrink-0 text-xs font-bold text-civic">{percentage}%</span>
               </div>
-              {current.totalVotes > 0 ? (
-                <>
-                  <div className="mt-2 h-2 rounded bg-slate-200 dark:bg-slate-800">
-                    <div className="h-2 rounded bg-civic transition-all duration-300" style={{ width: `${percentage}%` }} />
-                  </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{option.votesCount} صوت، {percentage}%</span>
-                </>
-              ) : (
-                <span className="mt-2 block text-xs text-slate-500 dark:text-slate-400">لا توجد أصوات بعد</span>
-              )}
+              <div className="mt-2 h-2.5 overflow-hidden rounded bg-slate-200 dark:bg-slate-800" aria-hidden="true">
+                <div className="h-full rounded bg-civic transition-all duration-300 dark:bg-emerald-400" style={{ width: `${percentage}%` }} />
+              </div>
+              <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                {current.totalVotes > 0 ? `${option.votesCount} صوت` : "لا توجد أصوات بعد"}
+              </span>
             </label>
           );
         })}
       </div>
-      <button onClick={submit} disabled={!selected || loading || voted} className="rounded bg-civic px-4 py-2 text-sm font-semibold text-white hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-[0.98] disabled:opacity-50 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]" type="button">
-        <Vote className="ml-2 inline h-4 w-4" />
+      <button onClick={submit} disabled={!selected || loading || voted} className="inline-flex items-center justify-center gap-2 rounded bg-civic px-4 py-2 text-sm font-semibold text-white hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-[0.98] disabled:opacity-50 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]" type="button">
+        <Vote className="h-4 w-4" />
         {voted ? "تم التصويت" : loading ? "جار التصويت..." : "تصويت"}
       </button>
-      <p className="text-xs text-slate-500 dark:text-slate-400">نتائج التصويتات تعبر عن مستخدمي المنصة وليست استطلاعًا علميًا.</p>
+      <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">نتائج التصويتات تعبر عن مستخدمي المنصة وليست استطلاعًا علميًا.</p>
       <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );

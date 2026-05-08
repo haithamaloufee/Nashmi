@@ -8,6 +8,7 @@ import Party from "@/models/Party";
 import PartyFollower from "@/models/PartyFollower";
 import Post from "@/models/Post";
 import Poll from "@/models/Poll";
+import AuthorityProfile from "@/models/AuthorityProfile";
 import "@/models/MediaAsset";
 import "@/models/User";
 
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
       basePollQuery.$or = searchClause;
     }
 
-    const [posts, polls] = await Promise.all([
+    const [posts, polls, authority] = await Promise.all([
       filter === "polls"
         ? []
         : Post.find(basePostQuery)
@@ -65,12 +66,24 @@ export async function GET(request: Request) {
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .sort({ publishedAt: -1 })
             .limit(limit)
-            .lean()
+            .lean(),
+      AuthorityProfile.findOne({ slug: "independent-election-commission", status: "active" })
+        .populate({ path: "logoMediaId", select: "url status" })
+        .select("name logoUrl logoMediaId")
+        .lean()
     ]);
+    const authorityAuthor = {
+      name: authority?.name || "الهيئة المستقلة للانتخاب",
+      logoUrl:
+        (typeof authority?.logoMediaId === "object" && authority.logoMediaId && "url" in authority.logoMediaId ? String(authority.logoMediaId.url) : null) ||
+        authority?.logoUrl ||
+        "/related/iec-logo.png"
+    };
+    const withAuthority = <T extends Record<string, any>>(items: T[]) => items.map((item) => (item.authorType === "iec" ? { ...item, authorityAuthor } : item));
 
     const updates = [
-      ...posts.map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
-      ...polls.map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
+      ...withAuthority(posts).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
+      ...withAuthority(polls).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
     ]
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
       .slice(0, limit);

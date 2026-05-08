@@ -33,10 +33,12 @@ export default async function IecPage() {
   const socialLinks = authority.socialLinks || {};
   const officialLinks = authority.officialLinks || [];
   const mediaUrl = typeof authority.logoMediaId === "object" && authority.logoMediaId ? authority.logoMediaId.url : null;
+  const coverMediaUrl = typeof authority.coverMediaId === "object" && authority.coverMediaId ? authority.coverMediaId.url : null;
   const logoUrl =
     normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/", "/related/"] }) ||
     normalizeSafeImageUrl(authority.logoUrl, { localPrefixes: ["/images/", "/related/"] }) ||
     "/related/iec-logo.png";
+  const coverUrl = normalizeSafeImageUrl(coverMediaUrl, { localPrefixes: ["/images/", "/uploads/", "/related/"] }) || normalizeSafeImageUrl(authority.coverUrl, { localPrefixes: ["/images/", "/uploads/", "/related/"] });
   const logoFallback = <img src="/related/iec-logo.png" alt="شعار الهيئة المستقلة للانتخاب" className="h-20 w-20 shrink-0 rounded bg-white object-contain p-1 ring-1 ring-line" loading="lazy" decoding="async" />;
 
   const linkItems = [
@@ -48,6 +50,9 @@ export default async function IecPage() {
   return (
     <main className="container-page py-8">
       <section className="mb-8 rounded border border-line bg-white p-6 shadow-sm">
+        {coverUrl ? (
+          <SafeImage src={coverUrl} alt="غلاف الهيئة المستقلة للانتخاب" className="-mx-6 -mt-6 mb-6 h-44 w-[calc(100%+3rem)] rounded-t object-cover" fallback={<div className="-mx-6 -mt-6 mb-6 h-44 w-[calc(100%+3rem)] rounded-t bg-civic/10" />} localPrefixes={["/images/", "/uploads/", "/related/"]} />
+        ) : null}
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <SafeImage src={logoUrl} alt="شعار الهيئة المستقلة للانتخاب" className="h-20 w-20 shrink-0 rounded bg-white object-contain p-1 ring-1 ring-line" fallback={logoFallback} localPrefixes={["/images/", "/uploads/", "/related/"]} />

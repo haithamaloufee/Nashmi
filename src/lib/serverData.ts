@@ -26,6 +26,33 @@ function compactSearch(value: string | null | undefined) {
   return String(value || "").trim().slice(0, 120);
 }
 
+type LeanItem = Record<string, unknown>;
+
+function authorityLogo(authority: LeanItem | null | undefined) {
+  const logoMedia = authority?.logoMediaId;
+  if (logoMedia && typeof logoMedia === "object" && "url" in logoMedia && typeof logoMedia.url === "string") return logoMedia.url;
+  return typeof authority?.logoUrl === "string" ? authority.logoUrl : "/related/iec-logo.png";
+}
+
+async function getAuthorityAuthor() {
+  const authority = await AuthorityProfile.findOne({ slug: "independent-election-commission", status: "active" })
+    .populate({ path: "logoMediaId", select: "url status" })
+    .select("name logoUrl logoMediaId")
+    .lean();
+  return {
+    name: authority?.name || "الهيئة المستقلة للانتخاب",
+    logoUrl: authorityLogo(authority as LeanItem | null)
+  };
+}
+
+function attachAuthorityAuthor<T extends LeanItem>(items: T[], authorityAuthor: { name: string; logoUrl: string }) {
+  return items.map((item) => (item.authorType === "iec" ? { ...item, authorityAuthor } : item));
+}
+
+function dateTime(value: unknown) {
+  return new Date(value instanceof Date || typeof value === "string" || typeof value === "number" ? value : 0).getTime();
+}
+
 function logSafeDataError(error: unknown) {
   if (!(error instanceof Error)) {
     console.error({ name: "UnknownError" });
@@ -52,7 +79,7 @@ export async function getHomeData() {
   return safeData(
     { partiesCount: 0, lawsCount: 0, updatesCount: 0, latestPosts: [] as unknown[], latestPolls: [] as unknown[] },
     async () => {
-      const [partiesCount, lawsCount, postsCount, pollsCount, latestPosts, latestPolls] = await Promise.all([
+      const [partiesCount, lawsCount, postsCount, pollsCount, latestPosts, latestPolls, authorityAuthor] = await Promise.all([
         Party.countDocuments({ status: "active" }),
         Law.countDocuments({ status: "published" }),
         Post.countDocuments({ status: "published" }),
@@ -69,9 +96,10 @@ export async function getHomeData() {
           .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
           .sort({ publishedAt: -1 })
           .limit(2)
-          .lean()
+          .lean(),
+        getAuthorityAuthor()
       ]);
-      return { partiesCount, lawsCount, updatesCount: postsCount + pollsCount, latestPosts: serialize(latestPosts), latestPolls: serialize(latestPolls) };
+      return { partiesCount, lawsCount, updatesCount: postsCount + pollsCount, latestPosts: serialize(attachAuthorityAuthor(latestPosts as LeanItem[], authorityAuthor)), latestPolls: serialize(attachAuthorityAuthor(latestPolls as LeanItem[], authorityAuthor)) };
     }
   );
 }
@@ -116,9 +144,12 @@ export async function getPublicParties(search?: string) {
 
 export async function getPartyBySlug(slug: string, viewerUserId?: string) {
   return safeData(null as unknown, async () => {
-    const party = await Party.findOne({ slug, status: "active" }).populate({ path: "logoMediaId", select: "url status" }).lean();
+    const party = await Party.findOne({ slug, status: "active" })
+      .populate({ path: "logoMediaId", select: "url status" })
+      .populate({ path: "coverMediaId", select: "url status" })
+      .lean();
     if (!party) return null;
-    const [posts, polls, follow] = await Promise.all([
+    const [posts, polls, follow, authorityAuthor] = await Promise.all([
       Post.find({ partyId: party._id, status: "published" })
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
@@ -132,15 +163,19 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
         .sort({ publishedAt: -1 })
         .limit(10)
         .lean(),
-      viewerUserId ? PartyFollower.exists({ partyId: party._id, userId: viewerUserId }) : null
+      viewerUserId ? PartyFollower.exists({ partyId: party._id, userId: viewerUserId }) : null,
+      getAuthorityAuthor()
     ]);
-    return serialize({ party, posts, polls, isFollowing: Boolean(follow) });
+    return serialize({ party, posts: attachAuthorityAuthor(posts as LeanItem[], authorityAuthor), polls: attachAuthorityAuthor(polls as LeanItem[], authorityAuthor), isFollowing: Boolean(follow) });
   });
 }
 
 export async function getAuthorityProfileBySlug(slug: string) {
   return safeData(null as unknown, async () => {
-    const authority = await AuthorityProfile.findOne({ slug, status: "active" }).populate({ path: "logoMediaId", select: "url status" }).lean();
+    const authority = await AuthorityProfile.findOne({ slug, status: "active" })
+      .populate({ path: "logoMediaId", select: "url status" })
+      .populate({ path: "coverMediaId", select: "url status" })
+      .lean();
     return authority ? serialize(authority) : null;
   });
 }
@@ -149,7 +184,7 @@ export async function getAuthorityProfilePageData(slug: string) {
   return safeData(null as unknown, async () => {
     const authority = await AuthorityProfile.findOne({ slug, status: "active" }).populate({ path: "logoMediaId", select: "url status" }).lean();
     if (!authority) return null;
-    const [posts, polls] = await Promise.all([
+    const [posts, polls, authorityAuthor] = await Promise.all([
       Post.find({ authorType: "iec", status: "published" })
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
@@ -162,9 +197,10 @@ export async function getAuthorityProfilePageData(slug: string) {
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .sort({ publishedAt: -1 })
         .limit(10)
-        .lean()
+        .lean(),
+      getAuthorityAuthor()
     ]);
-    return serialize({ authority, posts, polls });
+    return serialize({ authority, posts: attachAuthorityAuthor(posts as LeanItem[], authorityAuthor), polls: attachAuthorityAuthor(polls as LeanItem[], authorityAuthor) });
   });
 }
 
@@ -181,7 +217,7 @@ export async function getUpdates(search?: string, filter = "all") {
       postQuery.searchNormalized = regex;
       pollQuery.searchNormalized = regex;
     }
-    const [posts, polls] = await Promise.all([
+    const [posts, polls, authorityAuthor] = await Promise.all([
       filter === "polls"
         ? []
         : Post.find(postQuery)
@@ -198,14 +234,15 @@ export async function getUpdates(search?: string, filter = "all") {
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .sort({ publishedAt: -1 })
             .limit(12)
-            .lean()
+            .lean(),
+      getAuthorityAuthor()
     ]);
     return serialize(
       [
-        ...posts.map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
-        ...polls.map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
+        ...attachAuthorityAuthor(posts as LeanItem[], authorityAuthor).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
+        ...attachAuthorityAuthor(polls as LeanItem[], authorityAuthor).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
       ]
-        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+        .sort((a, b) => dateTime(b.publishedAt) - dateTime(a.publishedAt))
         .slice(0, 18)
     );
   });
@@ -430,7 +467,7 @@ export async function getPartyDashboardData(userId: string) {
   return safeData(null as unknown, async () => {
     const party = await Party.findOne({ accountUserId: userId }).lean();
     if (!party) return null;
-    const [posts, polls, comments] = await Promise.all([
+    const [posts, polls, comments, authorityAuthor] = await Promise.all([
       Post.find({ partyId: party._id, status: { $ne: "deleted" } })
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
@@ -439,15 +476,16 @@ export async function getPartyDashboardData(userId: string) {
         .limit(50)
         .lean(),
       Poll.find({ partyId: party._id, status: { $ne: "deleted" } }).sort({ createdAt: -1 }).limit(50).lean(),
-      Comment.countDocuments({ partyId: party._id, status: "published" })
+      Comment.countDocuments({ partyId: party._id, status: "published" }),
+      getAuthorityAuthor()
     ]);
-    return serialize({ party, posts, polls, comments });
+    return serialize({ party, posts: attachAuthorityAuthor(posts as LeanItem[], authorityAuthor), polls: attachAuthorityAuthor(polls as LeanItem[], authorityAuthor), comments });
   });
 }
 
 export async function getIecDashboardData() {
   return safeData({ posts: [] as unknown[], laws: [] as unknown[] }, async () => {
-    const [posts, laws] = await Promise.all([
+    const [posts, laws, authorityAuthor] = await Promise.all([
       Post.find({ authorType: "iec", status: { $ne: "deleted" } })
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
@@ -455,9 +493,10 @@ export async function getIecDashboardData() {
         .sort({ createdAt: -1 })
         .limit(50)
         .lean(),
-      Law.find({}).sort({ updatedAt: -1 }).limit(50).lean()
+      Law.find({}).sort({ updatedAt: -1 }).limit(50).lean(),
+      getAuthorityAuthor()
     ]);
-    return { posts: serialize(posts), laws: serialize(laws) };
+    return { posts: serialize(attachAuthorityAuthor(posts as LeanItem[], authorityAuthor)), laws: serialize(laws) };
   });
 }
 

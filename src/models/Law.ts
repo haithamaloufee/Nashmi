@@ -14,6 +14,7 @@ const LawSchema = new Schema(
     simplifiedExplanation: { type: String, required: true },
     practicalExample: { type: String, default: null },
     youtubeVideoId: { type: String, default: null },
+    youtubeUrl: { type: String, default: null },
     thumbnailUrl: { type: String, default: null },
     tags: [{ type: String }],
     createdByUserId: { type: Schema.Types.ObjectId, ref: "User", required: true },

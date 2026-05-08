@@ -20,7 +20,12 @@ function safeUrl(value: unknown) {
 
 function getPartyLogoSrc(party: any) {
   const mediaUrl = typeof party.logoMediaId === "object" && party.logoMediaId ? party.logoMediaId.url : null;
-  return normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(party.logoUrl, { localPrefixes: ["/images/"] });
+  return normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(party.logoUrl, { localPrefixes: ["/images/", "/uploads/"] });
+}
+
+function getPartyCoverSrc(party: any) {
+  const mediaUrl = typeof party.coverMediaId === "object" && party.coverMediaId ? party.coverMediaId.url : null;
+  return normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(party.coverUrl, { localPrefixes: ["/images/", "/uploads/"] });
 }
 
 function ContactButton({ href, label }: { href: string; label: string }) {
@@ -50,12 +55,17 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
   const committees = Array.isArray(party.committees) ? party.committees : [];
   const achievements = Array.isArray(party.latestAchievements) ? party.latestAchievements : [];
   const logoFallback = <div className="-mt-16 mb-4 grid h-24 w-24 place-items-center rounded border-4 border-white bg-civic text-4xl font-black text-white">{party.name.slice(0, 1)}</div>;
+  const coverUrl = getPartyCoverSrc(party);
 
   return (
     <main className="container-page py-8">
       <ProfileTopScrollReset />
       <section className="card overflow-hidden">
-        <div className="h-44 bg-[linear-gradient(135deg,#126b6f,#e8eee7)]" />
+        {coverUrl ? (
+          <SafeImage src={coverUrl} alt={`غلاف ${party.name}`} className="h-44 w-full object-cover" fallback={<div className="h-44 bg-[linear-gradient(135deg,#126b6f,#e8eee7)]" />} localPrefixes={["/images/", "/uploads/"]} />
+        ) : (
+          <div className="h-44 bg-[linear-gradient(135deg,#126b6f,#e8eee7)]" />
+        )}
         <div className="p-6">
           <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="-mt-16 mb-4 h-24 w-24 rounded border-4 border-white bg-white object-contain shadow-sm" fallback={logoFallback} />
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">

@@ -25,6 +25,11 @@ type PartyRef = {
   isVerified?: boolean;
 };
 
+type AuthorityAuthor = {
+  name?: string;
+  logoUrl?: string | null;
+};
+
 type Media = {
   _id?: string;
   url: string;
@@ -41,6 +46,7 @@ type Post = {
   authorType: string;
   authorUserId?: AuthorUser | string;
   partyId?: PartyRef | string | null;
+  authorityAuthor?: AuthorityAuthor | null;
   mediaIds?: Array<Media | string>;
   likesCount: number;
   dislikesCount: number;
@@ -72,22 +78,27 @@ function authorInfo(post: Post) {
       badge: party.isVerified ? "حزب موثق" : "حزب",
       badgeTooltip: party.isVerified ? "حزب موثق على منصة نشمي اعتمادًا على البيانات الرسمية المتاحة." : "",
       href: party.slug ? `/parties/${party.slug}` : null,
-      type: "party",
       fallback: party.name.slice(0, 1)
     };
   }
   if (post.authorType === "iec") {
     return {
-      name: user?.name || "الهيئة المستقلة للانتخاب",
-      image: user?.avatarUrl || user?.image || null,
-      badge: "جهة رسمية",
-      badgeTooltip: "الهيئة المستقلة للانتخاب جهة رسمية مستقلة وليست حزبًا سياسيًا، ولا تتبع لأي حزب أو جهة حزبية. دورها مرتبط بإدارة العملية الانتخابية والإشراف عليها رسميًا.",
+      name: post.authorityAuthor?.name || user?.name || "الهيئة المستقلة للانتخاب",
+      image: post.authorityAuthor?.logoUrl || user?.avatarUrl || user?.image || "/related/iec-logo.png",
+      badge: "هيئة",
+      badgeTooltip: "الهيئة المستقلة للانتخاب جهة رسمية مستقلة وليست حزبًا سياسيًا.",
       href: "/iec",
-      type: "iec",
       fallback: "هـ"
     };
   }
-  return { name: user?.name || "نشمي", image: user?.avatarUrl || user?.image || null, badge: post.authorType === "admin" ? "إدارة" : "ناشر", badgeTooltip: "", href: null, type: "user", fallback: "ن" };
+  return {
+    name: user?.name || "مستخدم",
+    image: user?.avatarUrl || user?.image || null,
+    badge: post.authorType === "admin" ? "إدارة" : "مستخدم",
+    badgeTooltip: "",
+    href: null,
+    fallback: (user?.name || "م").slice(0, 1)
+  };
 }
 
 function mediaItems(post: Post) {
@@ -107,8 +118,9 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
     <SafeImage
       src={author.image}
       alt={author.name}
-      className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:group-hover:ring-emerald-200/50"
+      className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:bg-slate-900 dark:group-hover:ring-emerald-200/50"
       fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic/10 text-lg font-bold text-civic ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:group-hover:ring-emerald-200/50">{author.fallback}</div>}
+      localPrefixes={["/uploads/", "/images/", "/related/"]}
     />
   );
 
@@ -126,7 +138,7 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               {author.href ? (
-                <Link href={author.href} className="focus-ring min-w-0 cursor-pointer rounded text-ink hover:text-civic hover:underline dark:text-white dark:hover:text-emerald-200" aria-label={`فتح صفحة ${author.name}`}>
+                <Link href={author.href} className="focus-ring min-w-0 cursor-pointer rounded text-ink hover:text-civic hover:underline dark:text-white dark:hover:text-emerald-200">
                   <h3 className="truncate font-bold">{author.name}</h3>
                 </Link>
               ) : (
@@ -181,6 +193,7 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
                 alt={post.title || "وسائط المنشور"}
                 className="max-h-[520px] w-full object-cover"
                 fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">تعذر عرض الصورة</div>}
+                localPrefixes={["/uploads/", "/images/", "/related/"]}
               />
             )
           )}

@@ -6,6 +6,7 @@ import { lawSchema } from "@/lib/validators";
 import { createSearchText } from "@/lib/arabicSearch";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
+import { normalizeYoutubeInput, youtubeThumbnailUrl } from "@/lib/youtube";
 import Law from "@/models/Law";
 
 export async function GET() {
@@ -25,14 +26,17 @@ export async function POST(request: Request) {
     const user = await requireActiveUser(["iec", "admin", "super_admin"]);
     const input = await readJson(request, lawSchema);
     await connectToDatabase();
+    const youtube = normalizeYoutubeInput(input.youtubeUrl || input.youtubeVideoId || null);
+    const thumbnailUrl = input.thumbnailUrl || (youtube?.id ? youtubeThumbnailUrl(youtube.id) : null);
     const law = await Law.create({
       ...input,
       officialReferenceUrl: input.officialReferenceUrl || null,
-      thumbnailUrl: input.thumbnailUrl || null,
+      thumbnailUrl,
       articleNumber: input.articleNumber || null,
       originalText: input.originalText || null,
       practicalExample: input.practicalExample || null,
-      youtubeVideoId: input.youtubeVideoId || null,
+      youtubeVideoId: youtube?.id || input.youtubeVideoId || null,
+      youtubeUrl: youtube?.url || input.youtubeUrl || null,
       createdByUserId: user.id,
       updatedByUserId: null,
       reviewedByUserId: user.id,

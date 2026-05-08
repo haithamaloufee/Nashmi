@@ -60,6 +60,9 @@ export function handleApiError(error: unknown) {
   if (error instanceof Error && error.message === "FORBIDDEN") return fail("FORBIDDEN", undefined, 403);
   if (error instanceof Error && error.message === "NOT_FOUND") return fail("NOT_FOUND", undefined, 404);
   if (error instanceof Error && error.message === "RATE_LIMITED") return fail("RATE_LIMITED", undefined, 429);
+  if (error instanceof Error && error.message === "BLOB_STORAGE_NOT_CONFIGURED") {
+    return fail("SERVER_ERROR", "تخزين الصور الدائم غير مفعّل. أضف BLOB_READ_WRITE_TOKEN في بيئة النشر.", 500);
+  }
   if (error instanceof MissingEnvError) return fail("SERVER_ERROR", `Server configuration is missing: ${error.variableName}`, 500);
   if (error instanceof InvalidEnvError) return fail("SERVER_ERROR", `Server configuration is invalid: ${error.variableName}`, 500);
 
