@@ -1,6 +1,6 @@
 "use client";
 
-export default function TypingIndicator({ label = "نشمي الذكي يكتب..." }: { label?: string }) {
+export default function TypingIndicator({ label = "نشمي الذكي يفكر..." }: { label?: string }) {
   return (
     <div className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-civic shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200">
       <span>{label}</span>
