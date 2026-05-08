@@ -79,6 +79,27 @@ export function getMaxUploadSizeBytes() {
   return maxMb * 1024 * 1024;
 }
 
+function getUploadSizeBytes(name: string, defaultMb: number, maxAllowedMb: number) {
+  const raw = getOptionalEnv(name) || getOptionalEnv("MAX_UPLOAD_SIZE_MB") || String(defaultMb);
+  const maxMb = Number(raw);
+  if (!Number.isFinite(maxMb) || maxMb <= 0 || maxMb > maxAllowedMb) {
+    throw new InvalidEnvError(name, `must be a number between 1 and ${maxAllowedMb}`);
+  }
+  return maxMb * 1024 * 1024;
+}
+
+export function getMaxImageUploadSizeBytes() {
+  return getUploadSizeBytes("MAX_IMAGE_UPLOAD_SIZE_MB", 5, 25);
+}
+
+export function getMaxVideoUploadSizeBytes() {
+  return getUploadSizeBytes("MAX_VIDEO_UPLOAD_SIZE_MB", 25, 100);
+}
+
+export function hasBlobReadWriteToken() {
+  return Boolean(getOptionalEnv("BLOB_READ_WRITE_TOKEN"));
+}
+
 export function getGeminiApiKey() {
   return getRequiredEnv("GEMINI_API_KEY");
 }
@@ -120,6 +141,11 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
   if (options.requireGemini) check("GEMINI_API_KEY", getGeminiApiKey);
   check("MONGODB_SERVER_SELECTION_TIMEOUT_MS", getServerSelectionTimeoutMs);
   check("MAX_UPLOAD_SIZE_MB", getMaxUploadSizeBytes);
+  check("MAX_IMAGE_UPLOAD_SIZE_MB", getMaxImageUploadSizeBytes);
+  check("MAX_VIDEO_UPLOAD_SIZE_MB", getMaxVideoUploadSizeBytes);
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    check("BLOB_READ_WRITE_TOKEN", () => getRequiredEnv("BLOB_READ_WRITE_TOKEN"));
+  }
   check("GEMINI_ENABLE_GOOGLE_SEARCH", () => getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false));
   check("GEMINI_MAX_HISTORY_MESSAGES", () => getGeminiNumber("GEMINI_MAX_HISTORY_MESSAGES", 30, 2, 80));
   check("GEMINI_MAX_LAW_CONTEXT_RESULTS", () => getGeminiNumber("GEMINI_MAX_LAW_CONTEXT_RESULTS", 6, 0, 12));

@@ -1,15 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import ReportButton from "@/components/reports/ReportButton";
-import CommentBox from "@/components/comments/CommentBox";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import InlineModerationActions from "@/components/admin/InlineModerationActions";
 import SafeImage from "@/components/ui/SafeImage";
 import ShareMenu from "@/components/ui/ShareMenu";
 import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
+
+const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 
 type AuthorUser = {
   name?: string;
@@ -47,6 +49,7 @@ type Post = {
   authorUserId?: AuthorUser | string;
   partyId?: PartyRef | string | null;
   authorityAuthor?: AuthorityAuthor | null;
+  publisherSnapshot?: { name?: string | null; imageUrl?: string | null; href?: string | null; badge?: string | null } | null;
   mediaIds?: Array<Media | string>;
   likesCount: number;
   dislikesCount: number;
@@ -69,6 +72,16 @@ function relativeTime(value?: string) {
 }
 
 function authorInfo(post: Post) {
+  if (post.publisherSnapshot?.name) {
+    return {
+      name: post.publisherSnapshot.name,
+      image: post.publisherSnapshot.imageUrl || null,
+      badge: post.publisherSnapshot.badge || (post.authorType === "iec" ? "هيئة" : post.authorType === "party" ? "حزب" : "إدارة"),
+      badgeTooltip: post.authorType === "iec" ? "الهيئة المستقلة للانتخاب جهة رسمية مستقلة وليست حزبًا سياسيًا." : "",
+      href: post.publisherSnapshot.href || null,
+      fallback: post.publisherSnapshot.name.slice(0, 1)
+    };
+  }
   const user = typeof post.authorUserId === "object" ? post.authorUserId : null;
   const party = typeof post.partyId === "object" ? post.partyId : null;
   if (party?.name) {

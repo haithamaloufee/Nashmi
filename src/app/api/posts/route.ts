@@ -2,6 +2,7 @@ import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
 import { authorTypeForRole, contentCreatorRoles } from "@/lib/permissions";
+import { attachPublisherSnapshots, buildPublisherSnapshot, getAuthorityAuthor } from "@/lib/publisher";
 import { postCreateSchema } from "@/lib/validators";
 import { createSearchText, searchRegex } from "@/lib/arabicSearch";
 import { cursorFilter, getNextCursor, newestSort, parseLimit } from "@/lib/pagination";
@@ -9,7 +10,7 @@ import { cleanContent, readJson, requirePartyForUser, serialize } from "@/lib/ro
 import { writeAuditLog } from "@/lib/audit";
 import Post from "@/models/Post";
 import Party from "@/models/Party";
-import "@/models/MediaAsset";
+import MediaAsset from "@/models/MediaAsset";
 import "@/models/User";
 
 export async function GET(request: Request) {
@@ -25,14 +26,15 @@ export async function GET(request: Request) {
     if (partyId) query.partyId = partyId;
     if (filter === "iec") query.authorType = "iec";
     if (regex) query.searchNormalized = regex;
-    const posts = await Post.find(query)
+    const [posts, authorityAuthor] = await Promise.all([Post.find(query)
       .populate({ path: "authorUserId", select: "name avatarUrl image role" })
       .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
       .populate({ path: "mediaIds", select: "url mimeType type width height status" })
       .sort(newestSort)
       .limit(limit)
-      .lean();
-    return ok({ posts: serialize(posts) }, { nextCursor: getNextCursor(posts, limit) });
+      .lean(), getAuthorityAuthor()]);
+    const withPublisher = attachPublisherSnapshots(posts as any[], authorityAuthor);
+    return ok({ posts: serialize(withPublisher) }, { nextCursor: getNextCursor(posts, limit) });
   } catch (error) {
     return handleApiError(error);
   }
@@ -55,14 +57,22 @@ export async function POST(request: Request) {
     }
 
     const content = cleanContent(input.content);
+    const mediaIds = input.mediaIds || [];
+    if (mediaIds.length) {
+      const activeMediaCount = await MediaAsset.countDocuments({ _id: { $in: mediaIds }, ownerUserId: user.id, status: "active" });
+      if (activeMediaCount !== mediaIds.length) return fail("BAD_REQUEST", "بعض المرفقات غير مكتملة أو لا تخص هذا الحساب", 400);
+    }
+    const authorType = authorTypeForRole(user.role);
+    const publisherSnapshot = await buildPublisherSnapshot({ authorType, partyId, authorUser: user });
     const post = await Post.create({
-      authorType: authorTypeForRole(user.role),
+      authorType,
       authorUserId: user.id,
       partyId,
+      publisherSnapshot,
       title: input.title || null,
       content,
       tags: input.tags,
-      mediaIds: input.mediaIds,
+      mediaIds,
       status: "published",
       visibility: "public",
       publishedAt: new Date(),
@@ -75,7 +85,9 @@ export async function POST(request: Request) {
       .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
       .populate({ path: "mediaIds", select: "url mimeType type width height status" })
       .lean();
-    return ok({ post: serialize(populated || post) }, { status: 201 });
+    const authorityAuthor = await getAuthorityAuthor();
+    const [withPublisher] = attachPublisherSnapshots([(populated || post) as any], authorityAuthor);
+    return ok({ post: serialize(withPublisher) }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

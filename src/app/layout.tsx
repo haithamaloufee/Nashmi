@@ -18,14 +18,14 @@ export const metadata: Metadata = {
   title: "Nashmi / نشمي",
   description: "منصة رقمية تجريبية ومحايدة لتعزيز المشاركة المدنية والوعي الانتخابي والتواصل المنظم بين المواطنين والأحزاب.",
   icons: {
-    icon: "/images/nashmi%20logo.png",
-    shortcut: "/images/nashmi%20logo.png",
-    apple: "/images/nashmi%20logo.png"
+    icon: "/images/nashmi%20logo_transparent.png",
+    shortcut: "/images/nashmi%20logo_transparent.png",
+    apple: "/images/nashmi%20logo_transparent.png"
   },
   openGraph: {
     title: "Nashmi / نشمي",
     description: "منصة رقمية تجريبية ومحايدة لتعزيز المشاركة المدنية والوعي الانتخابي.",
-    images: [{ url: "/images/nashmi%20logo.png", width: 2048, height: 2048, alt: "شعار منصة نشمي" }]
+    images: [{ url: "/images/nashmi%20logo_transparent.png", width: 614, height: 614, alt: "شعار منصة نشمي" }]
   }
 };
 

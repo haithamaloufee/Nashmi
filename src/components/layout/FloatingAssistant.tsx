@@ -206,7 +206,7 @@ export default function FloatingAssistant() {
   }
 
   return (
-    <div className="fixed inset-x-2 z-40 flex justify-start print:hidden sm:inset-x-auto sm:left-6" style={{ bottom: bottomOffset }}>
+    <div className="fixed left-2 right-auto z-40 flex max-w-[calc(100vw-1rem)] justify-start print:hidden sm:left-6" style={{ bottom: bottomOffset }}>
       {open ? (
         <section
           className="flex min-h-[360px] w-[calc(100vw-1rem)] max-w-[420px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 sm:w-[420px]"

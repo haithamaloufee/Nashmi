@@ -31,7 +31,7 @@ export const dynamic = "force-dynamic";
 const valuesCards = [
   {
     title: "الرؤية",
-    text: "تعزيز ثقافة المشاركة المدنية الواعية وبناء مساحة رقمية آمنة للحوار والتفاعل.",
+    text: "مجتمعٌ يشارك بوعي في صناعة القرار والسياسات العامة.",
     icon: Flag
   },
   {
@@ -129,7 +129,7 @@ export default async function HomePage() {
       <LandingInteractions />
 
       <section className="relative isolate overflow-hidden border-b border-line bg-ink text-white" aria-labelledby="hero-title">
-        <Image src="/images/sharek-hero.png" alt="" fill priority unoptimized sizes="100vw" className="pointer-events-none absolute inset-0 -z-20 object-cover" />
+        <Image src="/images/sharek-hero.png" alt="" fill priority sizes="100vw" className="pointer-events-none absolute inset-0 -z-20 object-cover" />
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(15,25,33,.92)_0%,rgba(18,107,111,.74)_48%,rgba(15,25,33,.34)_100%)]" />
         <div className="container-page flex min-h-[560px] flex-col justify-center py-16 md:py-20">
           <div className="max-w-3xl text-shadow-sm">
@@ -189,7 +189,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="reveal-on-scroll relative min-h-[340px] overflow-hidden rounded border border-line bg-ink shadow-soft" data-reveal>
-          <Image src="/images/sharek-hero.png" alt="واجهة رمزية لمنصة نشمي" fill unoptimized sizes="(min-width: 1024px) 44vw, 100vw" className="pointer-events-none object-cover opacity-75" />
+          <Image src="/images/sharek-hero.png" alt="واجهة رمزية لمنصة نشمي" fill sizes="(min-width: 1024px) 44vw, 100vw" className="pointer-events-none object-cover opacity-75" />
           <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(23,33,43,.86),rgba(18,107,111,.15))]" />
           <div className="absolute inset-x-5 bottom-5 rounded border border-white/20 bg-white/12 p-5 text-white backdrop-blur">
             <Sparkles className="mb-3 h-7 w-7 text-emerald-200" />
@@ -281,7 +281,7 @@ export default async function HomePage() {
         <div className="container-page grid gap-9 md:grid-cols-2 xl:grid-cols-[1.1fr_0.8fr_1fr_1fr]">
           <section>
             <div className="mb-4 flex items-center gap-3">
-              <Image src="/images/nashmi logo.png" alt="شعار منصة نشمي" width={72} height={72} unoptimized className="h-16 w-16 rounded-full bg-white/95 object-contain p-1" />
+              <Image src="/images/nashmi logo_transparent.png" alt="شعار منصة نشمي" width={72} height={72} className="h-16 w-16 rounded-full bg-white/95 object-contain p-1" />
               <div>
                 <h2 id="footer-title" className="text-2xl font-black">نشمي</h2>
                 <p className="text-sm text-white/62">Nashmi civic demo</p>
@@ -311,7 +311,7 @@ export default async function HomePage() {
 
           <nav aria-label="روابط الهيئة الرسمية">
             <div className="mb-4 flex items-center gap-3">
-              <Image src="/related/iec-logo.png" alt="شعار الهيئة المستقلة للانتخاب" width={48} height={48} unoptimized className="h-12 w-12 rounded bg-white object-contain p-1" />
+              <Image src="/related/iec-logo.png" alt="شعار الهيئة المستقلة للانتخاب" width={48} height={48} className="h-12 w-12 rounded bg-white object-contain p-1" />
               <h3 className="text-lg font-black">روابط الهيئة الرسمية</h3>
             </div>
             <ul className="space-y-3 text-white/78">

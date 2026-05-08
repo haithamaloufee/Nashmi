@@ -1,15 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import PollVote from "@/components/polls/PollVote";
 import ReportButton from "@/components/reports/ReportButton";
-import CommentBox from "@/components/comments/CommentBox";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import InlineModerationActions from "@/components/admin/InlineModerationActions";
 import ShareMenu from "@/components/ui/ShareMenu";
 import SafeImage from "@/components/ui/SafeImage";
+
+const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 
 type Poll = {
   _id: string;
@@ -19,6 +21,7 @@ type Poll = {
   authorUserId?: { name?: string; avatarUrl?: string | null; image?: string | null } | string;
   partyId?: { name?: string; slug?: string; logoUrl?: string | null; isVerified?: boolean } | string | null;
   authorityAuthor?: { name?: string; logoUrl?: string | null } | null;
+  publisherSnapshot?: { name?: string | null; imageUrl?: string | null; href?: string | null; badge?: string | null } | null;
   options: Array<{ _id: string; text: string; votesCount: number }>;
   totalVotes: number;
   likesCount: number;
@@ -41,6 +44,15 @@ function relativeTime(value?: string) {
 }
 
 function authorInfo(poll: Poll) {
+  if (poll.publisherSnapshot?.name) {
+    return {
+      name: poll.publisherSnapshot.name,
+      image: poll.publisherSnapshot.imageUrl || null,
+      href: poll.publisherSnapshot.href || null,
+      type: poll.publisherSnapshot.badge || (poll.authorType === "iec" ? "هيئة" : "حزب"),
+      fallback: poll.publisherSnapshot.name.slice(0, 1)
+    };
+  }
   const user = typeof poll.authorUserId === "object" ? poll.authorUserId : null;
   const party = typeof poll.partyId === "object" ? poll.partyId : null;
   if (party?.name) {

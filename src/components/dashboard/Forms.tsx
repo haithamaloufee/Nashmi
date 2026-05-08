@@ -46,10 +46,15 @@ export function PostCreateForm() {
   const api = useApiMessage();
   const { showToast } = useToast();
   const [media, setMedia] = useState<Array<{ id: string; url: string; type?: string; mimeType?: string }>>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   return (
     <form
       action={async (formData) => {
+        if (uploadingMedia) {
+          showToast("انتظر حتى يكتمل رفع الملف قبل النشر.", "error");
+          return;
+        }
         const json = await api.submit("/api/posts", {
           title: formData.get("title") || null,
           content: formData.get("content"),
@@ -72,7 +77,9 @@ export function PostCreateForm() {
         imagesOnly={false}
         helper="يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF، أو فيديو MP4/WEBM"
         fallbackText="+"
+        purpose="post"
         onUploaded={(asset) => setMedia((current) => current.length >= 6 ? current : [...current, { id: asset._id, url: asset.url, type: asset.type, mimeType: asset.mimeType }])}
+        onUploadingChange={setUploadingMedia}
       />
       {media.length ? (
         <div className="grid gap-2 sm:grid-cols-2">
@@ -91,7 +98,7 @@ export function PostCreateForm() {
           ))}
         </div>
       ) : null}
-      <LoadingButton loading={api.loading} className="bg-civic px-4 py-2 text-white hover:bg-civic/90">نشر</LoadingButton>
+      <LoadingButton loading={api.loading || uploadingMedia} disabled={uploadingMedia} className="bg-civic px-4 py-2 text-white hover:bg-civic/90">{uploadingMedia ? "جار رفع الملف" : "نشر"}</LoadingButton>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
@@ -164,9 +171,9 @@ export function PartyProfileForm({ party }: { party: any }) {
       className="card space-y-4 p-5"
     >
       <h2 className="text-xl font-bold">تعديل ملف الحزب</h2>
-      <MediaUploadField label="شعار الحزب" value={logoUrl} fallbackText={party.name?.slice(0, 1) || "ح"} onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
+      <MediaUploadField label="شعار الحزب" value={logoUrl} purpose="party_logo" fallbackText={party.name?.slice(0, 1) || "ح"} onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
       <input name="logoUrl" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للشعار" />
-      <MediaUploadField label="غلاف الحزب" value={coverUrl} fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
+      <MediaUploadField label="غلاف الحزب" value={coverUrl} purpose="party_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
       <input name="coverUrl" type="url" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للغلاف" />
       <label className="block"><span>الوصف المختصر</span><textarea name="shortDescription" defaultValue={party.shortDescription} className="mt-1 w-full rounded border-line" rows={3} required /></label>
       <label className="block"><span>الوصف الكامل</span><textarea name="description" defaultValue={party.description} className="mt-1 w-full rounded border-line" rows={5} required /></label>
@@ -199,9 +206,9 @@ export function IecProfileForm({ authority }: { authority: any }) {
   return (
     <form action={(formData) => api.submit("/api/iec/profile", { logoUrl: formData.get("logoUrl") || logoUrl || null, coverUrl: formData.get("coverUrl") || coverUrl || null }, "PATCH")} className="card space-y-4 p-5">
       <h2 className="text-xl font-bold">ملف الهيئة</h2>
-      <MediaUploadField label="شعار الهيئة" value={logoUrl} fallbackText="هـ" onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
+      <MediaUploadField label="شعار الهيئة" value={logoUrl} purpose="authority_logo" fallbackText="هـ" onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
       <input name="logoUrl" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للشعار" />
-      <MediaUploadField label="غلاف الهيئة" value={coverUrl} fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
+      <MediaUploadField label="غلاف الهيئة" value={coverUrl} purpose="authority_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
       <input name="coverUrl" type="url" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للغلاف" />
       <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
@@ -297,7 +304,7 @@ export function LawCreateForm() {
         <input name="youtubeVideoId" className="rounded border-line" placeholder="رابط YouTube أو معرف الفيديو" />
       </div>
       <input name="officialReferenceUrl" className="w-full rounded border-line" placeholder="رابط رسمي اختياري" />
-      <MediaUploadField label="رفع صورة القانون من الجهاز" value={thumbnailUrl} onUploaded={(asset) => setThumbnailUrl(asset.url)} onClear={() => setThumbnailUrl("")} />
+      <MediaUploadField label="رفع صورة القانون من الجهاز" value={thumbnailUrl} purpose="law_thumbnail" onUploaded={(asset) => setThumbnailUrl(asset.url)} onClear={() => setThumbnailUrl("")} />
       <input name="thumbnailUrl" className="w-full rounded border-line" value={thumbnailUrl} onChange={(event) => setThumbnailUrl(event.target.value)} placeholder="أو أدخل رابط صورة خارجي" />
       <textarea name="shortDescription" className="w-full rounded border-line" rows={2} placeholder="وصف قصير" required />
       <textarea name="simplifiedExplanation" className="w-full rounded border-line" rows={5} placeholder="شرح مبسط" required />

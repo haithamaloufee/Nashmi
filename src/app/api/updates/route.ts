@@ -3,12 +3,12 @@ import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { getCurrentUser } from "@/lib/auth";
 import { searchRegex } from "@/lib/arabicSearch";
 import { parseLimit } from "@/lib/pagination";
+import { attachPublisherSnapshots, getAuthorityAuthor } from "@/lib/publisher";
 import { serialize } from "@/lib/routeUtils";
 import Party from "@/models/Party";
 import PartyFollower from "@/models/PartyFollower";
 import Post from "@/models/Post";
 import Poll from "@/models/Poll";
-import AuthorityProfile from "@/models/AuthorityProfile";
 import "@/models/MediaAsset";
 import "@/models/User";
 
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       basePollQuery.$or = searchClause;
     }
 
-    const [posts, polls, authority] = await Promise.all([
+    const [posts, polls, authorityAuthor] = await Promise.all([
       filter === "polls"
         ? []
         : Post.find(basePostQuery)
@@ -67,23 +67,15 @@ export async function GET(request: Request) {
             .sort({ publishedAt: -1 })
             .limit(limit)
             .lean(),
-      AuthorityProfile.findOne({ slug: "independent-election-commission", status: "active" })
-        .populate({ path: "logoMediaId", select: "url status" })
-        .select("name logoUrl logoMediaId")
-        .lean()
+      getAuthorityAuthor()
     ]);
-    const authorityAuthor = {
-      name: authority?.name || "الهيئة المستقلة للانتخاب",
-      logoUrl:
-        (typeof authority?.logoMediaId === "object" && authority.logoMediaId && "url" in authority.logoMediaId ? String(authority.logoMediaId.url) : null) ||
-        authority?.logoUrl ||
-        "/related/iec-logo.png"
-    };
-    const withAuthority = <T extends Record<string, any>>(items: T[]) => items.map((item) => (item.authorType === "iec" ? { ...item, authorityAuthor } : item));
+
+    const withPublisher = <T extends Record<string, any>>(items: T[]) =>
+      attachPublisherSnapshots(items, authorityAuthor).map((item) => (item.authorType === "iec" ? { ...item, authorityAuthor } : item));
 
     const updates = [
-      ...withAuthority(posts).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
-      ...withAuthority(polls).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
+      ...withPublisher(posts as any[]).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
+      ...withPublisher(polls as any[]).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
     ]
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
       .slice(0, limit);

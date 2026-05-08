@@ -30,7 +30,7 @@ export default async function Navbar() {
       <div className="container-page flex min-h-16 items-center justify-between gap-3 py-2">
         <Link href="/" className="focus-ring flex shrink-0 items-center gap-3 font-bold text-civic dark:text-emerald-200" aria-label="الانتقال إلى الصفحة الرئيسية">
           <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-civic/15 bg-white p-1.5 shadow-sm ring-1 ring-white/70 transition duration-200 dark:border-emerald-200/20 dark:bg-slate-900 dark:ring-slate-700 sm:h-16 sm:w-16">
-            <Image src="/images/nashmi logo.png" alt="شعار منصة نشمي" width={64} height={64} priority unoptimized className="h-full w-full object-contain" />
+            <Image src="/images/nashmi logo_transparent.png" alt="شعار منصة نشمي" width={64} height={64} priority className="h-full w-full object-contain" />
           </div>
           <span className="hidden text-lg font-black sm:inline dark:text-emerald-200 dark:drop-shadow-sm">نشمي</span>
         </Link>

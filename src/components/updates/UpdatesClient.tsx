@@ -18,13 +18,13 @@ const filters = [
   ["followed", "الأحزاب المتابَعة"]
 ] as const;
 
-export default function UpdatesClient({ initialSearch = "", initialFilter = "all" }: { initialSearch?: string; initialFilter?: string }) {
+export default function UpdatesClient({ initialSearch = "", initialFilter = "all", initialUpdates = [] }: { initialSearch?: string; initialFilter?: string; initialUpdates?: UpdateItem[] }) {
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [filter, setFilter] = useState(initialFilter);
-  const [updates, setUpdates] = useState<UpdateItem[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [updates, setUpdates] = useState<UpdateItem[]>(initialUpdates);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialUpdates.length >= 10 ? initialUpdates[initialUpdates.length - 1]?.publishedAt || null : null);
+  const [loading, setLoading] = useState(initialUpdates.length === 0);
   const [loadingMore, setLoadingMore] = useState(false);
   const { showToast } = useToast();
 
@@ -62,8 +62,9 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
   }, [debouncedSearch, filter, showToast]);
 
   useEffect(() => {
+    if (debouncedSearch === initialSearch && filter === initialFilter && initialUpdates.length) return;
     void load();
-  }, [load]);
+  }, [debouncedSearch, filter, initialFilter, initialSearch, initialUpdates.length, load]);
 
   const tags = useMemo(() => {
     const counts = new Map<string, number>();

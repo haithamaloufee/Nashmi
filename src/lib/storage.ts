@@ -1,6 +1,7 @@
 import { mkdir, open } from "fs/promises";
 import path from "path";
 import { put } from "@vercel/blob";
+import { hasBlobReadWriteToken } from "@/lib/env";
 
 type StoredFile = {
   url: string;
@@ -19,13 +20,15 @@ function safeLocalPath(uploadDir: string, storageKey: string) {
 
 export async function storePublicFile(input: { buffer: Buffer; storageKey: string; contentType: string }): Promise<StoredFile> {
   const key = input.storageKey.replace(/^\/+/, "");
-  const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  const hasBlobToken = hasBlobReadWriteToken();
 
   if (hasBlobToken) {
     const blob = await put(key, input.buffer, {
       access: "public",
       contentType: input.contentType,
-      addRandomSuffix: false
+      addRandomSuffix: false,
+      multipart: input.buffer.length >= 5 * 1024 * 1024,
+      cacheControlMaxAge: 60 * 60 * 24 * 365
     });
     return { url: blob.url, storageKey: key, provider: "vercel_blob" };
   }

@@ -5,6 +5,12 @@ const PostSchema = new Schema(
     authorType: { type: String, enum: ["party", "iec", "admin"], required: true },
     authorUserId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     partyId: { type: Schema.Types.ObjectId, ref: "Party", default: null },
+    publisherSnapshot: {
+      name: { type: String, default: null },
+      imageUrl: { type: String, default: null },
+      href: { type: String, default: null },
+      badge: { type: String, default: null }
+    },
     title: { type: String, default: null },
     content: { type: String, required: true },
     mediaIds: [{ type: Schema.Types.ObjectId, ref: "MediaAsset" }],
@@ -27,6 +33,7 @@ const PostSchema = new Schema(
 PostSchema.index({ status: 1, publishedAt: -1 });
 PostSchema.index({ partyId: 1, status: 1, publishedAt: -1 });
 PostSchema.index({ authorUserId: 1, createdAt: -1 });
+PostSchema.index({ authorType: 1, status: 1, publishedAt: -1 });
 PostSchema.index({ searchNormalized: 1 });
 PostSchema.index({ title: "text", content: "text", tags: "text" });
 

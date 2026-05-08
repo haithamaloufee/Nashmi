@@ -5,152 +5,154 @@ import { formatSafeError, loadEnv } from "./env";
 loadEnv();
 
 import { connectToDatabase, mongoose } from "../src/lib/db";
-import { normalizeSafeImageUrl } from "../src/lib/imageUrls";
+import { buildPartyMatchIndexes, matchPartyByName, normalizePartyLogoRecord } from "../src/lib/partyMatching";
+import { authorityLogo, DEFAULT_AUTHORITY_NAME } from "../src/lib/publisher";
+import AuthorityProfile from "../src/models/AuthorityProfile";
 import Party from "../src/models/Party";
+import Post from "../src/models/Post";
 
-type LogoRecord = {
-  "اسم_الحزب"?: unknown;
-  "الرابط"?: unknown;
-};
+type LogoRecord = Record<string, unknown>;
 
 type PartyLean = {
   _id: unknown;
   name: string;
   slug: string;
   logoUrl?: string | null;
+  isVerified?: boolean;
 };
 
-function normalizeArabicName(value: string, options: { relaxedTaMarbuta?: boolean } = {}) {
-  let normalized = value
-    .normalize("NFKC")
-    .replace(/[\u064B-\u065F\u0670]/g, "")
-    .replace(/\u0640/g, "")
-    .replace(/[أإآٱ]/g, "ا")
-    .replace(/ى/g, "ي")
-    .replace(/[^\p{Script=Arabic}\p{Number}\s()]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (options.relaxedTaMarbuta) normalized = normalized.replace(/ة/g, "ه");
-  return normalized;
-}
-
-function compactArabicMatchKey(value: string) {
-  return normalizeArabicName(value, { relaxedTaMarbuta: true })
-    .replace(/^الحزب/, "حزب")
-    .replace(/^حزب/, "")
-    .replace(/الاردني/g, "")
-    .replace(/اردني/g, "")
-    .replace(/\s+/g, "");
-}
-
 function candidateInputPaths() {
-  const paths = [
+  return [
     process.env.PARTY_LOGOS_JSON,
     path.join(process.cwd(), "scripts", "parties.json"),
     path.join(process.cwd(), "parties.json")
   ].filter(Boolean) as string[];
-  return paths;
 }
 
 function loadLogoRecords() {
   const inputPath = candidateInputPaths().find((candidate) => existsSync(candidate));
-  if (!inputPath) {
-    throw new Error("parties.json not found. Put it at scripts/parties.json or set PARTY_LOGOS_JSON.");
-  }
+  if (!inputPath) throw new Error("parties.json not found. Put it at scripts/parties.json or set PARTY_LOGOS_JSON.");
 
   const parsed = JSON.parse(readFileSync(inputPath, "utf8")) as unknown;
   if (!Array.isArray(parsed)) throw new Error("parties.json must contain an array.");
   return { inputPath, records: parsed as LogoRecord[] };
 }
 
-function indexParties(parties: PartyLean[], keyBuilder: (value: string) => string) {
-  const index = new Map<string, PartyLean[]>();
-  for (const party of parties) {
-    const key = keyBuilder(party.name);
-    const list = index.get(key) || [];
-    list.push(party);
-    index.set(key, list);
-  }
-  return index;
-}
-
 async function main() {
   await connectToDatabase();
 
   const { inputPath, records } = loadLogoRecords();
-  const activeParties = await Party.find({ status: "active" }).select("_id name slug logoUrl").lean<PartyLean[]>();
-  const exactIndex = indexParties(activeParties, (value) => normalizeArabicName(value));
-  const relaxedIndex = indexParties(activeParties, (value) => normalizeArabicName(value, { relaxedTaMarbuta: true }));
-  const compactIndex = indexParties(activeParties, compactArabicMatchKey);
-
+  const activeParties = await Party.find({ status: "active" }).select("_id name slug logoUrl isVerified").lean<PartyLean[]>();
+  const indexes = buildPartyMatchIndexes(activeParties);
   const unmatchedNames: string[] = [];
-  const unsafeUrls: Array<{ name: string; url: string }> = [];
+  const unsafeRecords: LogoRecord[] = [];
   const duplicateMatches: Array<{ name: string; matches: string[] }> = [];
-  let matched = 0;
-  let updated = 0;
-  let unchanged = 0;
+  const matchedPartyIds = new Set<string>();
 
-  for (const record of records) {
-    const name = typeof record["اسم_الحزب"] === "string" ? record["اسم_الحزب"].trim() : "";
-    const rawUrl = typeof record["الرابط"] === "string" ? record["الرابط"].trim() : "";
-    if (!name) {
-      unmatchedNames.push("(missing اسم_الحزب)");
+  let partiesMatched = 0;
+  let partyLogosUpdated = 0;
+  let partyPostsUpdated = 0;
+  let unchangedParties = 0;
+
+  for (const rawRecord of records) {
+    const record = normalizePartyLogoRecord(rawRecord);
+    if (!record) {
+      unsafeRecords.push(rawRecord);
       continue;
     }
 
-    const safeUrl = normalizeSafeImageUrl(rawUrl, { localPrefixes: ["/images/"] });
-    if (!safeUrl) {
-      unsafeUrls.push({ name, url: rawUrl });
-      continue;
-    }
-
-    const exactKey = normalizeArabicName(name);
-    const relaxedKey = normalizeArabicName(name, { relaxedTaMarbuta: true });
-    const compactKey = compactArabicMatchKey(name);
-    const matches = exactIndex.get(exactKey) || relaxedIndex.get(relaxedKey) || compactIndex.get(compactKey) || [];
+    const matches = matchPartyByName(record.name, indexes);
     if (matches.length === 0) {
-      unmatchedNames.push(name);
+      unmatchedNames.push(record.name);
       continue;
     }
     if (matches.length > 1) {
-      duplicateMatches.push({ name, matches: matches.map((party) => `${party.name} (${party.slug})`) });
+      duplicateMatches.push({ name: record.name, matches: matches.map((party) => `${party.name} (${party.slug})`) });
       continue;
     }
 
     const party = matches[0];
-    matched += 1;
-    if ((party.logoUrl || null) === safeUrl) {
-      unchanged += 1;
-      continue;
+    matchedPartyIds.add(String(party._id));
+    partiesMatched += 1;
+    if ((party.logoUrl || null) === record.imageUrl) unchangedParties += 1;
+    else {
+      await Party.updateOne({ _id: party._id, status: "active" }, { $set: { logoUrl: record.imageUrl } });
+      partyLogosUpdated += 1;
     }
 
-    await Party.updateOne({ _id: party._id, status: "active" }, { $set: { logoUrl: safeUrl } });
-    updated += 1;
+    const snapshot = {
+      name: party.name,
+      imageUrl: record.imageUrl,
+      href: party.slug ? `/parties/${party.slug}` : null,
+      badge: party.isVerified ? "حزب موثق" : "حزب"
+    };
+    const postResult = await Post.updateMany(
+      {
+        partyId: party._id,
+        status: { $ne: "deleted" },
+        $or: [
+          { "publisherSnapshot.imageUrl": { $ne: record.imageUrl } },
+          { publisherSnapshot: { $exists: false } },
+          { "publisherSnapshot.imageUrl": null }
+        ]
+      },
+      { $set: { publisherSnapshot: snapshot } }
+    );
+    partyPostsUpdated += postResult.modifiedCount || 0;
   }
 
-  const missingLogoParties = await Party.find({
+  const authority = await AuthorityProfile.findOne({ slug: "independent-election-commission" })
+    .populate({ path: "logoMediaId", select: "url status" })
+    .select("name logoUrl logoMediaId")
+    .lean();
+  const iecImageUrl = authorityLogo(authority as Record<string, unknown> | null);
+  const iecSnapshot = {
+    name: authority?.name || DEFAULT_AUTHORITY_NAME,
+    imageUrl: iecImageUrl,
+    href: "/iec",
+    badge: "هيئة"
+  };
+  const iecResult = await Post.updateMany(
+    {
+      authorType: "iec",
+      status: { $ne: "deleted" },
+      $or: [
+        { "publisherSnapshot.imageUrl": { $ne: iecImageUrl } },
+        { publisherSnapshot: { $exists: false } },
+        { "publisherSnapshot.imageUrl": null }
+      ]
+    },
+    { $set: { publisherSnapshot: iecSnapshot } }
+  );
+
+  const postsWithoutPublisherImage = await Post.countDocuments({
+    status: { $ne: "deleted" },
+    $or: [
+      { publisherSnapshot: { $exists: false } },
+      { "publisherSnapshot.imageUrl": null },
+      { "publisherSnapshot.imageUrl": "" }
+    ]
+  });
+
+  const partiesWithoutMatchedImage = await Party.find({
     status: "active",
-    $or: [{ logoUrl: null }, { logoUrl: "" }, { logoUrl: { $exists: false } }]
-  })
-    .select("name slug")
-    .sort({ slug: 1 })
-    .lean<{ name: string; slug: string }[]>();
+    _id: { $nin: [...matchedPartyIds] }
+  }).select("name slug").sort({ slug: 1 }).lean<{ name: string; slug: string }[]>();
 
   const report = {
     inputPath,
     totalJsonRecords: records.length,
     activeParties: activeParties.length,
-    matched,
-    updatedLogoUrlCount: updated,
-    unchangedLogoUrlCount: unchanged,
-    skippedNotFoundCount: unmatchedNames.length,
-    skippedUnsafeUrlCount: unsafeUrls.length,
-    duplicateMatchesCount: duplicateMatches.length,
-    unmatchedNames,
-    unsafeUrls,
+    partiesMatched,
+    partyLogosUpdated,
+    unchangedParties,
+    partyPostsUpdated,
+    iecPostsUpdated: iecResult.modifiedCount || 0,
+    postsWithoutPublisherImage,
+    unmatchedJsonPartyNames: unmatchedNames,
+    unsafeRecordsCount: unsafeRecords.length,
     duplicateMatches,
-    partiesStillMissingLogoUrl: missingLogoParties.map((party) => `${party.name} (${party.slug})`)
+    partiesWithoutMatchedImage: partiesWithoutMatchedImage.map((party) => `${party.name} (${party.slug})`)
   };
 
   console.log(JSON.stringify(report, null, 2));

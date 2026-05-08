@@ -41,6 +41,7 @@ export default function AccountProfileForm({ user }: { user: SafeUser }) {
         value={avatarUrl}
         endpoint="/api/account/avatar"
         fileField="avatar"
+        purpose="avatar"
         rounded="full"
         fallbackText={name.slice(0, 1) || "م"}
         onUploaded={(asset) => {

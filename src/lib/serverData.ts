@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { searchRegex } from "@/lib/arabicSearch";
+import { attachPublisherSnapshots } from "@/lib/publisher";
 import { serialize } from "@/lib/routeUtils";
 import Party from "@/models/Party";
 import Post from "@/models/Post";
@@ -46,7 +47,7 @@ async function getAuthorityAuthor() {
 }
 
 function attachAuthorityAuthor<T extends LeanItem>(items: T[], authorityAuthor: { name: string; logoUrl: string }) {
-  return items.map((item) => (item.authorType === "iec" ? { ...item, authorityAuthor } : item));
+  return attachPublisherSnapshots(items, authorityAuthor).map((item) => (item.authorType === "iec" ? { ...item, authorityAuthor } : item));
 }
 
 function dateTime(value: unknown) {
