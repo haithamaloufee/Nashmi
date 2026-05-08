@@ -39,7 +39,21 @@ export async function POST(request: Request) {
       lastVerifiedAt: new Date(),
       searchNormalized: createSearchText([input.title, input.category, input.shortDescription, input.simplifiedExplanation, input.originalText || "", ...(input.tags || [])])
     });
-    await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "law.create", targetType: "law", targetId: law._id, request });
+    await writeAuditLog({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: "law.create",
+      targetType: "law",
+      targetId: law._id,
+      metadata: {
+        title: law.title,
+        slug: law.slug,
+        status: law.status,
+        category: law.category,
+        summary: `${user.role === "iec" ? "قام مستخدم من الهيئة" : "قام مستخدم إداري"} بإضافة قانون جديد بحالة ${law.status === "draft" ? "مسودة" : law.status === "hidden" ? "مخفي" : "منشور"}`
+      },
+      request
+    });
     return ok({ law: serialize(law) }, { status: 201 });
   } catch (error) {
     return handleApiError(error);

@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, Loader2, MessageSquare, Plus, Send, Trash2 } from "lucide-react";
+import { Archive, ArrowDown, Loader2, MessageSquare, Plus, Send, Trash2 } from "lucide-react";
 import MarkdownMessage from "@/components/chat/MarkdownMessage";
+import TypingIndicator from "@/components/chat/TypingIndicator";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 
 type GroundingSource = {
@@ -70,6 +71,9 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const latestAssistantRef = useRef<HTMLDivElement | null>(null);
+  const latestUserRef = useRef<HTMLDivElement | null>(null);
+  const isNearBottomRef = useRef(true);
+  const pendingAssistantFocusRef = useRef(false);
 
   const activeSession = useMemo(() => sessions.find((session) => session._id === activeSessionId) || null, [sessions, activeSessionId]);
   const showSuggestions = !loading && messages.length === 1 && messages[0]?.role === "assistant";
@@ -111,16 +115,22 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
-      setShowScrollToBottom(scrollTop + clientHeight < scrollHeight - 100);
+      const nearBottom = scrollTop + clientHeight >= scrollHeight - 120;
+      isNearBottomRef.current = nearBottom;
+      setShowScrollToBottom(!nearBottom);
     };
 
     container.addEventListener("scroll", handleScroll);
+    handleScroll();
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
-    if (messages.length > 1 && messages[messages.length - 1].role === "assistant") {
-      latestAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (pendingAssistantFocusRef.current && messages.length > 1 && messages[messages.length - 1].role === "assistant") {
+      if (isNearBottomRef.current) {
+        latestAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      pendingAssistantFocusRef.current = false;
     }
   }, [messages]);
 
@@ -219,6 +229,10 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
     setMessage("");
     setMessages((items) => [...items, { role: "user", content: clean }]);
     setLoading(true);
+    window.requestAnimationFrame(() => {
+      latestUserRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      scrollToBottom();
+    });
 
     const url = activeSessionId ? `/api/chat/sessions/${activeSessionId}/messages` : lawId ? `/api/chat/law/${lawId}` : "/api/chat";
 
@@ -240,11 +254,13 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
       const friendlyError = fallbackError(json);
       setError(friendlyError);
       setLastFailedPrompt(clean);
+      pendingAssistantFocusRef.current = true;
       setMessages((items) => [...items, { role: "assistant", content: friendlyError }]);
       return;
     }
 
     setActiveSessionId(json.data.session._id);
+    pendingAssistantFocusRef.current = true;
     setMessages((items) => [...items, json.data.message]);
     await refreshSessions(json.data.session._id);
   }
@@ -256,31 +272,32 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
 
   return (
     <div className="grid min-h-[calc(100vh-10rem)] gap-4 lg:grid-cols-[280px_1fr]" dir="rtl">
-      <aside className="rounded-3xl border border-line bg-white/95 shadow-soft dark:border-slate-700 dark:bg-slate-950/95">
+      <aside className="rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
         <div className="flex items-center justify-between border-b border-line p-3 dark:border-slate-700">
           <h2 className="text-sm font-bold text-ink dark:text-white">المحادثات</h2>
           <button
             type="button"
             onClick={newConversation}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-civic transition duration-200 hover:border-civic hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 dark:border-slate-700"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-civic transition duration-200 hover:border-civic hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 dark:border-slate-700 dark:text-emerald-200 dark:hover:bg-emerald-200/10"
             title="محادثة جديدة"
+            aria-label="محادثة جديدة"
           >
             <Plus className="h-4 w-4" />
           </button>
         </div>
         <div className="max-h-[calc(100vh-16rem)] space-y-2 overflow-auto p-2">
           {sessionsLoading ? (
-            <div className="flex items-center gap-2 p-3 text-sm text-ink/60">
+            <div className="flex items-center gap-2 p-3 text-sm text-slate-600 dark:text-slate-300">
               <Loader2 className="h-4 w-4 animate-spin" />
               جار تحميل المحادثات
             </div>
           ) : null}
-          {!sessionsLoading && sessions.length === 0 ? <p className="p-3 text-sm text-ink/60">لا توجد محادثات محفوظة بعد.</p> : null}
+          {!sessionsLoading && sessions.length === 0 ? <p className="p-3 text-sm text-slate-600 dark:text-slate-300">لا توجد محادثات محفوظة بعد.</p> : null}
           {sessions.map((session) => (
             <div
               key={session._id}
               className={`group flex items-center gap-1 rounded-xl px-1 transition duration-200 ${
-                session._id === activeSessionId ? "bg-civic/10 font-bold text-civic" : "text-ink hover:bg-civic/10"
+                session._id === activeSessionId ? "bg-civic/10 font-bold text-civic dark:bg-emerald-200/12 dark:text-emerald-100" : "text-slate-700 hover:bg-civic/10 dark:text-slate-300 dark:hover:bg-emerald-200/10"
               }`}
             >
               <button type="button" onClick={() => openSession(session._id)} className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-right text-sm">
@@ -293,7 +310,7 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
                   event.stopPropagation();
                   void deleteSession(session._id);
                 }}
-                className="ms-1 me-2 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-ink/45 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600"
+                className="ms-1 me-2 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/40 dark:hover:text-red-200"
                 aria-label="حذف المحادثة"
                 title="حذف المحادثة"
               >
@@ -304,18 +321,19 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
         </div>
       </aside>
 
-      <section className="overflow-hidden rounded-3xl border border-line bg-white shadow-soft dark:border-slate-700 dark:bg-slate-950/95">
-        <div className="flex flex-col gap-3 border-b border-line bg-civic/5 p-4 dark:border-slate-700">
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+        <div className="flex flex-col justify-between gap-3 border-b border-slate-200 bg-civic/5 p-4 dark:border-slate-700 dark:bg-slate-900/70 sm:flex-row sm:items-center">
           <div>
-            <h2 className="font-bold text-ink">{activeSession?.title || "محادثة جديدة"}</h2>
-            <p className="mt-1 text-xs text-civic">متصل وجاهز للمساعدة التوعوية</p>
+            <h2 className="font-bold text-slate-950 dark:text-white">{activeSession?.title || "محادثة جديدة"}</h2>
+            <p className="mt-1 text-xs font-semibold text-civic dark:text-emerald-200">متصل وجاهز للمساعدة التوعوية</p>
           </div>
           {activeSessionId ? (
             <button
               type="button"
               onClick={deleteConversation}
-              className="inline-flex h-9 w-9 items-center justify-center rounded border border-line text-red-600 hover:bg-red-50"
+              className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 dark:border-slate-700 dark:text-red-300 dark:hover:bg-red-950/40"
               title="حذف المحادثة"
+              aria-label="حذف المحادثة"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -323,94 +341,93 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
         </div>
 
         {error ? (
-          <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-2 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-2 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/35 dark:text-red-200">
             <span>{error}</span>
             {lastFailedPrompt ? (
-              <button type="button" onClick={() => sendMessage(lastFailedPrompt)} className="rounded bg-white px-3 py-1.5 font-semibold text-red-700 hover:bg-red-100">
+              <button type="button" onClick={() => sendMessage(lastFailedPrompt)} className="rounded bg-white px-3 py-1.5 font-semibold text-red-700 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 dark:bg-red-900/50 dark:text-red-100 dark:hover:bg-red-900">
                 إعادة المحاولة
               </button>
             ) : null}
           </div>
         ) : null}
 
-        <div ref={scrollRef} className="relative h-[min(520px,calc(100vh-18rem))] space-y-4 overflow-auto bg-[#f4f7f4] p-4 dark:bg-[#071217]">
-          {messages.map((item, index) => (
-            <div key={item._id || `${item.role}-${index}`} className={`flex ${item.role === "user" ? "justify-start" : "justify-end"}`}>
-              <div
-                ref={item.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
-                className={`max-w-[88%] rounded-3xl p-4 leading-8 shadow-sm ${item.role === "user" ? "rounded-tr-3xl bg-civic text-white" : "rounded-tl-3xl border border-line bg-white text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
-              >
-                {item.role === "assistant" ? <MarkdownMessage content={item.content} /> : <div className="whitespace-pre-wrap text-ink dark:text-slate-100">{item.content}</div>}
-                {item.role === "assistant" && item.groundingSources?.length ? (
-                  <div className="mt-3 border-t border-line pt-2 text-xs dark:border-slate-700">
-                    <p className="mb-1 font-bold text-ink/70 dark:text-slate-300">المصادر</p>
-                    <div className="space-y-1">
-                      {item.groundingSources.map((source, sourceIndex) => (
-                        <a
-                          key={`${source.title}-${sourceIndex}`}
-                          href={source.url || "#"}
-                          target={source.url?.startsWith("http") ? "_blank" : undefined}
-                          rel={source.url?.startsWith("http") ? "noreferrer" : undefined}
-                          className="block text-civic underline-offset-4 hover:underline"
-                        >
-                          <span className="text-ink/50">[{sourceLabel(source.sourceType)}]</span> {source.title}
-                        </a>
-                      ))}
+        <div className="relative">
+          <div ref={scrollRef} className="assistant-scrollbar h-[min(560px,calc(100vh-18rem))] space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#071217]">
+            {messages.map((item, index) => (
+              <div key={item._id || `${item.role}-${index}`} className={`flex ${item.role === "user" ? "justify-start" : "justify-end"}`}>
+                <div
+                  ref={item.role === "user" && index === messages.length - 1 ? latestUserRef : item.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
+                  className={`min-w-0 max-w-[88%] rounded-3xl p-4 leading-8 shadow-sm ${item.role === "user" ? "rounded-tr-3xl bg-civic text-white dark:bg-[#1b8f89]" : "rounded-tl-3xl border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+                >
+                  {item.role === "assistant" ? <MarkdownMessage content={item.content} /> : <div className="whitespace-pre-wrap break-words text-white">{item.content}</div>}
+                  {item.role === "assistant" && item.groundingSources?.length ? (
+                    <div className="mt-3 border-t border-slate-200 pt-2 text-xs dark:border-slate-700">
+                      <p className="mb-1 font-bold text-slate-600 dark:text-slate-300">المصادر</p>
+                      <div className="space-y-1">
+                        {item.groundingSources.map((source, sourceIndex) => (
+                          <a
+                            key={`${source.title}-${sourceIndex}`}
+                            href={source.url || "#"}
+                            target={source.url?.startsWith("http") ? "_blank" : undefined}
+                            rel={source.url?.startsWith("http") ? "noopener noreferrer" : undefined}
+                            className="block break-words text-civic underline-offset-4 hover:underline dark:text-emerald-200"
+                          >
+                            <span className="text-slate-500 dark:text-slate-400">[{sourceLabel(source.sourceType)}]</span> {source.title}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {showSuggestions ? (
-            <div className="rounded border border-line bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
-              <p className="mb-3 text-sm font-bold text-ink/70 dark:text-slate-200">أسئلة مقترحة</p>
-              <div className="flex flex-wrap gap-2">
-                {suggestedQuestions.map((question) => (
-                  <button
-                    key={question}
-                    type="button"
-                    onClick={() => sendMessage(question)}
-                    className="rounded border border-line px-3 py-2 text-sm text-ink hover:border-civic hover:text-civic"
-                  >
-                    {question}
-                  </button>
-                ))}
+            {showSuggestions ? (
+              <div className="rounded border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+                <p className="mb-3 text-sm font-bold text-slate-600 dark:text-slate-200">أسئلة مقترحة</p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedQuestions.map((question) => (
+                    <button
+                      key={question}
+                      type="button"
+                      onClick={() => sendMessage(question)}
+                      className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-civic hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-emerald-300 dark:hover:text-emerald-200"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {loading ? (
-            <div className="flex justify-end">
-              <div className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-civic shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-civic" />
-                <span className="h-2 w-2 animate-pulse rounded-full bg-civic [animation-delay:120ms]" />
-                <span className="h-2 w-2 animate-pulse rounded-full bg-civic [animation-delay:240ms]" />
+            {loading ? (
+              <div className="flex justify-end">
+                <TypingIndicator label="نشمي الذكي يفكر..." />
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
 
           {showScrollToBottom && (
             <button
               type="button"
               onClick={scrollToBottom}
-              className="absolute bottom-4 right-4 rounded-full bg-civic p-2 text-white shadow-lg hover:bg-civic/90 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
-              aria-label="التمرير إلى الأسفل"
+              className="absolute bottom-4 left-4 z-10 rounded-full bg-civic p-2 text-white shadow-lg transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+              aria-label="الانتقال إلى آخر المحادثة"
             >
-              <Send className="h-4 w-4 rotate-90" />
+              <ArrowDown className="h-4 w-4" />
             </button>
           )}
         </div>
 
-        <form onSubmit={submit} className="flex gap-2 border-t border-line bg-white p-4 dark:border-slate-700 dark:bg-slate-950/95">
+        <form onSubmit={submit} className="flex gap-2 border-t border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/95">
           <input
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            className="min-w-0 flex-1 rounded-full border border-line bg-white/95 px-4 py-3 text-sm focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+            className="min-w-0 flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
             maxLength={1200}
             placeholder="اسأل عن قانون، انتخابات، أحزاب، أو طريقة استخدام المنصة"
             disabled={loading}
+            aria-label="رسالة إلى المساعد الذكي"
           />
           <button
             type="submit"

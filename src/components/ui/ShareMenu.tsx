@@ -100,32 +100,32 @@ export default function ShareMenu({ url, title, text, label = "مشاركة" }: 
       </button>
 
       {open ? (
-        <div className="absolute bottom-full left-0 z-30 mb-2 w-72 rounded-lg border border-line bg-white p-2 text-sm text-ink shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-white" role="menu">
+        <div className="absolute bottom-full left-0 z-30 mb-2 w-72 rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100" role="menu">
           <div className="mb-1 flex items-center justify-between px-2 py-1">
             <p className="font-bold">مشاركة المنشور</p>
-            <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-7 w-7 place-items-center rounded-full text-ink/55 hover:bg-civic/10 hover:text-civic dark:text-white/64 dark:hover:text-emerald-200" aria-label="إغلاق خيارات المشاركة">
+            <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-7 w-7 place-items-center rounded-full text-slate-500 hover:bg-civic/10 hover:text-civic dark:text-slate-400 dark:hover:text-emerald-200" aria-label="إغلاق خيارات المشاركة">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {canNativeShare ? (
-            <button type="button" onClick={nativeShare} className="focus-ring flex w-full items-center gap-2 rounded px-3 py-2 text-start hover:bg-civic/10 hover:text-civic dark:hover:text-emerald-200" role="menuitem">
+            <button type="button" onClick={nativeShare} className="focus-ring flex w-full items-center gap-2 rounded px-3 py-2 text-start text-slate-700 hover:bg-civic/10 hover:text-civic dark:text-slate-200 dark:hover:bg-emerald-200/10 dark:hover:text-emerald-200" role="menuitem">
               <Share2 className="h-4 w-4" />
               مشاركة من الجهاز
             </button>
           ) : null}
 
-          <button type="button" onClick={copyLink} className="focus-ring flex w-full items-center gap-2 rounded px-3 py-2 text-start hover:bg-civic/10 hover:text-civic dark:hover:text-emerald-200" role="menuitem">
+          <button type="button" onClick={copyLink} className="focus-ring flex w-full items-center gap-2 rounded px-3 py-2 text-start text-slate-700 hover:bg-civic/10 hover:text-civic dark:text-slate-200 dark:hover:bg-emerald-200/10 dark:hover:text-emerald-200" role="menuitem">
             {copied ? <Check className="h-4 w-4 text-civic dark:text-emerald-200" /> : <Copy className="h-4 w-4" />}
             {copied ? "تم نسخ الرابط" : "نسخ الرابط"}
           </button>
 
-          <a href={buildMailto(title, shareUrl, text)} className="focus-ring flex items-center gap-2 rounded px-3 py-2 hover:bg-civic/10 hover:text-civic dark:hover:text-emerald-200" role="menuitem" onClick={() => setOpen(false)}>
+          <a href={buildMailto(title, shareUrl, text)} className="focus-ring flex items-center gap-2 rounded px-3 py-2 text-slate-700 hover:bg-civic/10 hover:text-civic dark:text-slate-200 dark:hover:bg-emerald-200/10 dark:hover:text-emerald-200" role="menuitem" onClick={() => setOpen(false)}>
             <Mail className="h-4 w-4" />
             مشاركة عبر البريد
           </a>
 
-          <a href={buildWhatsApp(shareUrl, text)} target="_blank" rel="noopener noreferrer" className="focus-ring flex items-center gap-2 rounded px-3 py-2 hover:bg-civic/10 hover:text-civic dark:hover:text-emerald-200" role="menuitem" onClick={() => setOpen(false)}>
+          <a href={buildWhatsApp(shareUrl, text)} target="_blank" rel="noopener noreferrer" className="focus-ring flex items-center gap-2 rounded px-3 py-2 text-slate-700 hover:bg-civic/10 hover:text-civic dark:text-slate-200 dark:hover:bg-emerald-200/10 dark:hover:text-emerald-200" role="menuitem" onClick={() => setOpen(false)}>
             <Send className="h-4 w-4" />
             مشاركة عبر واتساب
           </a>

@@ -87,7 +87,7 @@ export function PollCardSkeleton() {
 
 export function CommentSkeleton() {
   return (
-    <div className="rounded border border-line bg-white/80 p-3">
+    <div className="rounded border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/95">
       <div className="flex items-start gap-3">
         <SkeletonLine className="h-8 w-8 rounded-full" />
         <div className="flex-1 space-y-2">

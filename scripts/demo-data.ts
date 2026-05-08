@@ -46,7 +46,7 @@ export function describeMissingDemoData(counts: DemoDataCounts) {
 
 export const demoLawCards = [
   {
-    title: "المساواة أمام القانون  الفرص",
+    title: "المساواة أمام القانون وتكافؤ الفرص",
     slug: "equality-before-law-and-equal-opportunity",
     category: "الحقوق الدستورية",
     sourceName: "دستور المملكة الأردنية الهاشمية",
@@ -57,8 +57,8 @@ export const demoLawCards = [
     shortDescription: "كل المواطنين متساوون أمام القانون، والفرص العامة يجب أن تكون مبنية على العدالة لا على الخلفية الشخصية. هذه البطاقة مصممة لتظهر للمستخدم كملخص واضح ومفيد داخل صفحة القوانين، بحيث يفهم الفكرة القانونية بسرعة قبل قراءة النص الأصلي.",
     simplifiedExplanation: "بأسلوب شبابي مبسط: كل المواطنين متساوون أمام القانون، والفرص العامة يجب أن تكون مبنية على العدالة لا على الخلفية الشخصية. لذلك هذه القاعدة مهمة لفكرة Nashmi لأنها تحول النص القانوني من مادة جامدة إلى معلومة عملية تساعد المواطن على المشاركة بوعي، سواء كان يقرأ عن الانتخابات أو الأحزاب أو حقوقه الدستورية.",
     practicalExample: "طالبان من محافظتين مختلفتين يتقدمان لنشاط عام ويعاملان وفق نفس الشروط.",
-    youtubeVideoId: "https://youtu.be/zY2fYxO_Sp4?si=nEfAG_nH9pqkGPRt",
-    thumbnailUrl: "https://m7et.com/wp-content/uploads/2022/10/%D8%B9%D9%84%D9%85-%D8%A7%D9%84%D8%A3%D8%B1%D8%AF%D9%861.jpg\\" ,
+    youtubeVideoId: null,
+    thumbnailUrl: null ,
     tags: ["الدستور", "مساواة", "تكافؤ الفرص", "حقوق"],
     status: "published",
   },

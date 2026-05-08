@@ -71,9 +71,10 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
         onClick={() => send(reaction === "like" ? null : "like")}
         type="button"
         disabled={pending}
-        className={`inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-civic/10 active:scale-95 disabled:opacity-60 ${
-          reaction === "like" ? "bg-civic/10 text-civic ring-1 ring-civic/20" : "text-ink/70"
+        className={`inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-95 disabled:opacity-60 dark:hover:bg-emerald-200/10 ${
+          reaction === "like" ? "bg-civic/10 text-civic ring-1 ring-civic/20 dark:bg-emerald-200/12 dark:text-emerald-100 dark:ring-emerald-200/25" : "text-slate-600 dark:text-slate-300"
         }`}
+        aria-label="إعجاب"
       >
         <ThumbsUp className="h-4 w-4" />
         {counts.like}
@@ -82,9 +83,10 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
         onClick={() => send(reaction === "dislike" ? null : "dislike")}
         type="button"
         disabled={pending}
-        className={`inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-clay/10 active:scale-95 disabled:opacity-60 ${
-          reaction === "dislike" ? "bg-clay/10 text-clay ring-1 ring-clay/20" : "text-ink/70"
+        className={`inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-clay/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay active:scale-95 disabled:opacity-60 dark:hover:bg-amber-300/10 ${
+          reaction === "dislike" ? "bg-clay/10 text-clay ring-1 ring-clay/20 dark:bg-amber-300/12 dark:text-amber-200 dark:ring-amber-200/20" : "text-slate-600 dark:text-slate-300"
         }`}
+        aria-label="عدم إعجاب"
       >
         <ThumbsDown className="h-4 w-4" />
         {counts.dislike}

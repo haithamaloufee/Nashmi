@@ -282,7 +282,7 @@ export async function getAdminStats(): Promise<AdminStats> {
         ChatMessage.countDocuments(),
         AuditLog.countDocuments(),
         Report.find({ status: "open" }).sort({ createdAt: -1 }).limit(8).lean(),
-        AuditLog.find({}).sort({ createdAt: -1 }).limit(8).lean(),
+        AuditLog.find({}).populate({ path: "actorUserId", select: "name email role" }).sort({ createdAt: -1 }).limit(8).lean(),
         Post.find({}).sort({ createdAt: -1 }).limit(10).lean(),
         Report.countDocuments(),
         Law.countDocuments()
@@ -416,7 +416,7 @@ export async function getDashboardLists() {
         Party.find({}).sort({ createdAt: -1 }).limit(100).lean(),
         Report.find({}).sort({ createdAt: -1 }).limit(100).lean(),
         Law.find({}).sort({ createdAt: -1 }).limit(100).lean(),
-        AuditLog.find({}).sort({ createdAt: -1 }).limit(100).lean(),
+        AuditLog.find({}).populate({ path: "actorUserId", select: "name email role" }).sort({ createdAt: -1 }).limit(100).lean(),
         Post.find({}).sort({ createdAt: -1 }).limit(10).lean(),
         Comment.find({}).sort({ createdAt: -1 }).limit(10).lean(),
         Poll.find({}).sort({ createdAt: -1 }).limit(10).lean()

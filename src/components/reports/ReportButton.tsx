@@ -35,23 +35,23 @@ export default function ReportButton({ targetType, targetId, compact = false }: 
       <button
         onClick={() => setOpen((value) => !value)}
         type="button"
-        className={`${compact ? "h-8 w-8 px-0" : "px-3 py-1.5"} rounded border border-line bg-white text-xs text-ink/70 transition hover:border-civic hover:text-civic`}
+        className={`${compact ? "h-8 w-8 px-0" : "px-3 py-1.5"} rounded border border-slate-200 bg-white text-xs text-slate-600 transition hover:border-civic hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-300 dark:hover:text-emerald-200`}
         aria-label="إرسال بلاغ"
       >
         <Flag className={`${compact ? "mx-auto" : "ml-1 inline"} h-3.5 w-3.5`} />
         {compact ? null : "بلاغ"}
       </button>
       {open ? (
-        <form action={submit} className="absolute left-0 z-30 mt-2 w-72 space-y-2 rounded border border-line bg-white p-3 shadow-soft">
-          <select name="reason" className="w-full rounded border-line text-sm">
+        <form action={submit} className="absolute left-0 z-30 mt-2 w-72 space-y-2 rounded border border-slate-200 bg-white p-3 text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+          <select name="reason" className="w-full rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
             <option value="spam">محتوى مزعج</option>
             <option value="abuse">إساءة</option>
             <option value="misinformation">معلومات مضللة</option>
             <option value="hate">خطاب كراهية</option>
             <option value="other">أخرى</option>
           </select>
-          <textarea name="details" className="w-full rounded border-line text-sm" rows={2} placeholder="تفاصيل اختيارية" />
-          <button className="rounded bg-civic px-3 py-1.5 text-sm text-white">إرسال</button>
+          <textarea name="details" className="w-full rounded border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500" rows={2} placeholder="تفاصيل اختيارية" />
+          <button className="rounded bg-civic px-3 py-1.5 text-sm font-semibold text-white hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]">إرسال</button>
         </form>
       ) : null}
       <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)} />

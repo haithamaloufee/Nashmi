@@ -131,20 +131,21 @@ export default function CommentBox({ targetType, targetId, expanded, onCountChan
   if (!expanded) return null;
 
   return (
-    <div className="mt-4 border-t border-line pt-4">
-      <div className="flex gap-2">
+    <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <textarea
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          className="min-h-11 flex-1 resize-y rounded border-line text-sm focus:border-civic focus:ring-civic"
+          className="min-h-11 flex-1 resize-y rounded border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
           rows={2}
           maxLength={1000}
           placeholder="اكتب تعليقًا "
+          aria-label="كتابة تعليق"
         />
         <button
           onClick={submit}
           disabled={!content.trim() || submitting}
-          className="inline-flex h-11 min-w-24 items-center justify-center gap-2 rounded bg-civic px-3 text-sm font-semibold text-white transition hover:bg-civic/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 min-w-24 items-center justify-center gap-2 rounded bg-civic px-3 text-sm font-semibold text-white transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
           type="button"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
@@ -159,18 +160,18 @@ export default function CommentBox({ targetType, targetId, expanded, onCountChan
             <div className="skeleton h-16 rounded" />
           </div>
         ) : null}
-        {loaded && comments.length === 0 ? <p className="rounded bg-paper/70 p-3 text-sm text-ink/60">لا توجد تعليقات بعد. كن أول من يعلق.</p> : null}
+        {loaded && comments.length === 0 ? <p className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300">لا توجد تعليقات بعد. كن أول من يعلق.</p> : null}
         {comments.map((comment) => (
-          <div key={comment._id} className={`rounded border border-line bg-white/80 p-3 ${comment.pending ? "opacity-70" : ""}`}>
+          <div key={comment._id} className={`rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 ${comment.pending ? "opacity-75" : ""}`}>
             <div className="flex items-start gap-3">
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-civic/10 text-sm font-bold text-civic">{avatarText(comment)}</div>
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-civic/10 text-sm font-bold text-civic ring-1 ring-civic/15 dark:bg-emerald-200/12 dark:text-emerald-100 dark:ring-emerald-200/25">{avatarText(comment)}</div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-ink">{authorName(comment)}</span>
-                  <span className="text-xs text-ink/45">{comment.pending ? "قيد الإرسال" : formatDate(comment.createdAt)}</span>
-                  {comment.failed ? <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-700">فشل الإرسال</span> : null}
+                  <span className="font-semibold text-slate-900 dark:text-white">{authorName(comment)}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{comment.pending ? "قيد الإرسال" : formatDate(comment.createdAt)}</span>
+                  {comment.failed ? <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-950/45 dark:text-red-200">فشل الإرسال</span> : null}
                 </div>
-                <p className="mt-1 whitespace-pre-line text-sm leading-7 text-ink/78">{comment.content}</p>
+                <p className="mt-1 whitespace-pre-line break-words text-sm leading-7 text-slate-800 dark:text-slate-200">{comment.content}</p>
               </div>
               {!comment.pending ? (
                 <div className="flex shrink-0 items-center gap-1">
@@ -188,7 +189,7 @@ export default function CommentBox({ targetType, targetId, expanded, onCountChan
           type="button"
           onClick={() => loadComments(nextCursor)}
           disabled={loading}
-          className="mt-3 rounded border border-line px-3 py-2 text-sm font-semibold text-civic transition hover:border-civic hover:bg-civic/10 disabled:opacity-60"
+          className="mt-3 rounded border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-civic transition hover:border-civic hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200 dark:hover:border-emerald-300 dark:hover:bg-slate-800"
         >
           {loading ? "جار التحميل..." : "عرض المزيد من التعليقات"}
         </button>

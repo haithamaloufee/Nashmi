@@ -31,8 +31,8 @@ body {
 }
 
 .dark body {
-  background: #101820;
-  color: #eef3ef;
+  background: #0b141b;
+  color: #f1f5f9;
 }
 
 a {
@@ -146,9 +146,9 @@ select:disabled {
 .dark .bg-white,
 .dark .bg-paper,
 .dark .bg-slate-50 {
-  border-color: rgba(229, 223, 211, 0.14);
-  background-color: #16242d;
-  color: #eef3ef;
+  border-color: rgba(148, 163, 184, 0.28);
+  background-color: #0f172a;
+  color: #f1f5f9;
 }
 
 .dark .bg-amber-50 {
@@ -170,11 +170,11 @@ select:disabled {
 }
 
 .dark .border-line {
-  border-color: rgba(229, 223, 211, 0.16);
+  border-color: rgba(148, 163, 184, 0.26);
 }
 
 .dark .ring-line {
-  --tw-ring-color: rgba(229, 223, 211, 0.16);
+  --tw-ring-color: rgba(148, 163, 184, 0.26);
 }
 
 .dark .shadow-soft,
@@ -205,9 +205,9 @@ select:disabled {
 
 .dark .election-chart-grid {
   background:
-    linear-gradient(to top, rgba(238, 243, 239, 0.12) 1px, transparent 1px),
-    linear-gradient(#16242d, #16242d);
-  border-color: rgba(229, 223, 211, 0.16);
+    linear-gradient(to top, rgba(226, 232, 240, 0.12) 1px, transparent 1px),
+    linear-gradient(#0f172a, #0f172a);
+  border-color: rgba(148, 163, 184, 0.26);
 }
 
 .dark .election-bar-track {
@@ -219,8 +219,12 @@ select:disabled {
 }
 
 .dark .donut-chart-inner {
-  background: #101820;
-  color: #eef3ef;
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+.dark .skeleton {
+  background: #1f2937;
 }
 
 .card-hover:hover {

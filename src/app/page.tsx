@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -10,7 +9,6 @@ import {
   ExternalLink,
   Flag,
   Info,
-  MessageCircle,
   Newspaper,
   Scale,
   ShieldCheck,
@@ -21,12 +19,12 @@ import {
   Zap
 } from "lucide-react";
 import ElectionStatsSection from "@/components/landing/ElectionStatsSection";
+import LandingInsightsSections from "@/components/landing/LandingInsightsSections";
 import LandingInteractions from "@/components/landing/LandingInteractions";
 import RelatedSitesSection from "@/components/landing/RelatedSitesSection";
 import RoyalQuotesSection from "@/components/landing/RoyalQuotesSection";
-import { HomeStatsSkeleton } from "@/components/ui/Skeletons";
+import CountUpNumber from "@/components/ui/CountUpNumber";
 import { getCurrentUser } from "@/lib/auth";
-import { getHomeStats } from "@/lib/serverData";
 
 export const dynamic = "force-dynamic";
 
@@ -78,38 +76,13 @@ function ExternalAnchor({ href, children, className, ariaLabel }: { href: string
   );
 }
 
-function formatMetricValue(value: number, available: boolean) {
-  return available ? new Intl.NumberFormat("ar-JO").format(value) : "غير متاح";
-}
-
-async function PlatformStats() {
-  const data = await getHomeStats();
-  const dataAvailable = data.available !== false;
-  const stats = [
-    { label: "عدد المنشورات", value: data.postsCount, icon: Newspaper },
-    { label: "عدد التصويتات", value: data.pollsCount, icon: Vote },
-    { label: "عدد الأحزاب", value: data.partiesCount, icon: Building2 },
-    { label: "عدد التفاعلات", value: data.interactionsCount, icon: MessageCircle },
-    { label: "عدد المستخدمين", value: data.usersCount, icon: Users }
-  ];
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {stats.map((stat) => {
-        const Icon = stat.icon;
-        return (
-          <div key={stat.label} className="reveal-on-scroll rounded border border-white/20 bg-white/10 p-5 text-white shadow-soft backdrop-blur dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 dark:shadow-black/20" data-reveal>
-            <Icon className="mb-4 h-8 w-8 text-emerald-200" />
-            <span className={`block font-black leading-none text-white drop-shadow-sm ${dataAvailable ? "text-4xl" : "text-2xl"}`}>
-              {formatMetricValue(stat.value, dataAvailable)}
-            </span>
-            <span className="mt-3 block text-sm font-semibold text-white/78">{stat.label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const partySnapshotStats = [
+  { label: "عدد الأحزاب السياسية", value: 32, icon: Building2 },
+  { label: "عدد الأعضاء", value: 86625, icon: Users },
+  { label: "ذكور", value: 49699, icon: Users },
+  { label: "إناث", value: 36926, icon: Users },
+  { label: "شباب 18-35", value: 30556, icon: Vote }
+];
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -247,20 +220,33 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[linear-gradient(135deg,#17313a,#126b6f)] py-16" id="statistics" aria-labelledby="stats-title">
+      <section className="bg-[linear-gradient(135deg,#0f172a,#126b6f)] py-16" id="statistics" aria-labelledby="stats-title">
         <div className="container-page">
           <div className="reveal-on-scroll mb-8 flex flex-col justify-between gap-4 text-white md:flex-row md:items-end" data-reveal>
             <div>
-              <p className="mb-2 text-sm font-bold text-emerald-200">بيانات المنصة</p>
-              <h2 id="stats-title" className="text-3xl font-black">مؤشرات المنصة</h2>
+              <p className="mb-2 text-sm font-bold text-emerald-200">إحصاءات الأحزاب</p>
+              <h2 id="stats-title" className="text-3xl font-black">لمحة عن العضوية الحزبية</h2>
             </div>
-            <p className="max-w-xl leading-8 text-white/75">تستند هذه المؤشرات إلى بيانات المنصة الحالية عند توفر قاعدة البيانات، وليست أرقامًا رسمية للانتخابات أو للهيئة.</p>
+            <p className="max-w-xl leading-8 text-white/75">أرقام ثابتة من لقطات مرجع إحصاءات الأحزاب المرفقة، تعرض هنا بصريًا دون إنشاء تبعية خلفية جديدة.</p>
           </div>
-          <Suspense fallback={<HomeStatsSkeleton />}>
-            <PlatformStats />
-          </Suspense>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {partySnapshotStats.map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <div key={stat.label} className="reveal-on-scroll rounded border border-emerald-200/20 bg-white/[0.08] p-5 text-white shadow-soft transition hover:-translate-y-0.5 hover:border-emerald-200/45 hover:bg-white/[0.12] dark:bg-slate-950/35" data-reveal>
+                  <Icon className="mb-4 h-8 w-8 text-emerald-200" />
+                  <span className="block text-4xl font-black leading-none text-white drop-shadow-sm">
+                    <CountUpNumber value={stat.value} duration={1200} />
+                  </span>
+                  <span className="mt-3 block text-sm font-semibold text-white/78">{stat.label}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
+
+      <LandingInsightsSections />
 
       <ElectionStatsSection />
 

@@ -51,7 +51,22 @@ export async function PATCH(request: Request, context: Context) {
       ...((input.tags || current.tags || []) as string[])
     ]);
     const law = await Law.findByIdAndUpdate(id, { $set: update }, { new: true }).lean();
-    await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "law.update", targetType: "law", targetId: id, metadata: { meaningChanged }, request });
+    await writeAuditLog({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: "law.update",
+      targetType: "law",
+      targetId: id,
+      metadata: {
+        meaningChanged,
+        title: law?.title,
+        slug: law?.slug,
+        status: law?.status,
+        category: law?.category,
+        summary: `${user.role === "iec" ? "قام مستخدم من الهيئة" : "قام مستخدم إداري"} بتحديث قانون: ${law?.title || current.title}`
+      },
+      request
+    });
     return ok({ law: serialize(law) });
   } catch (error) {
     return handleApiError(error);

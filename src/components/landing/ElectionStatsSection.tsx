@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { BarChart3, FileCheck2, Info, Users, Vote } from "lucide-react";
+import CountUpNumber from "@/components/ui/CountUpNumber";
 
 const electionNumbers = [
   { label: "عدد المقترعين", value: 1638356, icon: Vote },
@@ -33,8 +34,8 @@ export default function ElectionStatsSection() {
               <article key={item.label} className="reveal-on-scroll rounded border border-white/20 bg-white/10 p-5 shadow-soft backdrop-blur transition hover:-translate-y-1 hover:bg-white/15 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 dark:hover:bg-slate-900/95" data-reveal>
                 <Icon className="mb-4 h-9 w-9 text-emerald-200" />
                 <h3 className="text-lg font-bold text-white/88">{item.label}</h3>
-                <p className="mt-4 text-4xl font-black" data-counter={item.value}>
-                  0
+                <p className="mt-4 text-4xl font-black">
+                  <CountUpNumber value={item.value} duration={1300} />
                 </p>
               </article>
             );
@@ -64,7 +65,7 @@ export default function ElectionStatsSection() {
                     <div className="election-chart-grid" aria-label="رسم أعمدة لنسب الانتخاب حسب الدائرة">
                       {districtPercentages.map((item) => (
                         <div key={item.label} className="flex min-h-[300px] flex-col items-center justify-end gap-2">
-                          <span className="text-xs font-bold text-ink/78">{item.value}</span>
+                          <span className="text-xs font-bold text-ink/78 dark:text-slate-300">{item.value}</span>
                           <div className="election-bar-track" aria-hidden="true">
                             <div className="election-bar-fill" style={{ "--bar-height": `${item.value}%` } as CSSProperties} />
                           </div>
@@ -81,13 +82,11 @@ export default function ElectionStatsSection() {
                   </div>
                 </article>
 
-                <article className="reveal-on-scroll grid min-h-[420px] place-items-center rounded bg-white p-6 text-ink shadow-soft" data-reveal>
+                <article className="reveal-on-scroll grid min-h-[420px] place-items-center rounded bg-white p-6 text-ink shadow-soft dark:border dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 dark:shadow-black/20" data-reveal>
                   <div className="text-center">
                     <div className="donut-chart mx-auto" data-donut-value="32.25">
                       <div className="donut-chart-inner">
-                        <span data-counter="32.25" data-counter-decimals="2" data-counter-suffix="%">
-                          0.00%
-                        </span>
+                        <CountUpNumber value={32.25} decimals={2} suffix="%" duration={1400} />
                       </div>
                     </div>
                     <h3 className="mt-6 text-2xl font-black">النسبة الكلية 2024</h3>

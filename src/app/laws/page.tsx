@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import { Search } from "lucide-react";
 import LawCard from "@/components/laws/LawCard";
+import LawManagementControls from "@/components/laws/LawManagementControls";
 import Alert from "@/components/ui/Alert";
+import { getCurrentUser } from "@/lib/auth";
+import { canManageLaws } from "@/lib/permissions";
 import { getPublicLaws } from "@/lib/serverData";
 import { SkeletonLine } from "@/components/ui/Skeletons";
 
@@ -50,10 +53,17 @@ async function LawsContent({ search, category }: { search?: string; category?: s
 
 export default async function LawsPage({ searchParams }: { searchParams: Promise<{ search?: string; category?: string }> }) {
   const params = await searchParams;
+  const user = await getCurrentUser();
+  const canManage = canManageLaws(user?.role);
   return (
     <main className="container-page py-8">
-      <h1 className="text-3xl font-black">افهم قانونك</h1>
-      <p className="mt-2 text-ink/70">شرح مبسط للقوانين والمفاهيم الانتخابية من مصادر منشورة.</p>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div>
+          <h1 className="text-3xl font-black">افهم قانونك</h1>
+          <p className="mt-2 text-ink/70">شرح مبسط للقوانين والمفاهيم الانتخابية من مصادر منشورة.</p>
+        </div>
+        {canManage ? <LawManagementControls mode="create" /> : null}
+      </div>
       <div className="mt-5">
         <Alert>شرح القوانين للتوعية العامة وليس استشارة قانونية رسمية.</Alert>
       </div>
