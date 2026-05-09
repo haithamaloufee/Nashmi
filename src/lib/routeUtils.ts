@@ -1,7 +1,6 @@
 import type { ZodSchema } from "zod";
 import type { SafeUser } from "@/lib/auth";
 import { assertNoDangerousKeys, stripHtml } from "@/lib/security";
-import { isAdmin } from "@/lib/permissions";
 import Party from "@/models/Party";
 
 export async function readJson<T>(request: Request, schema: ZodSchema<T>) {
@@ -29,7 +28,7 @@ export async function requirePartyForUser(userId: string) {
 }
 
 export function canEditOwnedContent(user: SafeUser, doc: { authorUserId?: unknown }) {
-  return isAdmin(user.role) || String(doc.authorUserId) === user.id;
+  return String(doc.authorUserId) === user.id;
 }
 
 export function cleanContent(input: string) {

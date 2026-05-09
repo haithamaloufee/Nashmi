@@ -59,6 +59,39 @@ export function canManageUser(user: { role: Role }, targetUser: { role: Role }) 
   return false;
 }
 
+export function normalizeOwnershipId(value: unknown) {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && value !== null) {
+    return String((value as { _id?: unknown; id?: unknown })._id ?? (value as { _id?: unknown; id?: unknown }).id ?? "");
+  }
+  return null;
+}
+
+export function isContentOwner(user: { role: string; id: string }, item: { authorUserId?: unknown; authorType?: string }) {
+  if (user.role === "party" && item.authorType !== "party") return false;
+  if (user.role === "iec" && item.authorType !== "iec") return false;
+  if (user.role !== "party" && user.role !== "iec") return false;
+  const ownerId = normalizeOwnershipId(item.authorUserId);
+  return Boolean(ownerId && ownerId === user.id);
+}
+
+export function canEditOwnPost(user: { role: string; id: string }, post: { authorUserId?: unknown; authorType?: string }) {
+  return isContentOwner(user, post);
+}
+
+export function canDeleteOwnPost(user: { role: string; id: string }, post: { authorUserId?: unknown; authorType?: string }) {
+  return isContentOwner(user, post);
+}
+
+export function canEditOwnPoll(user: { role: string; id: string }, poll: { authorUserId?: unknown; authorType?: string }) {
+  return isContentOwner(user, poll);
+}
+
+export function canDeleteOwnPoll(user: { role: string; id: string }, poll: { authorUserId?: unknown; authorType?: string }) {
+  return isContentOwner(user, poll);
+}
+
 export function assertOwnParty() {
   // To be implemented with DB check
 }

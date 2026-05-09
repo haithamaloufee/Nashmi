@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
-import { isAdmin } from "@/lib/permissions";
+import { canDeleteOwnPost, canEditOwnPost, isAdmin } from "@/lib/permissions";
 import { attachPublisherSnapshots, getAuthorityAuthor } from "@/lib/publisher";
 import { normalizePopulatedMedia } from "@/lib/media";
 import { postUpdateSchema } from "@/lib/validators";
@@ -17,14 +17,6 @@ import MediaAsset from "@/models/MediaAsset";
 type Context = { params: Promise<{ id: string }> };
 
 const deleteSchema = z.object({ reason: z.string().trim().min(3).max(1000).optional() });
-
-function isOwnerContentRole(role: string) {
-  return role === "party" || role === "iec";
-}
-
-function ownsContent(userId: string, doc: { authorUserId?: unknown }) {
-  return String(doc.authorUserId) === userId;
-}
 
 async function revalidatePostSurfaces(post: { partyId?: unknown; publisherSnapshot?: { href?: string | null } | null; authorType?: string }) {
   revalidatePath("/updates");
@@ -71,7 +63,7 @@ export async function PATCH(request: Request, context: Context) {
     const post = await Post.findById(id);
     if (!post || post.status === "deleted") throw new Error("NOT_FOUND");
 
-    const ownerAuthorized = isOwnerContentRole(user.role) && ownsContent(user.id, post);
+    const ownerAuthorized = canEditOwnPost(user, post);
     const moderationAuthorized = isAdmin(user.role) && input.status !== undefined && input.title === undefined && input.content === undefined && input.tags === undefined && input.mediaIds === undefined;
     if (!ownerAuthorized && !moderationAuthorized) {
       console.info({ route: "/api/posts/[id]", action: "update", userId: user.id, role: user.role, postId: id, ownerId: String(post.authorUserId), authorized: false, durationMs: Date.now() - startedAt });
@@ -112,7 +104,7 @@ export async function DELETE(request: Request, context: Context) {
     const post = await Post.findById(id);
     if (!post || post.status === "deleted") throw new Error("NOT_FOUND");
 
-    const ownerAuthorized = isOwnerContentRole(user.role) && ownsContent(user.id, post);
+    const ownerAuthorized = canDeleteOwnPost(user, post);
     const moderationAuthorized = isAdmin(user.role) && !ownerAuthorized;
     if (!ownerAuthorized && !moderationAuthorized) {
       console.info({ route: "/api/posts/[id]", action: "delete", userId: user.id, role: user.role, postId: id, ownerId: String(post.authorUserId), authorized: false, durationMs: Date.now() - startedAt });

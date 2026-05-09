@@ -5,6 +5,7 @@ import { MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import MediaUploadField from "@/components/ui/MediaUploadField";
 import SafeImage from "@/components/ui/SafeImage";
 import { useToast } from "@/components/ui/ToastProvider";
+import { canEditOwnPost, canEditOwnPoll } from "@/lib/permissions";
 
 type SafeUser = { id: string; role: string } | null;
 type MediaItem = { _id?: string; url: string; mimeType?: string; type?: "image" | "video" | "document"; status?: string };
@@ -17,13 +18,6 @@ type OwnerContentMenuProps = {
 };
 
 let currentUserPromise: Promise<SafeUser> | null = null;
-
-function getAuthorId(item: any) {
-  const author = item?.authorUserId;
-  if (!author) return null;
-  if (typeof author === "string") return author;
-  return String(author._id || author.id || "");
-}
 
 function existingMedia(item: any): MediaItem[] {
   return (item?.mediaIds || []).filter((media: unknown): media is MediaItem => typeof media === "object" && media !== null && Boolean((media as MediaItem).url) && (media as MediaItem).status !== "deleted");
@@ -74,9 +68,9 @@ export default function OwnerContentMenu({ type, item, onUpdated, onDeleted }: O
   }, [item]);
 
   const isVisible = useMemo(() => {
-    const ownerId = getAuthorId(item);
-    return Boolean(user && (user.role === "party" || user.role === "iec") && ownerId && ownerId === user.id);
-  }, [item, user]);
+    if (!user) return false;
+    return type === "post" ? canEditOwnPost(user, item) : canEditOwnPoll(user, item);
+  }, [item, type, user]);
 
   if (!isVisible) return null;
 
@@ -209,8 +203,12 @@ export default function OwnerContentMenu({ type, item, onUpdated, onDeleted }: O
       {deleteOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl dark:bg-slate-950">
-            <h2 className="text-lg font-bold">تأكيد الحذف</h2>
-            <p className="mt-2 leading-7 text-slate-600 dark:text-slate-300">سيتم حذف هذا المحتوى من الصفحات العامة. لا يمكن للزوار رؤيته بعد الحذف.</p>
+            <h2 className="text-lg font-bold">{type === "post" ? "حذف المنشور" : "حذف التصويت"}</h2>
+            <p className="mt-2 leading-7 text-slate-600 dark:text-slate-300">
+              {type === "post"
+                ? "هل أنت متأكد أنك تريد حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء."
+                : "هل أنت متأكد أنك تريد حذف هذا التصويت؟"}
+            </p>
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={() => setDeleteOpen(false)} className="rounded border border-line px-4 py-2 font-semibold">إلغاء</button>
               <button type="button" onClick={deleteItem} disabled={saving} className="rounded bg-red-600 px-4 py-2 font-semibold text-white disabled:opacity-60">

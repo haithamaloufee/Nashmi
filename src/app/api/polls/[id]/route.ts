@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
-import { isAdmin } from "@/lib/permissions";
+import { canDeleteOwnPoll, canEditOwnPoll, isAdmin } from "@/lib/permissions";
 import { attachPublisherSnapshots, getAuthorityAuthor } from "@/lib/publisher";
 import { pollUpdateSchema } from "@/lib/validators";
 import { createSearchText } from "@/lib/arabicSearch";
@@ -14,14 +14,6 @@ import Party from "@/models/Party";
 
 type Context = { params: Promise<{ id: string }> };
 const deleteSchema = z.object({ reason: z.string().trim().min(3).max(1000).optional() });
-
-function isOwnerContentRole(role: string) {
-  return role === "party" || role === "iec";
-}
-
-function ownsContent(userId: string, doc: { authorUserId?: unknown }) {
-  return String(doc.authorUserId) === userId;
-}
 
 async function revalidatePollSurfaces(poll: { partyId?: unknown; authorType?: string }) {
   revalidatePath("/updates");
@@ -66,7 +58,7 @@ export async function PATCH(request: Request, context: Context) {
     const poll = await Poll.findById(id);
     if (!poll || poll.status === "deleted") throw new Error("NOT_FOUND");
 
-    const ownerAuthorized = isOwnerContentRole(user.role) && ownsContent(user.id, poll);
+    const ownerAuthorized = canEditOwnPoll(user, poll);
     const moderationAuthorized = isAdmin(user.role) && input.status !== undefined && input.question === undefined && input.description === undefined && input.options === undefined && input.resultsVisibility === undefined && input.expiresAt === undefined;
     if (!ownerAuthorized && !moderationAuthorized) {
       console.info({ route: "/api/polls/[id]", action: "update", userId: user.id, role: user.role, pollId: id, ownerId: String(poll.authorUserId), authorized: false, durationMs: Date.now() - startedAt });
@@ -107,7 +99,7 @@ export async function DELETE(request: Request, context: Context) {
     const poll = await Poll.findById(id);
     if (!poll || poll.status === "deleted") throw new Error("NOT_FOUND");
 
-    const ownerAuthorized = isOwnerContentRole(user.role) && ownsContent(user.id, poll);
+    const ownerAuthorized = canDeleteOwnPoll(user, poll);
     const moderationAuthorized = isAdmin(user.role) && !ownerAuthorized;
     if (!ownerAuthorized && !moderationAuthorized) {
       console.info({ route: "/api/polls/[id]", action: "delete", userId: user.id, role: user.role, pollId: id, ownerId: String(poll.authorUserId), authorized: false, durationMs: Date.now() - startedAt });
