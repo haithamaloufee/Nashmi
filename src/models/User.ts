@@ -25,6 +25,7 @@ const UserSchema = new Schema(
 UserSchema.index({ emailNormalized: 1 }, { unique: true });
 UserSchema.index({ googleId: 1 }, { unique: true, partialFilterExpression: { googleId: { $type: "string" } } });
 UserSchema.index({ role: 1, status: 1 });
+UserSchema.index({ status: 1, createdAt: -1 });
 
 export type UserDocument = InferSchemaType<typeof UserSchema>;
 

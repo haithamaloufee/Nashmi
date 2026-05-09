@@ -1,5 +1,7 @@
 import { connectToDatabase } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
+import { CACHE_HEADERS, cacheHeaders } from "@/lib/cache";
 import { requireActiveUser } from "@/lib/auth";
 import { authorTypeForRole, contentCreatorRoles } from "@/lib/permissions";
 import { attachPublisherSnapshots, buildPublisherSnapshot, getAuthorityAuthor } from "@/lib/publisher";
@@ -27,6 +29,7 @@ export async function GET(request: Request) {
     if (filter === "iec") query.authorType = "iec";
     if (regex) query.searchNormalized = regex;
     const [posts, authorityAuthor] = await Promise.all([Post.find(query)
+      .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
       .populate({ path: "authorUserId", select: "name avatarUrl image role" })
       .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
       .populate({ path: "mediaIds", select: "url mimeType type width height status" })
@@ -34,7 +37,10 @@ export async function GET(request: Request) {
       .limit(limit)
       .lean(), getAuthorityAuthor()]);
     const withPublisher = attachPublisherSnapshots(posts as any[], authorityAuthor);
-    return ok({ posts: serialize(withPublisher) }, { nextCursor: getNextCursor(posts, limit) });
+    return ok(
+      { posts: serialize(withPublisher) },
+      { nextCursor: getNextCursor(posts, limit), headers: cacheHeaders(CACHE_HEADERS.publicFeed) }
+    );
   } catch (error) {
     return handleApiError(error);
   }
@@ -79,6 +85,9 @@ export async function POST(request: Request) {
       searchNormalized: createSearchText([input.title || "", content, ...(input.tags || [])])
     });
     if (partyId) await Party.updateOne({ _id: partyId }, { $inc: { postsCount: 1 } });
+    revalidatePath("/updates");
+    revalidatePath("/");
+    if (publisherSnapshot.href) revalidatePath(publisherSnapshot.href);
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "post.create", targetType: "post", targetId: post._id, metadata: { partyId }, request });
     const populated = await Post.findById(post._id)
       .populate({ path: "authorUserId", select: "name avatarUrl image role" })

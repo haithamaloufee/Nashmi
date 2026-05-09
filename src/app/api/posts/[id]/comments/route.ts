@@ -1,5 +1,8 @@
 import { connectToDatabase } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 import { ok, handleApiError } from "@/lib/apiResponse";
+import { CACHE_HEADERS, cacheHeaders } from "@/lib/cache";
+import { publicComments, publicComment } from "@/lib/comments";
 import { requireActiveUser } from "@/lib/auth";
 import { commentSchema } from "@/lib/validators";
 import { requireRateLimit } from "@/lib/rateLimit";
@@ -16,12 +19,19 @@ export async function GET(request: Request, context: Context) {
     const url = new URL(request.url);
     const limit = parseLimit(url.searchParams.get("limit"));
     await connectToDatabase();
-    const comments = await Comment.find({ targetType: "post", targetId: id, status: "published", ...cursorFilter(url.searchParams.get("cursor")) })
-      .populate({ path: "authorUserId", select: "name avatarUrl image role" })
-      .sort(newestSort)
-      .limit(limit)
-      .lean();
-    return ok({ comments: serialize(comments) }, { nextCursor: getNextCursor(comments, limit) });
+    const [postExists, comments] = await Promise.all([
+      Post.exists({ _id: id, status: "published" }),
+      Comment.find({ targetType: "post", targetId: id, status: "published", ...cursorFilter(url.searchParams.get("cursor")) })
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .sort(newestSort)
+        .limit(limit)
+        .lean()
+    ]);
+    if (!postExists) throw new Error("NOT_FOUND");
+    return ok(
+      { comments: serialize(publicComments(comments as any[])) },
+      { nextCursor: getNextCursor(comments, limit), headers: cacheHeaders(CACHE_HEADERS.publicComments) }
+    );
   } catch (error) {
     return handleApiError(error);
   }
@@ -45,8 +55,9 @@ export async function POST(request: Request, context: Context) {
       content: cleanContent(input.content)
     });
     await Post.updateOne({ _id: id }, { $inc: { commentsCount: 1 } });
+    revalidatePath("/updates");
     const populated = await Comment.findById(comment._id).populate({ path: "authorUserId", select: "name avatarUrl image role" }).lean();
-    return ok({ comment: serialize(populated || comment) }, { status: 201 });
+    return ok({ comment: serialize(publicComment((populated || comment) as any)) }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

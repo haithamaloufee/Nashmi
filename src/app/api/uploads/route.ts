@@ -25,6 +25,15 @@ async function readRemoteMagic(url: string) {
   return Buffer.from(await response.arrayBuffer());
 }
 
+function isVercelBlobUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
+
 export async function GET() {
   return ok({
     directBlobUpload: hasBlobReadWriteToken(),
@@ -99,6 +108,7 @@ export async function PATCH(request: Request) {
 
     const storageKey = input.storageKey.replace(/^\/+/, "");
     if (!storageKey.startsWith(`media/${user.id}/`) && !storageKey.startsWith("media/direct/")) return fail("FORBIDDEN", "مسار الملف لا يخص هذا الحساب", 403);
+    if (storageKey.startsWith("media/direct/") && !isVercelBlobUrl(input.url)) return fail("FORBIDDEN", "روابط الوسائط الخارجية غير مسموحة. استخدم رفع الملفات من الجهاز.", 403);
 
     const magic = await readRemoteMagic(input.url);
     if (!magic || !hasValidUploadMagic(magic, mimeType)) return fail("BAD_REQUEST", "نوع الملف لا يطابق محتواه", 400);

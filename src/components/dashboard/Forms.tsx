@@ -75,7 +75,7 @@ export function PostCreateForm() {
       <MediaUploadField
         label="مرفقات المنشور"
         imagesOnly={false}
-        helper="يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF، أو فيديو MP4/WEBM"
+        helper="يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF، أو فيديو MP4/WEBM حتى 100MB"
         fallbackText="+"
         purpose="post"
         onUploaded={(asset) => setMedia((current) => current.length >= 6 ? current : [...current, { id: asset._id, url: asset.url, type: asset.type, mimeType: asset.mimeType }])}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Bot, Compass, Loader2, Search } from "lucide-react";
 import PostCard from "@/components/posts/PostCard";
@@ -26,6 +26,7 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
   const [nextCursor, setNextCursor] = useState<string | null>(initialUpdates.length >= 10 ? initialUpdates[initialUpdates.length - 1]?.publishedAt || null : null);
   const [loading, setLoading] = useState(initialUpdates.length === 0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const prefetchedPage = useRef<{ key: string; updates: UpdateItem[]; nextCursor: string | null } | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -34,13 +35,21 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
   }, [search]);
 
   const load = useCallback(async (cursor?: string | null) => {
-    if (cursor) setLoadingMore(true);
-    else setLoading(true);
     const params = new URLSearchParams({ limit: "10", filter });
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (cursor) params.set("cursor", cursor);
+    const key = params.toString();
+    if (cursor && prefetchedPage.current?.key === key) {
+      const page = prefetchedPage.current;
+      prefetchedPage.current = null;
+      setUpdates((current) => [...current, ...page.updates]);
+      setNextCursor(page.nextCursor);
+      return;
+    }
+    if (cursor) setLoadingMore(true);
+    else setLoading(true);
     try {
-      const response = await fetch(`/api/updates?${params.toString()}`, { cache: "no-store" });
+      const response = await fetch(`/api/updates?${key}`);
       const json = await response.json().catch(() => ({}));
       if (cursor) setLoadingMore(false);
       else setLoading(false);
@@ -60,6 +69,28 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
       showToast("تعذر الاتصال بالخادم", "error");
     }
   }, [debouncedSearch, filter, showToast]);
+
+  useEffect(() => {
+    if (!nextCursor || loading || loadingMore || filter === "followed") return;
+    const params = new URLSearchParams({ limit: "10", filter });
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    params.set("cursor", nextCursor);
+    const key = params.toString();
+    if (prefetchedPage.current?.key === key) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void fetch(`/api/updates?${key}`, { signal: controller.signal })
+        .then((response) => response.json())
+        .then((json) => {
+          if (json?.ok) prefetchedPage.current = { key, updates: json.data?.updates || [], nextCursor: json.nextCursor || null };
+        })
+        .catch(() => undefined);
+    }, 500);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [debouncedSearch, filter, loading, loadingMore, nextCursor]);
 
   useEffect(() => {
     if (debouncedSearch === initialSearch && filter === initialFilter && initialUpdates.length) return;

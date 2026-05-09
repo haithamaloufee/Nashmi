@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 import { ok, handleApiError } from "@/lib/apiResponse";
 import { requireUser, requireActiveUser, safeUser } from "@/lib/auth";
 import { profileUpdateSchema } from "@/lib/validators";
@@ -26,6 +27,7 @@ export async function PATCH(request: Request) {
     if (input.language !== undefined) update.language = input.language;
     const user = await User.findByIdAndUpdate(current.id, { $set: update }, { new: true });
     if (!user) throw new Error("NOT_FOUND");
+    revalidatePath(`/users/${current.id}`);
     await writeAuditLog({ actorUserId: current.id, actorRole: current.role, action: "user.profile_update", targetType: "user", targetId: current.id, request });
     return ok({ user: safeUser(user) });
   } catch (error) {

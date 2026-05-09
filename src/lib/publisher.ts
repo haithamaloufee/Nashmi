@@ -4,7 +4,9 @@ import Party from "@/models/Party";
 type LeanObject = Record<string, any>;
 
 export type PublisherSnapshot = {
+  id?: string | null;
   name: string;
+  type: "party" | "authority" | "user" | "admin" | "unknown";
   imageUrl: string | null;
   href: string | null;
   badge: string;
@@ -30,7 +32,9 @@ export function snapshotFromPost(post: LeanObject, authorityAuthor?: { name: str
 
   if (party?.name) {
     return {
+      id: party._id ? String(party._id) : existing?.id || null,
       name: existing?.name || party.name,
+      type: "party",
       imageUrl: existing?.imageUrl || party.logoUrl || user?.avatarUrl || user?.image || null,
       href: existing?.href || (party.slug ? `/parties/${party.slug}` : null),
       badge: existing?.badge || (party.isVerified ? "حزب موثق" : "حزب")
@@ -39,7 +43,9 @@ export function snapshotFromPost(post: LeanObject, authorityAuthor?: { name: str
 
   if (post.authorType === "iec") {
     return {
+      id: existing?.id || null,
       name: existing?.name || authorityAuthor?.name || user?.name || DEFAULT_AUTHORITY_NAME,
+      type: "authority",
       imageUrl: existing?.imageUrl || authorityAuthor?.logoUrl || user?.avatarUrl || user?.image || DEFAULT_AUTHORITY_LOGO,
       href: existing?.href || "/iec",
       badge: existing?.badge || "هيئة"
@@ -47,10 +53,12 @@ export function snapshotFromPost(post: LeanObject, authorityAuthor?: { name: str
   }
 
   return {
+    id: user?._id ? String(user._id) : existing?.id || null,
     name: existing?.name || user?.name || "مستخدم",
+    type: post.authorType === "admin" ? "admin" : user ? "user" : "unknown",
     imageUrl: existing?.imageUrl || user?.avatarUrl || user?.image || null,
-    href: existing?.href || null,
-    badge: existing?.badge || "إدارة"
+    href: existing?.href || (user?._id ? `/users/${String(user._id)}` : null),
+    badge: existing?.badge || (post.authorType === "admin" ? "إدارة" : "مستخدم")
   };
 }
 
@@ -65,12 +73,18 @@ export async function getAuthorityAuthor() {
   };
 }
 
-export async function buildPublisherSnapshot(input: { authorType: "party" | "iec" | "admin"; partyId?: string | null; authorUser?: { name?: string; avatarUrl?: string | null; image?: string | null } | null }) {
+export async function buildPublisherSnapshot(input: {
+  authorType: "party" | "iec" | "admin";
+  partyId?: string | null;
+  authorUser?: { id?: string; name?: string; avatarUrl?: string | null; image?: string | null } | null;
+}) {
   if (input.authorType === "party" && input.partyId) {
     const party = await Party.findById(input.partyId).select("name slug logoUrl isVerified").lean();
     if (party) {
       return {
+        id: String(party._id),
         name: party.name,
+        type: "party" as const,
         imageUrl: party.logoUrl || input.authorUser?.avatarUrl || input.authorUser?.image || null,
         href: party.slug ? `/parties/${party.slug}` : null,
         badge: party.isVerified ? "حزب موثق" : "حزب"
@@ -81,7 +95,9 @@ export async function buildPublisherSnapshot(input: { authorType: "party" | "iec
   if (input.authorType === "iec") {
     const authorityAuthor = await getAuthorityAuthor();
     return {
+      id: null,
       name: authorityAuthor.name,
+      type: "authority" as const,
       imageUrl: authorityAuthor.logoUrl,
       href: "/iec",
       badge: "هيئة"
@@ -89,9 +105,11 @@ export async function buildPublisherSnapshot(input: { authorType: "party" | "iec
   }
 
   return {
+    id: input.authorUser?.id || null,
     name: input.authorUser?.name || "إدارة",
+    type: input.authorType === "admin" ? ("admin" as const) : ("unknown" as const),
     imageUrl: input.authorUser?.avatarUrl || input.authorUser?.image || null,
-    href: null,
+    href: input.authorUser?.id ? `/users/${input.authorUser.id}` : null,
     badge: "إدارة"
   };
 }

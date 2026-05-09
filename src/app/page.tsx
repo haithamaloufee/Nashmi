@@ -281,7 +281,7 @@ export default async function HomePage() {
         <div className="container-page grid gap-9 md:grid-cols-2 xl:grid-cols-[1.1fr_0.8fr_1fr_1fr]">
           <section>
             <div className="mb-4 flex items-center gap-3">
-              <Image src="/images/nashmi logo_transparent.png" alt="شعار منصة نشمي" width={72} height={72} className="h-16 w-16 rounded-full bg-white/95 object-contain p-1" />
+              <Image src="/images/nashmi logo.png" alt="شعار منصة نشمي" width={72} height={72} className="h-16 w-16 rounded-full bg-white/95 object-contain p-1" />
               <div>
                 <h2 id="footer-title" className="text-2xl font-black">نشمي</h2>
                 <p className="text-sm text-white/62">Nashmi civic demo</p>

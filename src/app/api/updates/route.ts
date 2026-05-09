@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
+import { CACHE_HEADERS, cacheHeaders } from "@/lib/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { searchRegex } from "@/lib/arabicSearch";
 import { parseLimit } from "@/lib/pagination";
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
       filter === "polls"
         ? []
         : Post.find(basePostQuery)
+            .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .populate({ path: "mediaIds", select: "url mimeType type width height status" })
@@ -62,6 +64,7 @@ export async function GET(request: Request) {
       filter === "posts"
         ? []
         : Poll.find(basePollQuery)
+            .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .sort({ publishedAt: -1 })
@@ -81,7 +84,10 @@ export async function GET(request: Request) {
       .slice(0, limit);
 
     const nextCursor = updates.length === limit ? new Date(updates[updates.length - 1].publishedAt).toISOString() : null;
-    return ok({ updates: serialize(updates) }, { nextCursor });
+    return ok(
+      { updates: serialize(updates) },
+      { nextCursor, headers: filter === "followed" ? undefined : cacheHeaders(CACHE_HEADERS.publicFeed) }
+    );
   } catch (error) {
     return handleApiError(error);
   }

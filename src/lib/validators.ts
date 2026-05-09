@@ -173,7 +173,7 @@ export const postCreateSchema = z.object({
   tags: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
   mediaIds: z.array(objectIdSchema).max(6).default([]),
   partyId: objectIdSchema.optional().nullable()
-});
+}).strict("لا يمكن إرسال روابط وسائط يدوية. استخدم رفع الملفات من الجهاز.");
 
 export const postUpdateSchema = postCreateSchema.partial().extend({
   status: z.enum(["published", "hidden"]).optional()
@@ -239,7 +239,7 @@ export const lawSchema = z.object({
 });
 
 export const reportSchema = z.object({
-  targetType: z.enum(["post", "poll", "comment", "party"]),
+  targetType: z.enum(["post", "poll", "comment", "party", "user"]),
   targetId: objectIdSchema,
   reason: z.enum(["spam", "abuse", "misinformation", "hate", "other"]),
   details: z.string().trim().max(1000).nullable().optional()

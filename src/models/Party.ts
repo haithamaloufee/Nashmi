@@ -77,7 +77,7 @@ const PartySchema = new Schema(
 );
 
 PartySchema.index({ slug: 1 }, { unique: true });
-PartySchema.index({ accountUserId: 1 }, { unique: true, partialFilterExpression: { accountUserId: { $exists: true, $ne: null } } });
+PartySchema.index({ accountUserId: 1 }, { unique: true, partialFilterExpression: { accountUserId: { $type: "objectId" } } });
 PartySchema.index({ name: "text", shortDescription: "text", description: "text" });
 PartySchema.index({ searchNormalized: 1 });
 PartySchema.index({ status: 1, isVerified: 1 });

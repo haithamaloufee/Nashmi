@@ -1,0 +1,18 @@
+{
+  "load:homepage-desktop": 917,
+  "load:homepage-mobile-360": 173,
+  "nav:/updates": 246,
+  "nav:/parties": 144,
+  "nav:/iec": 152,
+  "nav:/laws": 262,
+  "load:updates-desktop-visible-post-media": 4111,
+  "load:updates-mobile-360-visible-post-media": 559,
+  "load:updates-mobile-390-visible-post-media": 1353,
+  "load:updates-mobile-430-visible-post-media": 619,
+  "load:iec-desktop-visible-iec-post-media": 1051,
+  "load:iec-mobile-visible-iec-post-media": 944,
+  "load:navbar-parties": 1057,
+  "load:navbar-laws": 4711,
+  "load:public-profile-desktop": 342,
+  "load:public-profile-mobile": 441
+}

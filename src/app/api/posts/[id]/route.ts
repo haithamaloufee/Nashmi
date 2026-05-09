@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
@@ -9,6 +10,7 @@ import { canEditOwnedContent, cleanContent, readJson, serialize } from "@/lib/ro
 import { writeAuditLog } from "@/lib/audit";
 import Post from "@/models/Post";
 import Party from "@/models/Party";
+import MediaAsset from "@/models/MediaAsset";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -40,11 +42,19 @@ export async function PATCH(request: Request, context: Context) {
     if (input.title !== undefined) update.title = input.title || null;
     if (input.content !== undefined) update.content = cleanContent(input.content);
     if (input.tags !== undefined) update.tags = input.tags;
-    if (input.mediaIds !== undefined) update.mediaIds = input.mediaIds;
+    if (input.mediaIds !== undefined) {
+      const mediaQuery: Record<string, unknown> = { _id: { $in: input.mediaIds }, status: "active" };
+      if (!isAdmin(user.role)) mediaQuery.ownerUserId = user.id;
+      const activeMediaCount = await MediaAsset.countDocuments(mediaQuery);
+      if (activeMediaCount !== input.mediaIds.length) return fail("BAD_REQUEST", "بعض المرفقات غير مكتملة أو لا تخص هذا الحساب", 400);
+      update.mediaIds = input.mediaIds;
+    }
     if (input.status !== undefined && isAdmin(user.role)) update.status = input.status;
     update.searchNormalized = createSearchText([String(update.title ?? post.title ?? ""), String(update.content ?? post.content), ...((update.tags as string[] | undefined) || post.tags || [])]);
 
     const updated = await Post.findByIdAndUpdate(id, { $set: update }, { new: true }).lean();
+    revalidatePath("/updates");
+    revalidatePath("/");
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "post.update", targetType: "post", targetId: id, request });
     return ok({ post: serialize(updated) });
   } catch (error) {
@@ -68,6 +78,8 @@ export async function DELETE(request: Request, context: Context) {
     post.deletedBy = user.id as never;
     post.moderationReason = parsed.reason || "حذف بواسطة المالك";
     await post.save();
+    revalidatePath("/updates");
+    revalidatePath("/");
     if (post.partyId) await Party.updateOne({ _id: post.partyId, postsCount: { $gt: 0 } }, { $inc: { postsCount: -1 } });
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "post.delete", targetType: "post", targetId: id, metadata: { reason: post.moderationReason }, request });
     return ok({ deleted: true });

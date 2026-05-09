@@ -1,7 +1,7 @@
 import UpdatesClient from "@/components/updates/UpdatesClient";
 import { getUpdates } from "@/lib/serverData";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function UpdatesPage({ searchParams }: { searchParams: Promise<{ search?: string; filter?: string }> }) {
   const params = await searchParams;

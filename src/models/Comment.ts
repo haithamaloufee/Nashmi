@@ -23,6 +23,7 @@ const CommentSchema = new Schema(
 
 CommentSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
 CommentSchema.index({ authorUserId: 1, createdAt: -1 });
+CommentSchema.index({ status: 1, createdAt: -1 });
 
 export type CommentDocument = InferSchemaType<typeof CommentSchema>;
 export default (models.Comment as Model<CommentDocument>) || model<CommentDocument>("Comment", CommentSchema);

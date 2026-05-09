@@ -23,8 +23,11 @@ const messages: Record<ApiErrorCode, string> = {
   SERVER_ERROR: "حدث خطأ غير متوقع"
 };
 
-export function ok<T>(data: T, init?: { status?: number; nextCursor?: string | null }) {
-  return NextResponse.json({ ok: true, data, nextCursor: init?.nextCursor ?? null }, { status: init?.status || 200 });
+export function ok<T>(data: T, init?: { status?: number; nextCursor?: string | null; headers?: HeadersInit }) {
+  return NextResponse.json(
+    { ok: true, data, nextCursor: init?.nextCursor ?? null },
+    { status: init?.status || 200, headers: init?.headers }
+  );
 }
 
 export function fail(code: ApiErrorCode, message?: string, status = 400) {

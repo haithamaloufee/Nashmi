@@ -10,12 +10,14 @@ import Comment from "@/models/Comment";
 import Post from "@/models/Post";
 import Poll from "@/models/Poll";
 import Party from "@/models/Party";
+import User from "@/models/User";
 
 async function reportTargetExists(targetType: string, targetId: string) {
   if (targetType === "post") return Boolean(await Post.exists({ _id: targetId, status: "published" }));
   if (targetType === "poll") return Boolean(await Poll.exists({ _id: targetId, status: "active" }));
   if (targetType === "comment") return Boolean(await Comment.exists({ _id: targetId, status: "published" }));
   if (targetType === "party") return Boolean(await Party.exists({ _id: targetId, status: "active" }));
+  if (targetType === "user") return Boolean(await User.exists({ _id: targetId, status: "active" }));
   return false;
 }
 
@@ -25,16 +27,29 @@ export async function POST(request: Request) {
     requireRateLimit(`report:${user.id}`, 10, 60 * 60 * 1000);
     const input = await readJson(request, reportSchema);
     await connectToDatabase();
+    if (input.targetType === "user" && input.targetId === user.id) {
+      return fail("BAD_REQUEST", "لا يمكنك الإبلاغ عن حسابك الشخصي", 400);
+    }
     if (!(await reportTargetExists(input.targetType, input.targetId))) {
       return fail("NOT_FOUND", "لا يمكن إنشاء بلاغ لهدف غير موجود أو غير منشور", 404);
     }
+    const duplicateWindow = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existing = await Report.findOne({
+      targetType: input.targetType,
+      targetId: input.targetId,
+      reporterUserId: user.id,
+      reason: input.reason,
+      createdAt: { $gte: duplicateWindow }
+    }).select("_id").lean();
+    if (existing) return fail("CONFLICT", "تم إرسال بلاغ مشابه مؤخرًا", 409);
+
     const report = await Report.create({
       targetType: input.targetType,
       targetId: input.targetId,
       reporterUserId: user.id,
       reason: input.reason,
       details: input.details || null,
-      status: "open"
+      status: "pending"
     });
     if (input.targetType === "comment") await Comment.updateOne({ _id: input.targetId }, { $inc: { reportsCount: 1 } });
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "report.create", targetType: input.targetType, targetId: input.targetId, metadata: { reportId: report._id, reason: input.reason }, request });

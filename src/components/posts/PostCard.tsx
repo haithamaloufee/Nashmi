@@ -6,12 +6,12 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
-import InlineModerationActions from "@/components/admin/InlineModerationActions";
 import SafeImage from "@/components/ui/SafeImage";
 import ShareMenu from "@/components/ui/ShareMenu";
 import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
+const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
 
 type AuthorUser = {
   name?: string;
@@ -49,7 +49,7 @@ type Post = {
   authorUserId?: AuthorUser | string;
   partyId?: PartyRef | string | null;
   authorityAuthor?: AuthorityAuthor | null;
-  publisherSnapshot?: { name?: string | null; imageUrl?: string | null; href?: string | null; badge?: string | null } | null;
+  publisherSnapshot?: { id?: string | null; name?: string | null; type?: string | null; imageUrl?: string | null; href?: string | null; badge?: string | null } | null;
   mediaIds?: Array<Media | string>;
   likesCount: number;
   dislikesCount: number;
@@ -118,7 +118,7 @@ function mediaItems(post: Post) {
   return (post.mediaIds || []).filter((media): media is Media => typeof media === "object" && media.status !== "deleted" && Boolean(media.url));
 }
 
-export default function PostCard({ post, compact = false }: { post: Post; compact?: boolean }) {
+export default function PostCard({ post, compact = false, showModerationActions = false }: { post: Post; compact?: boolean; showModerationActions?: boolean }) {
   const [expandedText, setExpandedText] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
@@ -169,7 +169,7 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <InlineModerationActions targetType="post" targetId={post._id} />
+          {showModerationActions ? <InlineModerationActions targetType="post" targetId={post._id} /> : null}
           <ReportButton targetType="post" targetId={post._id} compact />
         </div>
       </div>
@@ -196,7 +196,7 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
         <div className={`mt-4 grid gap-2 overflow-hidden rounded border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900 ${media.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {media.slice(0, 4).map((item) =>
             item.type === "video" || item.mimeType?.startsWith("video/") ? (
-              <video key={item._id || item.url} className="max-h-[520px] w-full bg-black object-contain" controls preload="metadata">
+              <video key={item._id || item.url} className="aspect-video max-h-[520px] w-full bg-black object-contain" controls preload="metadata">
                 <source src={item.url} type={item.mimeType || "video/mp4"} />
               </video>
             ) : (
@@ -204,7 +204,7 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
                 key={item._id || item.url}
                 src={item.url}
                 alt={post.title || "وسائط المنشور"}
-                className="max-h-[520px] w-full object-cover"
+                className="aspect-video max-h-[520px] w-full bg-white object-contain p-3 dark:bg-slate-950"
                 fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">تعذر عرض الصورة</div>}
                 localPrefixes={["/uploads/", "/images/", "/related/"]}
               />
@@ -233,7 +233,7 @@ export default function PostCard({ post, compact = false }: { post: Post; compac
         <ShareMenu url={shareUrl} title={post.title || author.name} text={post.content.slice(0, 140)} />
       </div>
 
-      {!compact ? <CommentBox targetType="posts" targetId={post._id} expanded={commentsExpanded} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
+      {!compact ? <CommentBox targetType="posts" targetId={post._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>
   );
 }

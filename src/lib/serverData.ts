@@ -86,6 +86,7 @@ export async function getHomeData() {
         Post.countDocuments({ status: "published" }),
         Poll.countDocuments({ status: "active" }),
         Post.find({ status: "published" })
+          .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
           .populate({ path: "authorUserId", select: "name avatarUrl image role" })
           .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
           .populate({ path: "mediaIds", select: "url mimeType type width height status" })
@@ -93,6 +94,7 @@ export async function getHomeData() {
           .limit(3)
           .lean(),
         Poll.find({ status: "active" })
+          .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
           .populate({ path: "authorUserId", select: "name avatarUrl image role" })
           .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
           .sort({ publishedAt: -1 })
@@ -152,6 +154,7 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
     if (!party) return null;
     const [posts, polls, follow, authorityAuthor] = await Promise.all([
       Post.find({ partyId: party._id, status: "published" })
+        .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .populate({ path: "mediaIds", select: "url mimeType type width height status" })
@@ -159,6 +162,7 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
         .limit(10)
         .lean(),
       Poll.find({ partyId: party._id, status: "active" })
+        .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .sort({ publishedAt: -1 })
@@ -187,6 +191,7 @@ export async function getAuthorityProfilePageData(slug: string) {
     if (!authority) return null;
     const [posts, polls, authorityAuthor] = await Promise.all([
       Post.find({ authorType: "iec", status: "published" })
+        .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .populate({ path: "mediaIds", select: "url mimeType type width height status" })
@@ -194,6 +199,7 @@ export async function getAuthorityProfilePageData(slug: string) {
         .limit(10)
         .lean(),
       Poll.find({ authorType: "iec", status: "active" })
+        .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .sort({ publishedAt: -1 })
@@ -222,6 +228,7 @@ export async function getUpdates(search?: string, filter = "all") {
       filter === "polls"
         ? []
         : Post.find(postQuery)
+            .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .populate({ path: "mediaIds", select: "url mimeType type width height status" })
@@ -231,6 +238,7 @@ export async function getUpdates(search?: string, filter = "all") {
       filter === "posts"
         ? []
         : Poll.find(pollQuery)
+            .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .sort({ publishedAt: -1 })
@@ -319,7 +327,7 @@ export async function getAdminStats(): Promise<AdminStats> {
         ChatSession.countDocuments(),
         ChatMessage.countDocuments(),
         AuditLog.countDocuments(),
-        Report.find({ status: "open" }).sort({ createdAt: -1 }).limit(8).lean(),
+        Report.find({ status: { $in: ["pending", "open"] } }).sort({ createdAt: -1 }).limit(8).lean(),
         AuditLog.find({}).populate({ path: "actorUserId", select: "name email role" }).sort({ createdAt: -1 }).limit(8).lean(),
         Post.find({}).sort({ createdAt: -1 }).limit(10).lean(),
         Report.countDocuments(),
@@ -470,6 +478,7 @@ export async function getPartyDashboardData(userId: string) {
     if (!party) return null;
     const [posts, polls, comments, authorityAuthor] = await Promise.all([
       Post.find({ partyId: party._id, status: { $ne: "deleted" } })
+        .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt status")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .populate({ path: "mediaIds", select: "url mimeType type width height status" })
@@ -488,6 +497,7 @@ export async function getIecDashboardData() {
   return safeData({ posts: [] as unknown[], laws: [] as unknown[] }, async () => {
     const [posts, laws, authorityAuthor] = await Promise.all([
       Post.find({ authorType: "iec", status: { $ne: "deleted" } })
+        .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt status")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .populate({ path: "mediaIds", select: "url mimeType type width height status" })

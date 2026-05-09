@@ -34,7 +34,7 @@ const mediaAccept = `${imageAccept},video/mp4,video/webm`;
 const allowedImages = new Set(imageAccept.split(","));
 const allowedMedia = new Set(mediaAccept.split(","));
 const imageLimit = 5 * 1024 * 1024;
-const videoLimit = 25 * 1024 * 1024;
+const videoLimit = 100 * 1024 * 1024;
 
 function extensionForMimeType(mimeType: string) {
   if (mimeType === "image/jpeg") return "jpg";
@@ -82,7 +82,7 @@ function xhrUpload(input: { endpoint: string; fileField: string; purpose: string
 export default function MediaUploadField({
   label,
   value,
-  helper = "يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF",
+  helper = "يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF. حد الفيديو 100MB.",
   imagesOnly = true,
   endpoint = "/api/uploads",
   completeEndpoint,
@@ -220,6 +220,8 @@ export default function MediaUploadField({
         <div className="grid gap-3 sm:grid-cols-[132px_1fr] sm:items-center">
           {previewType.startsWith("video/") ? (
             <video src={displayUrl} className="h-32 w-full rounded bg-black object-contain ring-1 ring-line" controls muted />
+          ) : previewUrl ? (
+            <img src={previewUrl} alt={label} className={imageClass} />
           ) : (
             <SafeImage src={displayUrl} alt={label} className={imageClass} fallback={fallback} localPrefixes={["/uploads/", "/images/", "/related/"]} />
           )}

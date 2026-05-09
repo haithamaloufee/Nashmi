@@ -52,6 +52,8 @@ export default function MobileNav({ links, dashboardHref }: MobileNavProps) {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={!link.href.includes("dashboard") && !link.href.startsWith("/admin")}
+                  data-navbar-prefetch={!link.href.includes("dashboard") && !link.href.startsWith("/admin") ? link.href : undefined}
                   className={`focus-ring rounded border px-3 py-3 text-center ${
                     active
                       ? "border-civic bg-civic text-white dark:border-emerald-200 dark:bg-emerald-200 dark:text-[#101820]"

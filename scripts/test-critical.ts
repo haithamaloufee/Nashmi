@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { storePublicFile } from "../src/lib/storage";
 import { buildPartyMatchIndexes, matchPartyByName, normalizeArabicPartyName, normalizePartyLogoRecord } from "../src/lib/partyMatching";
 import { snapshotFromPost } from "../src/lib/publisher";
 import { hasValidUploadMagic, validateUploadFile, validateUploadMetadata } from "../src/lib/uploadValidation";
+import { postCreateSchema } from "../src/lib/validators";
 
 function makeFile(name: string, type: string, size: number) {
   return new File([new Uint8Array(size || 1)], name, { type });
@@ -26,10 +28,18 @@ async function testUploadValidation() {
   assert.equal(validateUploadFile(makeFile("a.mp4", "video/mp4", 1024)), null);
   assert.match(validateUploadFile(makeFile("a.svg", "image/svg+xml", 1024), { imagesOnly: true }) || "", /الصيغ المسموحة/);
   assert.match(validateUploadFile(makeFile("a.jpg", "image/png", 1024), { imagesOnly: true }) || "", /امتداد الملف/);
-  assert.match(validateUploadMetadata({ fileName: "a.mp4", mimeType: "video/mp4", size: 26 * 1024 * 1024 }) || "", /حجم الملف/);
+  assert.equal(validateUploadMetadata({ fileName: "a.mp4", mimeType: "video/mp4", size: 100 * 1024 * 1024 }), null);
+  assert.match(validateUploadMetadata({ fileName: "a.mp4", mimeType: "video/mp4", size: 101 * 1024 * 1024 }) || "", /100MB/);
 
   assert.equal(hasValidUploadMagic(Buffer.from([0xff, 0xd8, 0xff]), "image/jpeg"), true);
   assert.equal(hasValidUploadMagic(Buffer.from("not an image"), "image/jpeg"), false);
+}
+
+function testPostMediaUrlRejection() {
+  assert.throws(
+    () => postCreateSchema.parse({ content: "test", mediaUrl: "https://example.com/file.jpg" }),
+    /روابط وسائط|Unrecognized key/
+  );
 }
 
 async function testMissingBlobToken() {
@@ -59,6 +69,8 @@ async function testPublisherSnapshot() {
     authorUserId: { name: "ناشر", avatarUrl: null, image: null }
   };
   assert.deepEqual(snapshotFromPost(partyPost), {
+    id: null,
+    type: "party",
     name: "حزب الاختبار",
     imageUrl: "https://parties.iec.jo/storage/logo.png",
     href: "/parties/test-party",
@@ -69,11 +81,19 @@ async function testPublisherSnapshot() {
   assert.equal(snapshotFromPost(iecPost, { name: "الهيئة المستقلة للانتخاب", logoUrl: "/related/iec-logo.png" }).imageUrl, "/related/iec-logo.png");
 }
 
+function testLogoAssetReferences() {
+  const navbar = readFileSync("src/components/layout/Navbar.tsx", "utf8");
+  assert.match(navbar, /\/images\/nashmi logo\.png/);
+  assert.doesNotMatch(navbar, /nashmi logo_transparent|nashmi logo_cropped/);
+}
+
 async function main() {
   await testPartyMatching();
   await testUploadValidation();
   await testMissingBlobToken();
   await testPublisherSnapshot();
+  testLogoAssetReferences();
+  testPostMediaUrlRejection();
   console.log("Critical tests passed.");
 }
 

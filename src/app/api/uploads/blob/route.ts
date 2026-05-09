@@ -14,6 +14,22 @@ type ClientPayload = {
   purpose?: string;
 };
 
+export async function GET() {
+  try {
+    await requireActiveUser(["admin", "super_admin"]);
+    return Response.json({
+      ok: true,
+      data: {
+        blobTokenConfigured: hasBlobReadWriteToken(),
+        durableStorageEnabled: hasBlobReadWriteToken(),
+        runtime
+      }
+    }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
 function parsePayload(value: string | null): ClientPayload {
   if (!value) return {};
   try {

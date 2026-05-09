@@ -10,6 +10,7 @@ import Post from "@/models/Post";
 import Poll from "@/models/Poll";
 import Comment from "@/models/Comment";
 import Party from "@/models/Party";
+import User from "@/models/User";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -61,6 +62,10 @@ async function moderateTarget(targetType: string, targetId: unknown, action: str
   if (targetType === "party") {
     if (action === "hide" || action === "delete") return Party.updateOne({ _id: targetId }, { $set: { status: "disabled" } });
     if (action === "restore") return Party.updateOne({ _id: targetId }, { $set: { status: "active" } });
+  }
+  if (targetType === "user") {
+    if (action === "hide" || action === "delete") return User.updateOne({ _id: targetId }, { $set: { status: "disabled" } });
+    if (action === "restore") return User.updateOne({ _id: targetId }, { $set: { status: "active" } });
   }
   return null;
 }

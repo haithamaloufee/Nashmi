@@ -93,7 +93,12 @@ export function getMaxImageUploadSizeBytes() {
 }
 
 export function getMaxVideoUploadSizeBytes() {
-  return getUploadSizeBytes("MAX_VIDEO_UPLOAD_SIZE_MB", 25, 100);
+  const raw = getOptionalEnv("MAX_VIDEO_UPLOAD_SIZE_MB") || "100";
+  const maxMb = Number(raw);
+  if (!Number.isFinite(maxMb) || maxMb <= 0 || maxMb > 100) {
+    throw new InvalidEnvError("MAX_VIDEO_UPLOAD_SIZE_MB", "must be a number between 1 and 100");
+  }
+  return maxMb * 1024 * 1024;
 }
 
 export function hasBlobReadWriteToken() {

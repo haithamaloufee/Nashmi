@@ -7,11 +7,11 @@ import { MessageCircle } from "lucide-react";
 import PollVote from "@/components/polls/PollVote";
 import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
-import InlineModerationActions from "@/components/admin/InlineModerationActions";
 import ShareMenu from "@/components/ui/ShareMenu";
 import SafeImage from "@/components/ui/SafeImage";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
+const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
 
 type Poll = {
   _id: string;
@@ -21,7 +21,8 @@ type Poll = {
   authorUserId?: { name?: string; avatarUrl?: string | null; image?: string | null } | string;
   partyId?: { name?: string; slug?: string; logoUrl?: string | null; isVerified?: boolean } | string | null;
   authorityAuthor?: { name?: string; logoUrl?: string | null } | null;
-  publisherSnapshot?: { name?: string | null; imageUrl?: string | null; href?: string | null; badge?: string | null } | null;
+  publisherSnapshot?: { id?: string | null; name?: string | null; type?: string | null; imageUrl?: string | null; href?: string | null; badge?: string | null } | null;
+  mediaIds?: Array<{ _id?: string; url: string; mimeType?: string; type?: "image" | "video" | "document"; status?: string } | string>;
   options: Array<{ _id: string; text: string; votesCount: number }>;
   totalVotes: number;
   likesCount: number;
@@ -41,6 +42,10 @@ function relativeTime(value?: string) {
   if (abs < 3600) return formatter.format(Math.round(diffSeconds / 60), "minute");
   if (abs < 86400) return formatter.format(Math.round(diffSeconds / 3600), "hour");
   return new Intl.DateTimeFormat("ar-JO", { dateStyle: "medium" }).format(date);
+}
+
+function mediaItems(poll: Poll) {
+  return (poll.mediaIds || []).filter((media): media is { _id?: string; url: string; mimeType?: string; type?: "image" | "video" | "document"; status?: string } => typeof media === "object" && media.status !== "deleted" && Boolean(media.url));
 }
 
 function authorInfo(poll: Poll) {
@@ -76,10 +81,11 @@ function authorInfo(poll: Poll) {
   return { name: user?.name || "مستخدم", image: user?.avatarUrl || user?.image || null, href: null, type: "مستخدم", fallback: "م" };
 }
 
-export default function PollCard({ poll, compact = false }: { poll: Poll; compact?: boolean }) {
+export default function PollCard({ poll, compact = false, showModerationActions = false }: { poll: Poll; compact?: boolean; showModerationActions?: boolean }) {
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [commentsCount, setCommentsCount] = useState(poll.commentsCount || 0);
   const author = useMemo(() => authorInfo(poll), [poll]);
+  const media = useMemo(() => mediaItems(poll), [poll]);
   const avatar = (
     <SafeImage
       src={author.image}
@@ -115,12 +121,32 @@ export default function PollCard({ poll, compact = false }: { poll: Poll; compac
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <InlineModerationActions targetType="poll" targetId={poll._id} />
+          {showModerationActions ? <InlineModerationActions targetType="poll" targetId={poll._id} /> : null}
           <ReportButton targetType="poll" targetId={poll._id} compact />
         </div>
       </div>
 
       <h3 className="text-lg font-bold leading-8 text-slate-950 dark:text-white">{poll.question}</h3>
+      {media.length ? (
+        <div className={`mt-4 grid gap-2 overflow-hidden rounded border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900 ${media.length > 1 ? "sm:grid-cols-2" : ""}`}>
+          {media.slice(0, 4).map((item) =>
+            item.type === "video" || item.mimeType?.startsWith("video/") ? (
+              <video key={item._id || item.url} className="aspect-video max-h-[520px] w-full bg-black object-contain" controls preload="metadata">
+                <source src={item.url} type={item.mimeType || "video/mp4"} />
+              </video>
+            ) : (
+              <SafeImage
+                key={item._id || item.url}
+                src={item.url}
+                alt={poll.question || "وسائط التصويت"}
+                className="aspect-video max-h-[520px] w-full bg-white object-contain p-3 dark:bg-slate-950"
+                fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">تعذر عرض الصورة</div>}
+                localPrefixes={["/uploads/", "/images/", "/related/"]}
+              />
+            )
+          )}
+        </div>
+      ) : null}
       <PollVote poll={poll} />
       <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
         <span>{commentsCount} تعليق</span>
@@ -140,7 +166,7 @@ export default function PollCard({ poll, compact = false }: { poll: Poll; compac
         ) : null}
         <ShareMenu url={`/updates?poll=${poll._id}`} title={poll.question} text={poll.description || poll.question} />
       </div>
-      {!compact ? <CommentBox targetType="polls" targetId={poll._id} expanded={commentsExpanded} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
+      {!compact ? <CommentBox targetType="polls" targetId={poll._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>
   );
 }
