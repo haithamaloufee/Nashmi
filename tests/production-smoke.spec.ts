@@ -93,16 +93,16 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
 
   expect([...prefetchedUrls].some((url) => url.includes("/updates") || url.includes("/parties") || url.includes("/iec") || url.includes("/laws"))).toBe(true);
 
-  await checkPage(page, "/updates", "updates-desktop-visible-post-media", { width: 1440, height: 1000 });
-  await expect(page.locator("article img.aspect-video, article video.aspect-video").first()).toBeVisible();
-  await checkPage(page, "/updates", "updates-mobile-360-visible-post-media", { width: 360, height: 820 });
-  await expect(page.locator("article img.aspect-video, article video.aspect-video").first()).toBeVisible();
-  await checkPage(page, "/updates", "updates-mobile-390-visible-post-media", { width: 390, height: 840 });
-  await checkPage(page, "/updates", "updates-mobile-430-visible-post-media", { width: 430, height: 860 });
+  await checkPage(page, "/updates", "updates-desktop-no-forced-post-media", { width: 1440, height: 1000 });
+  await expect(page.locator("article").first()).toBeVisible();
+  await checkPage(page, "/updates", "updates-mobile-360-no-forced-post-media", { width: 360, height: 820 });
+  await expect(page.locator("article").first()).toBeVisible();
+  await checkPage(page, "/updates", "updates-mobile-390-no-forced-post-media", { width: 390, height: 840 });
+  await checkPage(page, "/updates", "updates-mobile-430-no-forced-post-media", { width: 430, height: 860 });
 
-  await checkPage(page, "/iec", "iec-desktop-visible-iec-post-media", { width: 1440, height: 1000 });
-  await expect(page.locator("article img.aspect-video, article video.aspect-video").first()).toBeVisible();
-  await checkPage(page, "/iec", "iec-mobile-visible-iec-post-media", { width: 360, height: 820 });
+  await checkPage(page, "/iec", "iec-desktop-no-forced-post-media", { width: 1440, height: 1000 });
+  await expect(page.locator("article").first()).toBeVisible();
+  await checkPage(page, "/iec", "iec-mobile-no-forced-post-media", { width: 360, height: 820 });
 
   await checkPage(page, "/parties", "navbar-parties", { width: 1440, height: 900 });
   await checkPage(page, "/laws", "navbar-laws", { width: 1440, height: 900 });

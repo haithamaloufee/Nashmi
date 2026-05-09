@@ -1,6 +1,7 @@
 type UnknownMediaAsset = {
   _id?: unknown;
   url?: unknown;
+  storageKey?: unknown;
   type?: unknown;
   mimeType?: unknown;
   width?: unknown;
@@ -15,6 +16,7 @@ type PublicMediaSource = "user-upload" | "party-default" | "authority-default" |
 export type PublicMediaAsset = {
   id?: string;
   url: string;
+  storageKey?: string;
   type: "image" | "video" | "document";
   mimeType?: string;
   width?: number | null;
@@ -44,6 +46,32 @@ function resolveMediaSource(purpose: unknown, provider: unknown): PublicMediaSou
   return provider === "local_dev" ? "fallback" : "user-upload";
 }
 
+function isVercelBlobUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
+
+function isLocalUploadUrl(value: string) {
+  return value.startsWith("/uploads/");
+}
+
+function isGeneratedDefaultPostMedia(mediaAsset: UnknownMediaAsset, url: string) {
+  const storageKey = typeof mediaAsset.storageKey === "string" ? mediaAsset.storageKey : "";
+  if (storageKey.startsWith("default-post-media/")) return true;
+  if (mediaAsset.purpose === "post" && (url.startsWith("/related/") || url.includes("://parties.iec.jo/"))) return true;
+  return false;
+}
+
+function isDisplayablePostMedia(mediaAsset: UnknownMediaAsset, url: string) {
+  if (mediaAsset.purpose !== "post") return true;
+  if (isGeneratedDefaultPostMedia(mediaAsset, url)) return false;
+  return isVercelBlobUrl(url) || isLocalUploadUrl(url);
+}
+
 export function normalizeMediaAsset(asset: unknown): PublicMediaAsset | null {
   if (!asset || typeof asset !== "object") return null;
 
@@ -51,8 +79,11 @@ export function normalizeMediaAsset(asset: unknown): PublicMediaAsset | null {
 
   const rawUrl = mediaAsset.url;
   if (!isString(rawUrl) || !rawUrl.trim()) return null;
+  const normalizedUrl = rawUrl.trim();
+  if (!isDisplayablePostMedia(mediaAsset, normalizedUrl)) return null;
 
   const rawId = mediaAsset._id;
+  const rawStorageKey = mediaAsset.storageKey;
   const rawMimeType = mediaAsset.mimeType;
   const rawWidth = mediaAsset.width;
   const rawHeight = mediaAsset.height;
@@ -63,7 +94,8 @@ export function normalizeMediaAsset(asset: unknown): PublicMediaAsset | null {
 
   return {
     id: rawId ? String(rawId) : undefined,
-    url: rawUrl.trim(),
+    url: normalizedUrl,
+    storageKey: isString(rawStorageKey) ? rawStorageKey : undefined,
     type: normalizeMediaType(rawType),
     mimeType: isString(rawMimeType) ? rawMimeType : undefined,
     width: typeof rawWidth === "number" ? rawWidth : null,

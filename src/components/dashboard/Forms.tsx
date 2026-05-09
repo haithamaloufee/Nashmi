@@ -172,9 +172,7 @@ export function PartyProfileForm({ party }: { party: any }) {
     >
       <h2 className="text-xl font-bold">تعديل ملف الحزب</h2>
       <MediaUploadField label="شعار الحزب" value={logoUrl} purpose="party_logo" fallbackText={party.name?.slice(0, 1) || "ح"} onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
-      <input name="logoUrl" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للشعار" />
       <MediaUploadField label="غلاف الحزب" value={coverUrl} purpose="party_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
-      <input name="coverUrl" type="url" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للغلاف" />
       <label className="block"><span>الوصف المختصر</span><textarea name="shortDescription" defaultValue={party.shortDescription} className="mt-1 w-full rounded border-line" rows={3} required /></label>
       <label className="block"><span>الوصف الكامل</span><textarea name="description" defaultValue={party.description} className="mt-1 w-full rounded border-line" rows={5} required /></label>
       <label className="block"><span>الرؤية</span><textarea name="vision" defaultValue={party.vision} className="mt-1 w-full rounded border-line" rows={3} required /></label>
@@ -207,9 +205,7 @@ export function IecProfileForm({ authority }: { authority: any }) {
     <form action={(formData) => api.submit("/api/iec/profile", { logoUrl: formData.get("logoUrl") || logoUrl || null, coverUrl: formData.get("coverUrl") || coverUrl || null }, "PATCH")} className="card space-y-4 p-5">
       <h2 className="text-xl font-bold">ملف الهيئة</h2>
       <MediaUploadField label="شعار الهيئة" value={logoUrl} purpose="authority_logo" fallbackText="هـ" onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
-      <input name="logoUrl" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للشعار" />
       <MediaUploadField label="غلاف الهيئة" value={coverUrl} purpose="authority_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
-      <input name="coverUrl" type="url" value={coverUrl} onChange={(event) => setCoverUrl(event.target.value)} className="w-full rounded border-line" placeholder="أو أدخل رابط صورة خارجي للغلاف" />
       <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>

@@ -90,7 +90,7 @@ export async function getHomeData() {
           .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
           .populate({ path: "authorUserId", select: "name avatarUrl image role" })
           .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-          .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
+          .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
           .sort({ publishedAt: -1 })
           .limit(3)
           .lean(),
@@ -158,7 +158,7 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-        .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
+        .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
         .sort({ publishedAt: -1 })
         .limit(10)
         .lean(),
@@ -195,7 +195,7 @@ export async function getAuthorityProfilePageData(slug: string) {
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-        .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
+        .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
         .sort({ publishedAt: -1 })
         .limit(10)
         .lean(),
@@ -232,7 +232,7 @@ export async function getUpdates(search?: string, filter = "all") {
             .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-            .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
+            .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
             .sort({ publishedAt: -1 })
             .limit(12)
             .lean(),
@@ -482,7 +482,7 @@ export async function getPartyDashboardData(userId: string) {
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt status")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-        .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
+        .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
         .sort({ createdAt: -1 })
         .limit(50)
         .lean(),
@@ -501,7 +501,7 @@ export async function getIecDashboardData() {
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt status")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-        .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
+        .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
         .sort({ createdAt: -1 })
         .limit(50)
         .lean(),

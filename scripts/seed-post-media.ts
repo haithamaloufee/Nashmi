@@ -36,6 +36,16 @@ type LeanPost = {
 
 const defaultMediaPrefix = "default-post-media/";
 const partyFallbackImageUrl = "/related/parties-logo.svg";
+const seedDisabledMessage = [
+  "Default post media seeding is disabled.",
+  "Post body media must come from user device uploads only.",
+  "Use npm run posts:cleanup-seeded-media -- --dry-run to inspect old generated media."
+].join(" ");
+
+function assertExplicitlyEnabled() {
+  if (process.env.ALLOW_DEFAULT_POST_MEDIA_SEEDING === "1" && process.argv.includes("--force")) return;
+  throw new Error(`${seedDisabledMessage} To run this legacy script anyway, set ALLOW_DEFAULT_POST_MEDIA_SEEDING=1 and pass --force.`);
+}
 
 function candidateInputPaths() {
   return [
@@ -111,6 +121,7 @@ async function getDefaultAsset(input: {
 }
 
 async function main() {
+  assertExplicitlyEnabled();
   await connectToDatabase();
 
   const { inputPath, records } = loadLogoRecords();

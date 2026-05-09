@@ -22,14 +22,19 @@ export async function GET(request: Request) {
     const search = url.searchParams.get("search");
     const filter = url.searchParams.get("filter") || "all";
     const cursor = url.searchParams.get("cursor");
+    const since = url.searchParams.get("since");
     const cursorDate = cursor ? new Date(cursor) : null;
+    const sinceDate = since ? new Date(since) : null;
     const regex = search ? searchRegex(search) : null;
     const partyNameMatches = regex ? await Party.find({ status: "active", searchNormalized: regex }).select("_id").lean() : [];
     const matchingPartyIds = partyNameMatches.map((party) => party._id);
 
     const basePostQuery: Record<string, unknown> = { status: "published" };
     const basePollQuery: Record<string, unknown> = { status: "active" };
-    if (cursorDate && !Number.isNaN(cursorDate.getTime())) {
+    if (sinceDate && !Number.isNaN(sinceDate.getTime())) {
+      basePostQuery.publishedAt = { $gt: sinceDate };
+      basePollQuery.publishedAt = { $gt: sinceDate };
+    } else if (cursorDate && !Number.isNaN(cursorDate.getTime())) {
       basePostQuery.publishedAt = { $lt: cursorDate };
       basePollQuery.publishedAt = { $lt: cursorDate };
     }
@@ -58,7 +63,7 @@ export async function GET(request: Request) {
             .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-            .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+            .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
             .sort({ publishedAt: -1 })
             .limit(limit)
             .lean(),
@@ -84,10 +89,10 @@ export async function GET(request: Request) {
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
       .slice(0, limit);
 
-    const nextCursor = updates.length === limit ? new Date(updates[updates.length - 1].publishedAt).toISOString() : null;
+    const nextCursor = sinceDate ? null : updates.length === limit ? new Date(updates[updates.length - 1].publishedAt).toISOString() : null;
     return ok(
       { updates: serialize(updates) },
-      { nextCursor, headers: filter === "followed" ? undefined : cacheHeaders(CACHE_HEADERS.publicFeed) }
+      { nextCursor, headers: filter === "followed" || sinceDate ? undefined : cacheHeaders(CACHE_HEADERS.publicFeed) }
     );
   } catch (error) {
     return handleApiError(error);

@@ -18,15 +18,46 @@ const filters = [
   ["followed", "الأحزاب المتابَعة"]
 ] as const;
 
+const pageSize = 10;
+const refreshIntervalMs = 45000;
+
+function updateKey(update: UpdateItem) {
+  return `${update.type}-${update.item?._id || update.publishedAt}`;
+}
+
+function appendUnique(current: UpdateItem[], incoming: UpdateItem[]) {
+  const seen = new Set(current.map(updateKey));
+  const uniqueIncoming = incoming.filter((update) => {
+    const key = updateKey(update);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return [...current, ...uniqueIncoming];
+}
+
+function prependUnique(current: UpdateItem[], incoming: UpdateItem[]) {
+  const seen = new Set(current.map(updateKey));
+  const uniqueIncoming = incoming.filter((update) => {
+    const key = updateKey(update);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return [...uniqueIncoming, ...current].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+}
+
 export default function UpdatesClient({ initialSearch = "", initialFilter = "all", initialUpdates = [] }: { initialSearch?: string; initialFilter?: string; initialUpdates?: UpdateItem[] }) {
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [filter, setFilter] = useState(initialFilter);
   const [updates, setUpdates] = useState<UpdateItem[]>(initialUpdates);
-  const [nextCursor, setNextCursor] = useState<string | null>(initialUpdates.length >= 10 ? initialUpdates[initialUpdates.length - 1]?.publishedAt || null : null);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialUpdates.length >= pageSize ? initialUpdates[initialUpdates.length - 1]?.publishedAt || null : null);
   const [loading, setLoading] = useState(initialUpdates.length === 0);
   const [loadingMore, setLoadingMore] = useState(false);
   const prefetchedPage = useRef<{ key: string; updates: UpdateItem[]; nextCursor: string | null } | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const loadingMoreInFlightRef = useRef(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -35,23 +66,30 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
   }, [search]);
 
   const load = useCallback(async (cursor?: string | null) => {
-    const params = new URLSearchParams({ limit: "10", filter });
+    const params = new URLSearchParams({ limit: String(pageSize), filter });
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (cursor) params.set("cursor", cursor);
     const key = params.toString();
     if (cursor && prefetchedPage.current?.key === key) {
       const page = prefetchedPage.current;
       prefetchedPage.current = null;
-      setUpdates((current) => [...current, ...page.updates]);
+      setUpdates((current) => appendUnique(current, page.updates));
       setNextCursor(page.nextCursor);
       return;
     }
-    if (cursor) setLoadingMore(true);
+    if (cursor) {
+      if (loadingMoreInFlightRef.current) return;
+      loadingMoreInFlightRef.current = true;
+      setLoadingMore(true);
+    }
     else setLoading(true);
     try {
-      const response = await fetch(`/api/updates?${key}`);
+      const response = await fetch(`/api/updates?${key}`, { cache: "no-store" });
       const json = await response.json().catch(() => ({}));
-      if (cursor) setLoadingMore(false);
+      if (cursor) {
+        loadingMoreInFlightRef.current = false;
+        setLoadingMore(false);
+      }
       else setLoading(false);
 
       if (!json.ok) {
@@ -60,10 +98,13 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
         return;
       }
 
-      setUpdates((current) => (cursor ? [...current, ...(json.data.updates || [])] : json.data.updates || []));
+      setUpdates((current) => (cursor ? appendUnique(current, json.data.updates || []) : json.data.updates || []));
       setNextCursor(json.nextCursor || null);
     } catch {
-      if (cursor) setLoadingMore(false);
+      if (cursor) {
+        loadingMoreInFlightRef.current = false;
+        setLoadingMore(false);
+      }
       else setLoading(false);
       if (!cursor) setUpdates([]);
       showToast("تعذر الاتصال بالخادم", "error");
@@ -72,14 +113,14 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
 
   useEffect(() => {
     if (!nextCursor || loading || loadingMore || filter === "followed") return;
-    const params = new URLSearchParams({ limit: "10", filter });
+    const params = new URLSearchParams({ limit: String(pageSize), filter });
     if (debouncedSearch) params.set("search", debouncedSearch);
     params.set("cursor", nextCursor);
     const key = params.toString();
     if (prefetchedPage.current?.key === key) return;
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      void fetch(`/api/updates?${key}`, { signal: controller.signal })
+      void fetch(`/api/updates?${key}`, { signal: controller.signal, cache: "no-store" })
         .then((response) => response.json())
         .then((json) => {
           if (json?.ok) prefetchedPage.current = { key, updates: json.data?.updates || [], nextCursor: json.nextCursor || null };
@@ -94,8 +135,54 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
 
   useEffect(() => {
     if (debouncedSearch === initialSearch && filter === initialFilter && initialUpdates.length) return;
+    prefetchedPage.current = null;
     void load();
   }, [debouncedSearch, filter, initialFilter, initialSearch, initialUpdates.length, load]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !nextCursor || loading || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void load(nextCursor);
+      },
+      { rootMargin: "700px 0px 900px" }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [load, loading, loadingMore, nextCursor]);
+
+  useEffect(() => {
+    const newestPublishedAt = updates[0]?.publishedAt;
+    if (!newestPublishedAt || filter === "followed") return;
+
+    let cancelled = false;
+    const refreshNewItems = async () => {
+      if (document.visibilityState !== "visible") return;
+      const params = new URLSearchParams({ limit: String(pageSize), filter, since: newestPublishedAt });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      try {
+        const response = await fetch(`/api/updates?${params.toString()}`, { cache: "no-store" });
+        const json = await response.json().catch(() => ({}));
+        const incoming = json?.ok ? (json.data?.updates || []) as UpdateItem[] : [];
+        if (!cancelled && incoming.length) setUpdates((current) => prependUnique(current, incoming));
+      } catch {
+        // Background refresh is opportunistic; the regular feed remains usable on failure.
+      }
+    };
+
+    const interval = window.setInterval(() => void refreshNewItems(), refreshIntervalMs);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshNewItems();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [debouncedSearch, filter, updates]);
 
   const tags = useMemo(() => {
     const counts = new Map<string, number>();
@@ -168,14 +255,9 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
         ) : null}
 
         {nextCursor ? (
-          <button
-            type="button"
-            onClick={() => load(nextCursor)}
-            disabled={loadingMore}
-            className="w-full rounded border border-line bg-white px-4 py-3 font-semibold text-civic transition hover:border-civic hover:bg-civic/10 disabled:opacity-60"
-          >
-            {loadingMore ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "تحميل المزيد"}
-          </button>
+          <div ref={loadMoreRef} className="grid min-h-16 place-items-center text-civic" aria-live="polite">
+            {loadingMore ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+          </div>
         ) : null}
       </section>
 
