@@ -1,17 +1,48 @@
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
 import { isAdmin } from "@/lib/permissions";
+import { attachPublisherSnapshots, getAuthorityAuthor } from "@/lib/publisher";
 import { pollUpdateSchema } from "@/lib/validators";
 import { createSearchText } from "@/lib/arabicSearch";
-import { canEditOwnedContent, pollResultsDisclaimer, readJson, serialize } from "@/lib/routeUtils";
+import { pollResultsDisclaimer, readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import Poll from "@/models/Poll";
 import Party from "@/models/Party";
 
 type Context = { params: Promise<{ id: string }> };
 const deleteSchema = z.object({ reason: z.string().trim().min(3).max(1000).optional() });
+
+function isOwnerContentRole(role: string) {
+  return role === "party" || role === "iec";
+}
+
+function ownsContent(userId: string, doc: { authorUserId?: unknown }) {
+  return String(doc.authorUserId) === userId;
+}
+
+async function revalidatePollSurfaces(poll: { partyId?: unknown; authorType?: string }) {
+  revalidatePath("/updates");
+  revalidatePath("/");
+  if (poll.authorType === "iec") revalidatePath("/iec");
+  if (poll.partyId) {
+    const party = await Party.findById(poll.partyId).select("slug").lean();
+    if (party?.slug) revalidatePath(`/parties/${party.slug}`);
+  }
+}
+
+async function serializePollForResponse(id: string) {
+  const populated = await Poll.findById(id)
+    .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+    .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+    .lean();
+  if (!populated) return null;
+  const authorityAuthor = await getAuthorityAuthor();
+  const [withPublisher] = attachPublisherSnapshots([populated as any], authorityAuthor);
+  return serialize(withPublisher);
+}
 
 export async function GET(_request: Request, context: Context) {
   try {
@@ -26,6 +57,7 @@ export async function GET(_request: Request, context: Context) {
 }
 
 export async function PATCH(request: Request, context: Context) {
+  const startedAt = Date.now();
   try {
     const user = await requireActiveUser(["party", "iec", "admin", "super_admin"]);
     const { id } = await context.params;
@@ -33,30 +65,40 @@ export async function PATCH(request: Request, context: Context) {
     await connectToDatabase();
     const poll = await Poll.findById(id);
     if (!poll || poll.status === "deleted") throw new Error("NOT_FOUND");
-    if (!canEditOwnedContent(user, poll)) return fail("FORBIDDEN", "لا يمكنك تعديل تصويت لا تملكه", 403);
+
+    const ownerAuthorized = isOwnerContentRole(user.role) && ownsContent(user.id, poll);
+    const moderationAuthorized = isAdmin(user.role) && input.status !== undefined && input.question === undefined && input.description === undefined && input.options === undefined && input.resultsVisibility === undefined && input.expiresAt === undefined;
+    if (!ownerAuthorized && !moderationAuthorized) {
+      console.info({ route: "/api/polls/[id]", action: "update", userId: user.id, role: user.role, pollId: id, ownerId: String(poll.authorUserId), authorized: false, durationMs: Date.now() - startedAt });
+      return fail("FORBIDDEN", "تعديل التصويت متاح للمالك فقط.", 403);
+    }
 
     const update: Record<string, unknown> = {};
-    if (input.question !== undefined) update.question = input.question;
-    if (input.description !== undefined) update.description = input.description || null;
-    if (input.resultsVisibility !== undefined) update.resultsVisibility = input.resultsVisibility;
-    if (input.expiresAt !== undefined) update.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
-    if (input.status !== undefined && (isAdmin(user.role) || String(poll.authorUserId) === user.id)) update.status = input.status;
+    if (input.question !== undefined && ownerAuthorized) update.question = input.question;
+    if (input.description !== undefined && ownerAuthorized) update.description = input.description || null;
+    if (input.resultsVisibility !== undefined && ownerAuthorized) update.resultsVisibility = input.resultsVisibility;
+    if (input.expiresAt !== undefined && ownerAuthorized) update.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+    if (input.status !== undefined && (moderationAuthorized || ownerAuthorized)) update.status = input.status;
     if (input.options !== undefined) {
-      if (poll.totalVotes > 0) return fail("BAD_REQUEST", "لا يمكن تعديل الخيارات بعد أول تصويت", 400);
+      if (!ownerAuthorized) return fail("FORBIDDEN", "تعديل خيارات التصويت متاح للمالك فقط.", 403);
+      if (poll.totalVotes > 0) return fail("BAD_REQUEST", "لا يمكن تعديل الخيارات بعد أول تصويت.", 400);
       const uniqueOptions = new Set(input.options.map((option) => option.trim()));
-      if (uniqueOptions.size !== input.options.length) return fail("BAD_REQUEST", "لا يمكن تكرار خيارات التصويت", 400);
+      if (uniqueOptions.size !== input.options.length) return fail("BAD_REQUEST", "لا يمكن تكرار خيارات التصويت.", 400);
       update.options = input.options.map((text) => ({ text, votesCount: 0 }));
     }
     update.searchNormalized = createSearchText([String(update.question ?? poll.question), String(update.description ?? poll.description ?? ""), ...((input.options as string[] | undefined) || poll.options.map((option) => option.text))]);
-    const updated = await Poll.findByIdAndUpdate(id, { $set: update }, { new: true }).lean();
+    await Poll.findByIdAndUpdate(id, { $set: update }, { new: true }).lean();
+    await revalidatePollSurfaces(poll);
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "poll.update", targetType: "poll", targetId: id, request });
-    return ok({ poll: serialize(updated), disclaimer: pollResultsDisclaimer() });
+    console.info({ route: "/api/polls/[id]", action: "update", userId: user.id, role: user.role, pollId: id, ownerId: String(poll.authorUserId), authorized: true, mediaChanged: false, durationMs: Date.now() - startedAt });
+    return ok({ poll: await serializePollForResponse(id), disclaimer: pollResultsDisclaimer() });
   } catch (error) {
     return handleApiError(error);
   }
 }
 
 export async function DELETE(request: Request, context: Context) {
+  const startedAt = Date.now();
   try {
     const user = await requireActiveUser(["party", "iec", "admin", "super_admin"]);
     const { id } = await context.params;
@@ -64,12 +106,21 @@ export async function DELETE(request: Request, context: Context) {
     await connectToDatabase();
     const poll = await Poll.findById(id);
     if (!poll || poll.status === "deleted") throw new Error("NOT_FOUND");
-    if (!canEditOwnedContent(user, poll)) return fail("FORBIDDEN", "لا يمكنك حذف تصويت لا تملكه", 403);
-    if (isAdmin(user.role) && String(poll.authorUserId) !== user.id && !parsed.reason) return fail("BAD_REQUEST", "سبب الحذف مطلوب", 400);
+
+    const ownerAuthorized = isOwnerContentRole(user.role) && ownsContent(user.id, poll);
+    const moderationAuthorized = isAdmin(user.role) && !ownerAuthorized;
+    if (!ownerAuthorized && !moderationAuthorized) {
+      console.info({ route: "/api/polls/[id]", action: "delete", userId: user.id, role: user.role, pollId: id, ownerId: String(poll.authorUserId), authorized: false, durationMs: Date.now() - startedAt });
+      return fail("FORBIDDEN", "حذف التصويت متاح للمالك فقط.", 403);
+    }
+    if (moderationAuthorized && !parsed.reason) return fail("BAD_REQUEST", "سبب الحذف مطلوب.", 400);
+
     poll.status = "deleted";
     await poll.save();
+    await revalidatePollSurfaces(poll);
     if (poll.partyId) await Party.updateOne({ _id: poll.partyId, pollsCount: { $gt: 0 } }, { $inc: { pollsCount: -1 } });
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "poll.delete", targetType: "poll", targetId: id, metadata: { reason: parsed.reason || "حذف بواسطة المالك" }, request });
+    console.info({ route: "/api/polls/[id]", action: "delete", userId: user.id, role: user.role, pollId: id, ownerId: String(poll.authorUserId), authorized: true, mediaChanged: false, durationMs: Date.now() - startedAt });
     return ok({ deleted: true });
   } catch (error) {
     return handleApiError(error);

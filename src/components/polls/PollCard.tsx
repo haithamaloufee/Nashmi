@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
@@ -9,6 +9,7 @@ import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import ShareMenu from "@/components/ui/ShareMenu";
 import SafeImage from "@/components/ui/SafeImage";
+import OwnerContentMenu from "@/components/content/OwnerContentMenu";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
@@ -82,10 +83,17 @@ function authorInfo(poll: Poll) {
 }
 
 export default function PollCard({ poll, compact = false, showModerationActions = false }: { poll: Poll; compact?: boolean; showModerationActions?: boolean }) {
+  const [currentPoll, setCurrentPoll] = useState(poll);
+  const [deleted, setDeleted] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [commentsCount, setCommentsCount] = useState(poll.commentsCount || 0);
-  const author = useMemo(() => authorInfo(poll), [poll]);
-  const media = useMemo(() => mediaItems(poll), [poll]);
+  useEffect(() => {
+    setCurrentPoll(poll);
+    setDeleted(false);
+    setCommentsCount(poll.commentsCount || 0);
+  }, [poll]);
+  const author = useMemo(() => authorInfo(currentPoll), [currentPoll]);
+  const media = useMemo(() => mediaItems(currentPoll), [currentPoll]);
   const avatar = (
     <SafeImage
       src={author.image}
@@ -95,6 +103,8 @@ export default function PollCard({ poll, compact = false, showModerationActions 
       localPrefixes={["/uploads/", "/images/", "/related/"]}
     />
   );
+
+  if (deleted) return null;
 
   return (
     <article className="card card-hover bg-white p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
@@ -117,16 +127,17 @@ export default function PollCard({ poll, compact = false, showModerationActions 
               <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{author.type}</span>
               <span className="rounded-full bg-clay/10 px-2.5 py-1 text-xs font-bold text-clay dark:bg-amber-200/10 dark:text-amber-200">تصويت</span>
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{relativeTime(poll.publishedAt || poll.createdAt)}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{relativeTime(currentPoll.publishedAt || currentPoll.createdAt)}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {showModerationActions ? <InlineModerationActions targetType="poll" targetId={poll._id} /> : null}
-          <ReportButton targetType="poll" targetId={poll._id} compact />
+          <OwnerContentMenu type="poll" item={currentPoll} onUpdated={(updated) => setCurrentPoll(updated)} onDeleted={() => setDeleted(true)} />
+          {showModerationActions ? <InlineModerationActions targetType="poll" targetId={currentPoll._id} /> : null}
+          <ReportButton targetType="poll" targetId={currentPoll._id} compact />
         </div>
       </div>
 
-      <h3 className="text-lg font-bold leading-8 text-slate-950 dark:text-white">{poll.question}</h3>
+      <h3 className="text-lg font-bold leading-8 text-slate-950 dark:text-white">{currentPoll.question}</h3>
       {media.length ? (
         <div className={`mt-4 grid gap-2 overflow-hidden rounded border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900 ${media.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {media.slice(0, 4).map((item) =>
@@ -138,7 +149,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
               <SafeImage
                 key={item._id || item.url}
                 src={item.url}
-                alt={poll.question || "وسائط التصويت"}
+                alt={currentPoll.question || "وسائط التصويت"}
                 className="aspect-video max-h-[520px] w-full bg-white object-contain p-3 dark:bg-slate-950"
                 fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">تعذر عرض الصورة</div>}
                 localPrefixes={["/uploads/", "/images/", "/related/"]}
@@ -147,12 +158,12 @@ export default function PollCard({ poll, compact = false, showModerationActions 
           )}
         </div>
       ) : null}
-      <PollVote poll={poll} />
+      <PollVote poll={currentPoll} />
       <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
         <span>{commentsCount} تعليق</span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <ReactionButtons targetType="polls" targetId={poll._id} likesCount={poll.likesCount} dislikesCount={poll.dislikesCount} />
+        <ReactionButtons targetType="polls" targetId={currentPoll._id} likesCount={currentPoll.likesCount} dislikesCount={currentPoll.dislikesCount} />
         {!compact ? (
           <button
             type="button"
@@ -164,9 +175,9 @@ export default function PollCard({ poll, compact = false, showModerationActions 
             تعليق
           </button>
         ) : null}
-        <ShareMenu url={`/updates?poll=${poll._id}`} title={poll.question} text={poll.description || poll.question} />
+        <ShareMenu url={`/updates?poll=${currentPoll._id}`} title={currentPoll.question} text={currentPoll.description || currentPoll.question} />
       </div>
-      {!compact ? <CommentBox targetType="polls" targetId={poll._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
+      {!compact ? <CommentBox targetType="polls" targetId={currentPoll._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>
   );
 }

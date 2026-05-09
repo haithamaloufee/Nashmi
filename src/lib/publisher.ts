@@ -33,10 +33,10 @@ export function snapshotFromPost(post: LeanObject, authorityAuthor?: { name: str
   if (party?.name) {
     return {
       id: party._id ? String(party._id) : existing?.id || null,
-      name: existing?.name || party.name,
+      name: party.name || existing?.name,
       type: "party",
-      imageUrl: existing?.imageUrl || party.logoUrl || user?.avatarUrl || user?.image || null,
-      href: existing?.href || (party.slug ? `/parties/${party.slug}` : null),
+      imageUrl: party.logoUrl || user?.avatarUrl || user?.image || existing?.imageUrl || null,
+      href: party.slug ? `/parties/${party.slug}` : existing?.href || null,
       badge: existing?.badge || (party.isVerified ? "حزب موثق" : "حزب")
     };
   }
@@ -44,10 +44,10 @@ export function snapshotFromPost(post: LeanObject, authorityAuthor?: { name: str
   if (post.authorType === "iec") {
     return {
       id: existing?.id || null,
-      name: existing?.name || authorityAuthor?.name || user?.name || DEFAULT_AUTHORITY_NAME,
+      name: authorityAuthor?.name || existing?.name || user?.name || DEFAULT_AUTHORITY_NAME,
       type: "authority",
-      imageUrl: existing?.imageUrl || authorityAuthor?.logoUrl || user?.avatarUrl || user?.image || DEFAULT_AUTHORITY_LOGO,
-      href: existing?.href || "/iec",
+      imageUrl: authorityAuthor?.logoUrl || user?.avatarUrl || user?.image || existing?.imageUrl || DEFAULT_AUTHORITY_LOGO,
+      href: "/iec",
       badge: existing?.badge || "هيئة"
     };
   }

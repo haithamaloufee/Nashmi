@@ -8,6 +8,7 @@ type FieldErrors = {
   name?: string;
   email?: string;
   password?: string;
+  confirmPassword?: string;
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,9 +37,15 @@ function validatePassword(value: string) {
   return "";
 }
 
+function validateConfirmPassword(password: string, confirmPassword: string) {
+  if (!confirmPassword) return "تأكيد كلمة المرور مطلوب.";
+  if (password !== confirmPassword) return "كلمتا المرور غير متطابقتين.";
+  return "";
+}
+
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
-  const [values, setValues] = useState({ name: "", email: "", password: "" });
+  const [values, setValues] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,14 +55,15 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     return {
       name: mode === "signup" ? validateName(values.name) : "",
       email: validateEmail(values.email),
-      password: validatePassword(values.password)
+      password: validatePassword(values.password),
+      confirmPassword: mode === "signup" ? validateConfirmPassword(values.password, values.confirmPassword) : ""
     };
   }, [mode, values]);
 
-  const hasErrors = Boolean(errors.email || errors.password || (mode === "signup" && errors.name));
+  const hasErrors = Boolean(errors.email || errors.password || (mode === "signup" && (errors.name || errors.confirmPassword)));
   const hasVisibleErrors = hasErrors && Object.values(touched).some(Boolean);
 
-  function updateField(field: "name" | "email" | "password", value: string) {
+  function updateField(field: "name" | "email" | "password" | "confirmPassword", value: string) {
     const nextValue = field === "email" ? value.trim() : value;
     setValues((current) => ({ ...current, [field]: nextValue }));
     setTouched((current) => ({ ...current, [field]: true }));
@@ -67,6 +75,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     if (loading) return;
 
     setTouched({ name: true, email: true, password: true });
+    if (mode === "signup") setTouched({ name: true, email: true, password: true, confirmPassword: true });
     if (hasErrors) return;
 
     setLoading(true);
@@ -139,6 +148,25 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         />
         <span id="email-error">{fieldMessage("email")}</span>
       </label>
+      {mode === "signup" ? (
+        <label className="block text-sm font-medium">
+          تأكيد كلمة المرور
+          <span className="relative mt-1 block">
+            <input
+              name="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              value={values.confirmPassword}
+              onChange={(event) => updateField("confirmPassword", event.target.value)}
+              onBlur={() => setTouched((current) => ({ ...current, confirmPassword: true }))}
+              className="w-full rounded-xl border border-line bg-white/95 px-4 py-3 pe-14 text-sm text-ink focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-[#101820] dark:text-white"
+              aria-invalid={Boolean(touched.confirmPassword && errors.confirmPassword)}
+              aria-describedby="confirm-password-error"
+              autoComplete="new-password"
+            />
+          </span>
+          <span id="confirm-password-error">{fieldMessage("confirmPassword")}</span>
+        </label>
+      ) : null}
       <label className="block text-sm font-medium">
         كلمة المرور
         <span className="relative mt-1 block">

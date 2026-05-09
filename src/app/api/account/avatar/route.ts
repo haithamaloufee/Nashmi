@@ -7,10 +7,47 @@ import { requireRateLimit } from "@/lib/rateLimit";
 import { extensionForMimeType, hasValidUploadMagic, validateUploadFile, validateUploadMetadata } from "@/lib/uploadValidation";
 import { storePublicFile } from "@/lib/storage";
 import User from "@/models/User";
+import Party from "@/models/Party";
+import AuthorityProfile from "@/models/AuthorityProfile";
 
 export const runtime = "nodejs";
 
 const uploadRoles = ["citizen", "party", "iec", "admin", "super_admin"] as const;
+
+function revalidatePublisherAvatarPaths(role: string, userId: string, slug?: string | null) {
+  const paths = [`/users/${userId}`];
+  if (role === "party") {
+    paths.push("/", "/updates", "/parties", "/party-dashboard", "/party-dashboard/profile");
+    if (slug) paths.push(`/parties/${slug}`);
+  }
+  if (role === "iec") paths.push("/", "/updates", "/iec", "/iec-dashboard", "/iec-dashboard/profile");
+  for (const path of paths) revalidatePath(path);
+}
+
+async function syncPublisherProfileAvatar(user: { id: string; role: string }, avatarUrl: string | null) {
+  if (user.role === "party") {
+    const party = await Party.findOneAndUpdate(
+      { accountUserId: user.id, status: { $ne: "disabled" } },
+      { $set: { logoUrl: avatarUrl } },
+      { new: true }
+    ).select("slug").lean();
+    revalidatePublisherAvatarPaths(user.role, user.id, party?.slug || null);
+    return { targetType: "party", targetId: party?._id ? String(party._id) : null, slug: party?.slug || null };
+  }
+
+  if (user.role === "iec") {
+    const authority = await AuthorityProfile.findOneAndUpdate(
+      { slug: "independent-election-commission" },
+      { $set: { logoUrl: avatarUrl } },
+      { new: true }
+    ).select("slug").lean();
+    revalidatePublisherAvatarPaths(user.role, user.id);
+    return { targetType: "authority", targetId: authority?._id ? String(authority._id) : null, slug: authority?.slug || null };
+  }
+
+  revalidatePublisherAvatarPaths(user.role, user.id);
+  return { targetType: "user", targetId: user.id, slug: null };
+}
 
 async function readRemoteMagic(url: string) {
   const response = await fetch(url, { headers: { Range: "bytes=0-63" }, cache: "no-store" });
@@ -49,7 +86,7 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const updated = await User.findByIdAndUpdate(user.id, { $set: { avatarUrl: stored.url } }, { new: true });
     if (!updated) throw new Error("NOT_FOUND");
-    revalidatePath(`/users/${user.id}`);
+    await syncPublisherProfileAvatar(user, stored.url);
     return ok({ user: safeUser(updated) });
   } catch (error) {
     return handleApiError(error);
@@ -89,7 +126,7 @@ export async function PATCH(request: Request) {
     await connectToDatabase();
     const updated = await User.findByIdAndUpdate(user.id, { $set: { avatarUrl: input.url } }, { new: true });
     if (!updated) throw new Error("NOT_FOUND");
-    revalidatePath(`/users/${user.id}`);
+    await syncPublisherProfileAvatar(user, input.url);
     return ok({ user: safeUser(updated) });
   } catch (error) {
     return handleApiError(error);
@@ -102,7 +139,7 @@ export async function DELETE() {
     await connectToDatabase();
     const updated = await User.findByIdAndUpdate(user.id, { $set: { avatarUrl: null } }, { new: true });
     if (!updated) throw new Error("NOT_FOUND");
-    revalidatePath(`/users/${user.id}`);
+    await syncPublisherProfileAvatar(user, null);
     return ok({ user: safeUser(updated) });
   } catch (error) {
     return handleApiError(error);

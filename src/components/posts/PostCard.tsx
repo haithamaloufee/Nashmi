@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
@@ -9,6 +9,7 @@ import ReactionButtons from "@/components/ui/ReactionButtons";
 import SafeImage from "@/components/ui/SafeImage";
 import ShareMenu from "@/components/ui/ShareMenu";
 import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
+import OwnerContentMenu from "@/components/content/OwnerContentMenu";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
@@ -119,14 +120,21 @@ function mediaItems(post: Post) {
 }
 
 export default function PostCard({ post, compact = false, showModerationActions = false }: { post: Post; compact?: boolean; showModerationActions?: boolean }) {
+  const [currentPost, setCurrentPost] = useState(post);
+  const [deleted, setDeleted] = useState(false);
   const [expandedText, setExpandedText] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
-  const author = useMemo(() => authorInfo(post), [post]);
-  const media = useMemo(() => mediaItems(post), [post]);
-  const isLong = post.content.length > 360;
-  const text = isLong && !expandedText ? `${post.content.slice(0, 360)}...` : post.content;
-  const shareUrl = `/updates?post=${post._id}`;
+  useEffect(() => {
+    setCurrentPost(post);
+    setDeleted(false);
+    setCommentsCount(post.commentsCount || 0);
+  }, [post]);
+  const author = useMemo(() => authorInfo(currentPost), [currentPost]);
+  const media = useMemo(() => mediaItems(currentPost), [currentPost]);
+  const isLong = currentPost.content.length > 360;
+  const text = isLong && !expandedText ? `${currentPost.content.slice(0, 360)}...` : currentPost.content;
+  const shareUrl = `/updates?post=${currentPost._id}`;
   const avatar = (
     <SafeImage
       src={author.image}
@@ -136,6 +144,8 @@ export default function PostCard({ post, compact = false, showModerationActions 
       localPrefixes={["/uploads/", "/images/", "/related/"]}
     />
   );
+
+  if (deleted) return null;
 
   return (
     <article className="card card-hover overflow-visible bg-white p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
@@ -165,16 +175,17 @@ export default function PostCard({ post, compact = false, showModerationActions 
                 <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{author.badge}</span>
               )}
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{relativeTime(post.publishedAt || post.createdAt)}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{relativeTime(currentPost.publishedAt || currentPost.createdAt)}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {showModerationActions ? <InlineModerationActions targetType="post" targetId={post._id} /> : null}
-          <ReportButton targetType="post" targetId={post._id} compact />
+          <OwnerContentMenu type="post" item={currentPost} onUpdated={(updated) => setCurrentPost(updated)} onDeleted={() => setDeleted(true)} />
+          {showModerationActions ? <InlineModerationActions targetType="post" targetId={currentPost._id} /> : null}
+          <ReportButton targetType="post" targetId={currentPost._id} compact />
         </div>
       </div>
 
-      {post.title ? <h4 className="mt-4 text-lg font-bold leading-8 text-slate-950 dark:text-white">{post.title}</h4> : null}
+      {currentPost.title ? <h4 className="mt-4 text-lg font-bold leading-8 text-slate-950 dark:text-white">{currentPost.title}</h4> : null}
       <p className="mt-3 whitespace-pre-line break-words leading-8 text-slate-800 dark:text-slate-200">{text}</p>
       {isLong ? (
         <button type="button" onClick={() => setExpandedText((value) => !value)} className="mt-1 text-sm font-semibold text-civic hover:underline">
@@ -182,9 +193,9 @@ export default function PostCard({ post, compact = false, showModerationActions 
         </button>
       ) : null}
 
-      {post.tags?.length ? (
+      {currentPost.tags?.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          {post.tags.map((tag) => (
+          {currentPost.tags.map((tag) => (
             <span key={tag} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
               #{tag.replace(/^#/, "")}
             </span>
@@ -203,7 +214,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
               <SafeImage
                 key={item._id || item.url}
                 src={item.url}
-                alt={post.title || "وسائط المنشور"}
+                alt={currentPost.title || "وسائط المنشور"}
                 className="aspect-video max-h-[520px] w-full bg-white object-contain p-3 dark:bg-slate-950"
                 fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">تعذر عرض الصورة</div>}
                 localPrefixes={["/uploads/", "/images/", "/related/"]}
@@ -218,7 +229,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <ReactionButtons targetType="posts" targetId={post._id} likesCount={post.likesCount} dislikesCount={post.dislikesCount} />
+        <ReactionButtons targetType="posts" targetId={currentPost._id} likesCount={currentPost.likesCount} dislikesCount={currentPost.dislikesCount} />
         {!compact ? (
           <button
             type="button"
@@ -230,10 +241,10 @@ export default function PostCard({ post, compact = false, showModerationActions 
             تعليق
           </button>
         ) : null}
-        <ShareMenu url={shareUrl} title={post.title || author.name} text={post.content.slice(0, 140)} />
+        <ShareMenu url={shareUrl} title={currentPost.title || author.name} text={currentPost.content.slice(0, 140)} />
       </div>
 
-      {!compact ? <CommentBox targetType="posts" targetId={post._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
+      {!compact ? <CommentBox targetType="posts" targetId={currentPost._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>
   );
 }

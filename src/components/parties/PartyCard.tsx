@@ -20,14 +20,14 @@ type Party = {
 
 function getPartyLogoSrc(party: Party) {
   const mediaUrl = typeof party.logoMediaId === "object" && party.logoMediaId ? party.logoMediaId.url : null;
-  return normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(party.logoUrl, { localPrefixes: ["/images/"] });
+  return normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/", "/related/"] }) || normalizeSafeImageUrl(party.logoUrl, { localPrefixes: ["/images/", "/uploads/", "/related/"] });
 }
 
 export default function PartyCard({ party }: { party: Party }) {
   const fallback = <div className="grid h-12 w-12 shrink-0 place-items-center rounded bg-civic/10 text-lg font-bold text-civic">{party.name.slice(0, 1)}</div>;
 
   return (
-    <article className="card flex h-full flex-col p-5">
+    <Link href={`/parties/${party.slug}`} prefetch={false} className="card card-hover flex h-full flex-col p-5">
       <div className="mb-4 flex items-center gap-3">
         <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="h-12 w-12 shrink-0 rounded object-contain ring-1 ring-line" fallback={fallback} />
         <div>
@@ -54,10 +54,10 @@ export default function PartyCard({ party }: { party: Party }) {
           <Users className="ml-1 inline h-4 w-4" />
           {party.followersCount} متابع
         </span>
-        <Link href={`/parties/${party.slug}`} className="rounded bg-civic px-4 py-2 text-sm font-semibold text-white">
+        <span className="rounded bg-civic px-4 py-2 text-sm font-semibold text-white">
           عرض
-        </Link>
+        </span>
       </div>
-    </article>
+    </Link>
   );
 }
