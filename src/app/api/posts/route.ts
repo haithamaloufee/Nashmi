@@ -5,6 +5,7 @@ import { CACHE_HEADERS, cacheHeaders } from "@/lib/cache";
 import { requireActiveUser } from "@/lib/auth";
 import { authorTypeForRole, contentCreatorRoles } from "@/lib/permissions";
 import { attachPublisherSnapshots, buildPublisherSnapshot, getAuthorityAuthor } from "@/lib/publisher";
+import { normalizePopulatedMedia } from "@/lib/media";
 import { postCreateSchema } from "@/lib/validators";
 import { createSearchText, searchRegex } from "@/lib/arabicSearch";
 import { cursorFilter, getNextCursor, newestSort, parseLimit } from "@/lib/pagination";
@@ -32,11 +33,11 @@ export async function GET(request: Request) {
       .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
       .populate({ path: "authorUserId", select: "name avatarUrl image role" })
       .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-      .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+      .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
       .sort(newestSort)
       .limit(limit)
       .lean(), getAuthorityAuthor()]);
-    const withPublisher = attachPublisherSnapshots(posts as any[], authorityAuthor);
+    const withPublisher = attachPublisherSnapshots((posts as any[]).map(normalizePopulatedMedia), authorityAuthor);
     return ok(
       { posts: serialize(withPublisher) },
       { nextCursor: getNextCursor(posts, limit), headers: cacheHeaders(CACHE_HEADERS.publicFeed) }
@@ -92,10 +93,10 @@ export async function POST(request: Request) {
     const populated = await Post.findById(post._id)
       .populate({ path: "authorUserId", select: "name avatarUrl image role" })
       .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-      .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+      .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
       .lean();
     const authorityAuthor = await getAuthorityAuthor();
-    const [withPublisher] = attachPublisherSnapshots([(populated || post) as any], authorityAuthor);
+    const [withPublisher] = attachPublisherSnapshots([normalizePopulatedMedia((populated || post) as any)], authorityAuthor);
     return ok({ post: serialize(withPublisher) }, { status: 201 });
   } catch (error) {
     return handleApiError(error);

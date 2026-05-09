@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { searchRegex } from "@/lib/arabicSearch";
 import { parseLimit } from "@/lib/pagination";
 import { attachPublisherSnapshots, getAuthorityAuthor } from "@/lib/publisher";
+import { normalizePopulatedMediaItems } from "@/lib/media";
 import { serialize } from "@/lib/routeUtils";
 import Party from "@/models/Party";
 import PartyFollower from "@/models/PartyFollower";
@@ -77,8 +78,8 @@ export async function GET(request: Request) {
       attachPublisherSnapshots(items, authorityAuthor).map((item) => (item.authorType === "iec" ? { ...item, authorityAuthor } : item));
 
     const updates = [
-      ...withPublisher(posts as any[]).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
-      ...withPublisher(polls as any[]).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
+      ...withPublisher(normalizePopulatedMediaItems(posts as any[])).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
+      ...withPublisher(normalizePopulatedMediaItems(polls as any[])).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
     ]
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
       .slice(0, limit);

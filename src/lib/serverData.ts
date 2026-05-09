@@ -1,6 +1,7 @@
 import { connectToDatabase } from "@/lib/db";
 import { searchRegex } from "@/lib/arabicSearch";
 import { attachPublisherSnapshots } from "@/lib/publisher";
+import { normalizePopulatedMediaItems } from "@/lib/media";
 import { serialize } from "@/lib/routeUtils";
 import Party from "@/models/Party";
 import Post from "@/models/Post";
@@ -89,7 +90,7 @@ export async function getHomeData() {
           .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
           .populate({ path: "authorUserId", select: "name avatarUrl image role" })
           .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-          .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+          .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
           .sort({ publishedAt: -1 })
           .limit(3)
           .lean(),
@@ -102,7 +103,7 @@ export async function getHomeData() {
           .lean(),
         getAuthorityAuthor()
       ]);
-      return { partiesCount, lawsCount, updatesCount: postsCount + pollsCount, latestPosts: serialize(attachAuthorityAuthor(latestPosts as LeanItem[], authorityAuthor)), latestPolls: serialize(attachAuthorityAuthor(latestPolls as LeanItem[], authorityAuthor)) };
+      return { partiesCount, lawsCount, updatesCount: postsCount + pollsCount, latestPosts: serialize(attachAuthorityAuthor(normalizePopulatedMediaItems(latestPosts as LeanItem[]), authorityAuthor)), latestPolls: serialize(attachAuthorityAuthor(normalizePopulatedMediaItems(latestPolls as LeanItem[]), authorityAuthor)) };
     }
   );
 }
@@ -157,7 +158,7 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-        .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+        .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
         .sort({ publishedAt: -1 })
         .limit(10)
         .lean(),
@@ -171,7 +172,7 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
       viewerUserId ? PartyFollower.exists({ partyId: party._id, userId: viewerUserId }) : null,
       getAuthorityAuthor()
     ]);
-    return serialize({ party, posts: attachAuthorityAuthor(posts as LeanItem[], authorityAuthor), polls: attachAuthorityAuthor(polls as LeanItem[], authorityAuthor), isFollowing: Boolean(follow) });
+    return serialize({ party, posts: attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor), polls: attachAuthorityAuthor(normalizePopulatedMediaItems(polls as LeanItem[]), authorityAuthor), isFollowing: Boolean(follow) });
   });
 }
 
@@ -194,7 +195,7 @@ export async function getAuthorityProfilePageData(slug: string) {
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-        .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+        .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
         .sort({ publishedAt: -1 })
         .limit(10)
         .lean(),
@@ -207,7 +208,7 @@ export async function getAuthorityProfilePageData(slug: string) {
         .lean(),
       getAuthorityAuthor()
     ]);
-    return serialize({ authority, posts: attachAuthorityAuthor(posts as LeanItem[], authorityAuthor), polls: attachAuthorityAuthor(polls as LeanItem[], authorityAuthor) });
+    return serialize({ authority, posts: attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor), polls: attachAuthorityAuthor(normalizePopulatedMediaItems(polls as LeanItem[]), authorityAuthor) });
   });
 }
 
@@ -231,7 +232,7 @@ export async function getUpdates(search?: string, filter = "all") {
             .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-            .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+            .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
             .sort({ publishedAt: -1 })
             .limit(12)
             .lean(),
@@ -248,8 +249,8 @@ export async function getUpdates(search?: string, filter = "all") {
     ]);
     return serialize(
       [
-        ...attachAuthorityAuthor(posts as LeanItem[], authorityAuthor).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
-        ...attachAuthorityAuthor(polls as LeanItem[], authorityAuthor).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
+        ...attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
+        ...attachAuthorityAuthor(normalizePopulatedMediaItems(polls as LeanItem[]), authorityAuthor).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
       ]
         .sort((a, b) => dateTime(b.publishedAt) - dateTime(a.publishedAt))
         .slice(0, 18)
@@ -481,7 +482,7 @@ export async function getPartyDashboardData(userId: string) {
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt status")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-        .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+        .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
         .sort({ createdAt: -1 })
         .limit(50)
         .lean(),
@@ -489,7 +490,7 @@ export async function getPartyDashboardData(userId: string) {
       Comment.countDocuments({ partyId: party._id, status: "published" }),
       getAuthorityAuthor()
     ]);
-    return serialize({ party, posts: attachAuthorityAuthor(posts as LeanItem[], authorityAuthor), polls: attachAuthorityAuthor(polls as LeanItem[], authorityAuthor), comments });
+    return serialize({ party, posts: attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor), polls: attachAuthorityAuthor(polls as LeanItem[], authorityAuthor), comments });
   });
 }
 
@@ -500,14 +501,14 @@ export async function getIecDashboardData() {
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt status")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-        .populate({ path: "mediaIds", select: "url mimeType type width height status" })
+        .populate({ path: "mediaIds", select: "url mimeType type width height status purpose provider" })
         .sort({ createdAt: -1 })
         .limit(50)
         .lean(),
       Law.find({}).sort({ updatedAt: -1 }).limit(50).lean(),
       getAuthorityAuthor()
     ]);
-    return { posts: serialize(attachAuthorityAuthor(posts as LeanItem[], authorityAuthor)), laws: serialize(laws) };
+    return { posts: serialize(attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor)), laws: serialize(laws) };
   });
 }
 
