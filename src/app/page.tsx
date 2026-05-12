@@ -339,7 +339,7 @@ export default async function HomePage() {
             </a>
           </section>
         </div>
-        <div className="container-page mt-10 border-t border-white/[0.14] pt-5 text-sm text-white/70">© جميع الحقوق محفوظة لفريق جامعة الطفيلة التقنية</div>
+        <div className="container-page mt-10 border-t border-white/[0.14] pt-5 text-sm text-white/70">© جميع الحقوق محفوظة لفريق جامعة الطفيلة التقنية: هيثم العوفي، نوال الرفوع، محمد طالب، محمد المصري، وعاصف أبو الرب.</div>
       </footer>
     </main>
   );
