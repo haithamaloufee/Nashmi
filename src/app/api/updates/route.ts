@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     const matchingPartyIds = partyNameMatches.map((party) => party._id);
 
     const basePostQuery: Record<string, unknown> = { status: "published" };
-    const basePollQuery: Record<string, unknown> = { status: "active" };
+    const basePollQuery: Record<string, unknown> = { status: { $in: ["active", "closed"] } };
     if (sinceDate && !Number.isNaN(sinceDate.getTime())) {
       basePostQuery.publishedAt = { $gt: sinceDate };
       basePollQuery.publishedAt = { $gt: sinceDate };
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
       filter === "posts"
         ? []
         : Poll.find(basePollQuery)
-            .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
+            .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .sort({ publishedAt: -1 })

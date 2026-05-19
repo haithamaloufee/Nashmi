@@ -7,6 +7,7 @@ import { createSearchText, searchRegex } from "@/lib/arabicSearch";
 import { cursorFilter, getNextCursor, newestSort, parseLimit } from "@/lib/pagination";
 import { pollResultsDisclaimer, readJson, requirePartyForUser, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
+import { calculatePollEndDate, normalizePollDurationDays } from "@/lib/polls";
 import Poll from "@/models/Poll";
 import Party from "@/models/Party";
 
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
     const partyId = url.searchParams.get("partyId");
     const filter = url.searchParams.get("filter");
     const regex = search ? searchRegex(search) : null;
-    const query: Record<string, unknown> = { status: "active", ...cursorFilter(url.searchParams.get("cursor")) };
+    const query: Record<string, unknown> = { status: { $in: ["active", "closed"] }, ...cursorFilter(url.searchParams.get("cursor")) };
     if (partyId) query.partyId = partyId;
     if (filter === "iec") query.authorType = "iec";
     if (regex) query.searchNormalized = regex;
@@ -48,6 +49,10 @@ export async function POST(request: Request) {
       partyId = party._id.toString();
     }
 
+    const startsAt = new Date();
+    const durationDays = normalizePollDurationDays(input.durationDays);
+    const endsAt = calculatePollEndDate(startsAt, durationDays);
+
     const poll = await Poll.create({
       authorType: authorTypeForRole(user.role),
       authorUserId: user.id,
@@ -59,9 +64,12 @@ export async function POST(request: Request) {
       allowedVoterRoles: ["citizen"],
       resultsVisibility: input.resultsVisibility,
       allowVoteChange: false,
-      expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+      durationDays,
+      startsAt,
+      endsAt,
+      expiresAt: endsAt,
       status: "active",
-      publishedAt: new Date(),
+      publishedAt: startsAt,
       searchNormalized: createSearchText([input.question, input.description || "", ...input.options])
     });
     if (partyId) await Party.updateOne({ _id: partyId }, { $inc: { pollsCount: 1 } });

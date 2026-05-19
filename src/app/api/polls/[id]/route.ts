@@ -9,6 +9,7 @@ import { pollUpdateSchema } from "@/lib/validators";
 import { createSearchText } from "@/lib/arabicSearch";
 import { pollResultsDisclaimer, readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
+import { calculatePollEndDate, normalizePollDurationDays } from "@/lib/polls";
 import Poll from "@/models/Poll";
 import Party from "@/models/Party";
 
@@ -40,7 +41,7 @@ export async function GET(_request: Request, context: Context) {
   try {
     const { id } = await context.params;
     await connectToDatabase();
-    const poll = await Poll.findOne({ _id: id, status: "active" }).lean();
+    const poll = await Poll.findOne({ _id: id, status: { $in: ["active", "closed"] } }).lean();
     if (!poll) throw new Error("NOT_FOUND");
     return ok({ poll: serialize(poll), disclaimer: pollResultsDisclaimer() });
   } catch (error) {
@@ -59,7 +60,7 @@ export async function PATCH(request: Request, context: Context) {
     if (!poll || poll.status === "deleted") throw new Error("NOT_FOUND");
 
     const ownerAuthorized = canEditOwnPoll(user, poll);
-    const moderationAuthorized = isAdmin(user.role) && input.status !== undefined && input.question === undefined && input.description === undefined && input.options === undefined && input.resultsVisibility === undefined && input.expiresAt === undefined;
+    const moderationAuthorized = isAdmin(user.role) && input.status !== undefined && input.question === undefined && input.description === undefined && input.options === undefined && input.resultsVisibility === undefined && input.expiresAt === undefined && input.durationDays === undefined;
     if (!ownerAuthorized && !moderationAuthorized) {
       console.info({ route: "/api/polls/[id]", action: "update", userId: user.id, role: user.role, pollId: id, ownerId: String(poll.authorUserId), authorized: false, durationMs: Date.now() - startedAt });
       return fail("FORBIDDEN", "تعديل التصويت متاح للمالك فقط.", 403);
@@ -69,7 +70,18 @@ export async function PATCH(request: Request, context: Context) {
     if (input.question !== undefined && ownerAuthorized) update.question = input.question;
     if (input.description !== undefined && ownerAuthorized) update.description = input.description || null;
     if (input.resultsVisibility !== undefined && ownerAuthorized) update.resultsVisibility = input.resultsVisibility;
-    if (input.expiresAt !== undefined && ownerAuthorized) update.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+    if (input.expiresAt !== undefined && ownerAuthorized) {
+      update.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+      update.endsAt = update.expiresAt;
+    }
+    if (input.durationDays !== undefined && ownerAuthorized) {
+      const durationDays = normalizePollDurationDays(input.durationDays);
+      const start = poll.startsAt || poll.publishedAt || poll.createdAt || new Date();
+      const endsAt = calculatePollEndDate(start, durationDays);
+      update.durationDays = durationDays;
+      update.endsAt = endsAt;
+      update.expiresAt = endsAt;
+    }
     if (input.status !== undefined && (moderationAuthorized || ownerAuthorized)) update.status = input.status;
     if (input.options !== undefined) {
       if (!ownerAuthorized) return fail("FORBIDDEN", "تعديل خيارات التصويت متاح للمالك فقط.", 403);

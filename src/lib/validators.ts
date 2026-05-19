@@ -3,6 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { roles } from "@/lib/permissions";
 import { normalizeYoutubeInput } from "@/lib/youtube";
 import { normalizeSafeImageUrl } from "@/lib/imageUrls";
+import { allowedPollDurationDays, defaultPollDurationDays } from "@/lib/polls";
 
 export const objectIdSchema = z.string().refine((value) => isValidObjectId(value), "معرف غير صالح");
 export const emailSchema = z.string().email("البريد الإلكتروني غير صالح").max(254);
@@ -192,6 +193,7 @@ export const pollCreateSchema = z.object({
   description: z.string().trim().max(1000).nullable().optional(),
   options: z.array(z.string().trim().min(1).max(160)).min(2).max(6),
   resultsVisibility: z.enum(["always", "after_vote", "after_close"]).default("always"),
+  durationDays: z.coerce.number().int().refine((value) => allowedPollDurationDays.includes(value as never), "مدة التصويت غير صالحة").default(defaultPollDurationDays),
   expiresAt: z.string().datetime().nullable().optional(),
   partyId: objectIdSchema.optional().nullable()
 });
@@ -202,6 +204,29 @@ export const pollUpdateSchema = pollCreateSchema.partial().extend({
 
 export const voteSchema = z.object({
   optionId: objectIdSchema
+});
+
+export const aboutNashmiSchema = z.object({
+  titleAr: z.string().trim().min(2).max(160),
+  titleEn: z.string().trim().min(2).max(160),
+  bodyAr: z.string().trim().min(10).max(6000),
+  bodyEn: z.string().trim().min(10).max(6000),
+  youtubeUrl: z
+    .string()
+    .trim()
+    .max(2048)
+    .nullable()
+    .optional()
+    .transform((value, context) => {
+      const raw = (value || "").trim();
+      if (!raw) return null;
+      const normalized = normalizeYoutubeInput(raw);
+      if (!normalized) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "رابط يوتيوب غير صالح" });
+        return z.NEVER;
+      }
+      return normalized.url;
+    })
 });
 
 export const lawSchema = z.object({

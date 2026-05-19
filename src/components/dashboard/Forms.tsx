@@ -7,6 +7,8 @@ import LoadingButton from "@/components/ui/LoadingButton";
 import MediaUploadField from "@/components/ui/MediaUploadField";
 import SafeImage from "@/components/ui/SafeImage";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { allowedPollDurationDays, defaultPollDurationDays } from "@/lib/polls";
 
 function useApiMessage() {
   const router = useRouter();
@@ -106,6 +108,7 @@ export function PostCreateForm() {
 
 export function PollCreateForm() {
   const api = useApiMessage();
+  const { t } = useTranslation();
   return (
     <form
       action={(formData) =>
@@ -113,7 +116,8 @@ export function PollCreateForm() {
           question: formData.get("question"),
           description: formData.get("description") || null,
           options: splitLines(formData.get("options")),
-          resultsVisibility: formData.get("resultsVisibility") || "always"
+          resultsVisibility: formData.get("resultsVisibility") || "always",
+          durationDays: Number(formData.get("durationDays") || defaultPollDurationDays)
         })
       }
       className="card space-y-3 p-5"
@@ -127,8 +131,93 @@ export function PollCreateForm() {
         <option value="after_vote">بعد التصويت</option>
         <option value="after_close">بعد الإغلاق</option>
       </select>
+      <label className="block text-sm font-semibold">
+        {t("poll.duration")}
+        <select name="durationDays" defaultValue={defaultPollDurationDays} className="mt-1 w-full rounded border-line">
+          {allowedPollDurationDays.map((days) => (
+            <option key={days} value={days}>
+              {t(`poll.duration.${days}` as never)}
+            </option>
+          ))}
+        </select>
+      </label>
       <button className="block rounded bg-civic px-4 py-2 text-white">إنشاء</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
+    </form>
+  );
+}
+
+export function AboutNashmiAdminForm({ content }: { content: any }) {
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
+  const { t } = useTranslation();
+
+  return (
+    <form
+      action={async (formData) => {
+        setLoading(true);
+        setMessage("");
+        try {
+          const response = await fetch("/api/admin/site-content/about-nashmi", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              titleAr: formData.get("titleAr"),
+              titleEn: formData.get("titleEn"),
+              bodyAr: formData.get("bodyAr"),
+              bodyEn: formData.get("bodyEn"),
+              youtubeUrl: formData.get("youtubeUrl") || null
+            })
+          });
+          const json = await response.json().catch(() => ({}));
+          if (!json.ok) {
+            const error = json.error?.message || t("admin.about.failed");
+            setMessage(error);
+            showToast(error, "error");
+            return;
+          }
+          setMessage(t("admin.about.saved"));
+          showToast(t("admin.about.saved"), "success");
+        } catch {
+          setMessage(t("admin.about.failed"));
+          showToast(t("admin.about.failed"), "error");
+        } finally {
+          setLoading(false);
+        }
+      }}
+      className="card space-y-4 p-5"
+    >
+      <div>
+        <h2 className="text-2xl font-black">{t("admin.about.title")}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t("admin.about.hint")}</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block text-sm font-semibold">
+          {t("admin.about.titleAr")}
+          <input name="titleAr" defaultValue={content?.titleAr || "عن نشمي"} className="mt-1 w-full rounded border-line" required />
+        </label>
+        <label className="block text-sm font-semibold">
+          {t("admin.about.titleEn")}
+          <input name="titleEn" defaultValue={content?.titleEn || "About Nashmi"} className="mt-1 w-full rounded border-line" required />
+        </label>
+      </div>
+      <label className="block text-sm font-semibold">
+        {t("admin.about.bodyAr")}
+        <textarea name="bodyAr" defaultValue={content?.bodyAr || ""} className="mt-1 w-full rounded border-line" rows={7} required />
+      </label>
+      <label className="block text-sm font-semibold">
+        {t("admin.about.bodyEn")}
+        <textarea name="bodyEn" defaultValue={content?.bodyEn || ""} className="mt-1 w-full rounded border-line" rows={7} required />
+      </label>
+      <label className="block text-sm font-semibold">
+        {t("admin.about.youtube")}
+        <input name="youtubeUrl" defaultValue={content?.youtubeUrl || ""} className="mt-1 w-full rounded border-line" placeholder="https://www.youtube.com/watch?v=..." />
+      </label>
+      <button type="submit" disabled={loading} className="rounded bg-civic px-5 py-2.5 text-sm font-bold text-white hover:bg-civic/90 disabled:opacity-60">
+        {loading ? t("common.saving") : t("common.save")}
+      </button>
+      {message ? <p className="text-sm font-semibold text-ink/65">{message}</p> : null}
     </form>
   );
 }

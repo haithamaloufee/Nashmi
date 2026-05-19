@@ -14,5 +14,6 @@ export { default as Law } from "./Law";
 export { default as LawVersion } from "./LawVersion";
 export { default as AuthorityProfile } from "./AuthorityProfile";
 export { default as AuditLog } from "./AuditLog";
+export { default as SiteContent } from "./SiteContent";
 export { default as ChatSession } from "./ChatSession";
 export { default as ChatMessage } from "./ChatMessage";

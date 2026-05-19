@@ -25,6 +25,9 @@ const PollSchema = new Schema(
     likesCount: { type: Number, default: 0 },
     dislikesCount: { type: Number, default: 0 },
     commentsCount: { type: Number, default: 0 },
+    durationDays: { type: Number, default: 10, min: 1, max: 30 },
+    startsAt: { type: Date, default: Date.now },
+    endsAt: { type: Date, default: null },
     expiresAt: { type: Date, default: null },
     status: { type: String, enum: ["active", "closed", "hidden", "deleted"], default: "active" },
     publishedAt: { type: Date, default: Date.now },
@@ -36,6 +39,8 @@ const PollSchema = new Schema(
 PollSchema.index({ status: 1, publishedAt: -1 });
 PollSchema.index({ partyId: 1, status: 1, publishedAt: -1 });
 PollSchema.index({ authorUserId: 1, createdAt: -1 });
+PollSchema.index({ status: 1, endsAt: 1 });
+PollSchema.index({ status: 1, expiresAt: 1 });
 PollSchema.index({ searchNormalized: 1 });
 PollSchema.index({ question: "text", description: "text" });
 

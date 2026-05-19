@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import PollVote from "@/components/polls/PollVote";
+import PollCountdown from "@/components/polls/PollCountdown";
+import PollStatusBadge from "@/components/polls/PollStatusBadge";
 import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import ShareMenu from "@/components/ui/ShareMenu";
 import SafeImage from "@/components/ui/SafeImage";
 import OwnerContentMenu from "@/components/content/OwnerContentMenu";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
@@ -29,20 +32,25 @@ type Poll = {
   likesCount: number;
   dislikesCount: number;
   commentsCount?: number;
+  durationDays?: number | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  expiresAt?: string | null;
+  status?: string | null;
   publishedAt?: string;
   createdAt?: string;
 };
 
-function relativeTime(value?: string) {
+function relativeTime(value: string | undefined, language: "ar" | "en") {
   if (!value) return "";
   const date = new Date(value);
   const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
   const abs = Math.abs(diffSeconds);
-  const formatter = new Intl.RelativeTimeFormat("ar-JO", { numeric: "auto" });
+  const formatter = new Intl.RelativeTimeFormat(language === "ar" ? "ar-JO" : "en-US", { numeric: "auto" });
   if (abs < 60) return formatter.format(diffSeconds, "second");
   if (abs < 3600) return formatter.format(Math.round(diffSeconds / 60), "minute");
   if (abs < 86400) return formatter.format(Math.round(diffSeconds / 3600), "hour");
-  return new Intl.DateTimeFormat("ar-JO", { dateStyle: "medium" }).format(date);
+  return new Intl.DateTimeFormat(language === "ar" ? "ar-JO" : "en-US", { dateStyle: "medium" }).format(date);
 }
 
 function mediaItems(poll: Poll) {
@@ -83,6 +91,7 @@ function authorInfo(poll: Poll) {
 }
 
 export default function PollCard({ poll, compact = false, showModerationActions = false }: { poll: Poll; compact?: boolean; showModerationActions?: boolean }) {
+  const { language, t } = useTranslation();
   const [currentPoll, setCurrentPoll] = useState(poll);
   const [deleted, setDeleted] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
@@ -94,6 +103,9 @@ export default function PollCard({ poll, compact = false, showModerationActions 
   }, [poll]);
   const author = useMemo(() => authorInfo(currentPoll), [currentPoll]);
   const media = useMemo(() => mediaItems(currentPoll), [currentPoll]);
+  const markEnded = useCallback(() => {
+    setCurrentPoll((current) => (current.status === "closed" ? current : { ...current, status: "closed" }));
+  }, []);
   const avatar = (
     <SafeImage
       src={author.image}
@@ -125,9 +137,10 @@ export default function PollCard({ poll, compact = false, showModerationActions 
                 <h3 className="font-bold">{author.name}</h3>
               )}
               <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{author.type}</span>
-              <span className="rounded-full bg-clay/10 px-2.5 py-1 text-xs font-bold text-clay dark:bg-amber-200/10 dark:text-amber-200">تصويت</span>
+              <span className="rounded-full bg-clay/10 px-2.5 py-1 text-xs font-bold text-clay dark:bg-amber-200/10 dark:text-amber-200">{t("poll.type")}</span>
+              <PollStatusBadge poll={currentPoll} />
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{relativeTime(currentPoll.publishedAt || currentPoll.createdAt)}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{relativeTime(currentPoll.publishedAt || currentPoll.createdAt, language)}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -138,6 +151,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
       </div>
 
       <h3 className="text-lg font-bold leading-8 text-slate-950 dark:text-white">{currentPoll.question}</h3>
+      <PollCountdown poll={currentPoll} onEnded={markEnded} />
       {media.length ? (
         <div className={`mt-4 grid gap-2 overflow-hidden rounded border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900 ${media.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {media.slice(0, 4).map((item) =>
@@ -160,7 +174,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
       ) : null}
       <PollVote poll={currentPoll} />
       <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-        <span>{commentsCount} تعليق</span>
+        <span>{commentsCount} {t("poll.comments")}</span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <ReactionButtons targetType="polls" targetId={currentPoll._id} likesCount={currentPoll.likesCount} dislikesCount={currentPoll.dislikesCount} />
@@ -172,7 +186,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
             aria-expanded={commentsExpanded}
           >
             <MessageCircle className="h-4 w-4" />
-            تعليق
+            {t("poll.comments")}
           </button>
         ) : null}
         <ShareMenu url={`/updates?poll=${currentPoll._id}`} title={currentPoll.question} text={currentPoll.description || currentPoll.question} />

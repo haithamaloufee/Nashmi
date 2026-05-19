@@ -11,6 +11,7 @@ const links = [
   { href: "/admin/users", label: "المستخدمون" },
   { href: "/admin/parties", label: "الأحزاب" },
   { href: "/admin/moderation", label: "الإشراف" },
+  { href: "/admin/about-nashmi", label: "عن نشمي" },
   { href: "/admin/logs", label: "سجل التدقيق" }
 ];
 
@@ -48,6 +49,7 @@ export default async function AdminPage() {
     { label: "التصويتات", value: stats.polls, href: "/admin/moderation?type=polls", hint: "إدارة التصويتات وحالتها" },
     { label: "التعليقات", value: stats.comments, href: "/admin/moderation?type=comments", hint: "مراجعة التعليقات المبلغ عنها أو المخفية" },
     { label: "البلاغات المفتوحة", value: stats.openReports?.length || 0, href: "/admin/reports?status=open", hint: "التعامل مع البلاغات قيد المراجعة" },
+    { label: "عن نشمي", value: "تعديل", href: "/admin/about-nashmi", hint: "تحديث نص الصفحة التعريفية ورابط فيديو يوتيوب" },
     { label: "القوانين", value: stats.laws, href: "/admin/laws", hint: "إدارة مواد التوعية القانونية" }
   ];
 

@@ -94,8 +94,8 @@ export async function getHomeData() {
           .sort({ publishedAt: -1 })
           .limit(3)
           .lean(),
-        Poll.find({ status: "active" })
-          .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
+        Poll.find({ status: { $in: ["active", "closed"] } })
+          .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
           .populate({ path: "authorUserId", select: "name avatarUrl image role" })
           .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
           .sort({ publishedAt: -1 })
@@ -162,8 +162,8 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
         .sort({ publishedAt: -1 })
         .limit(10)
         .lean(),
-      Poll.find({ partyId: party._id, status: "active" })
-        .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
+      Poll.find({ partyId: party._id, status: { $in: ["active", "closed"] } })
+        .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .sort({ publishedAt: -1 })
@@ -199,8 +199,8 @@ export async function getAuthorityProfilePageData(slug: string) {
         .sort({ publishedAt: -1 })
         .limit(10)
         .lean(),
-      Poll.find({ authorType: "iec", status: "active" })
-        .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
+      Poll.find({ authorType: "iec", status: { $in: ["active", "closed"] } })
+        .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
         .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
         .sort({ publishedAt: -1 })
@@ -216,7 +216,7 @@ export async function getUpdates(search?: string, filter = "all") {
   return safeData([] as unknown[], async () => {
     const regex = search ? searchRegex(search) : null;
     const postQuery: Record<string, unknown> = { status: "published" };
-    const pollQuery: Record<string, unknown> = { status: "active" };
+    const pollQuery: Record<string, unknown> = { status: { $in: ["active", "closed"] } };
     if (filter === "iec") {
       postQuery.authorType = "iec";
       pollQuery.authorType = "iec";
@@ -239,7 +239,7 @@ export async function getUpdates(search?: string, filter = "all") {
       filter === "posts"
         ? []
         : Poll.find(pollQuery)
-            .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount publishedAt createdAt")
+            .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .sort({ publishedAt: -1 })

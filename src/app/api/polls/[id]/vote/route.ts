@@ -4,6 +4,7 @@ import { requireActiveUser } from "@/lib/auth";
 import { voteSchema } from "@/lib/validators";
 import { requireRateLimit } from "@/lib/rateLimit";
 import { isDuplicateKeyError, pollResultsDisclaimer, readJson, serialize } from "@/lib/routeUtils";
+import { getPollEndDate, isPollEnded } from "@/lib/polls";
 import Poll from "@/models/Poll";
 import PollVote from "@/models/PollVote";
 
@@ -18,7 +19,11 @@ export async function POST(request: Request, context: Context) {
     await connectToDatabase();
     const poll = await Poll.findOne({ _id: id, status: "active" });
     if (!poll) throw new Error("NOT_FOUND");
-    if (poll.expiresAt && poll.expiresAt.getTime() <= Date.now()) return fail("BAD_REQUEST", "انتهت مدة التصويت", 400);
+    if (isPollEnded(poll)) {
+      const endDate = getPollEndDate(poll);
+      await Poll.updateOne({ _id: id, status: "active" }, { $set: { endsAt: endDate || poll.endsAt || poll.expiresAt || new Date(), expiresAt: endDate || poll.expiresAt || poll.endsAt || new Date() } });
+      return fail("BAD_REQUEST", "انتهت مدة التصويت", 400);
+    }
     if (!poll.options.some((option) => String(option._id) === input.optionId)) return fail("BAD_REQUEST", "خيار التصويت غير صالح", 400);
 
     try {

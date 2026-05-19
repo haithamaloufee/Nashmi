@@ -46,6 +46,7 @@ export default function RouteTransitionProvider({ children }: { children: ReactN
       if (event.defaultPrevented || !isPlainLeftClick(event)) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
+      if (target.closest("button,[role='button'],[data-no-route-transition='true']")) return;
 
       const anchor = target.closest("a[href]") as HTMLAnchorElement | null;
       if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;

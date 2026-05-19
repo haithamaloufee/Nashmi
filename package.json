@@ -21,6 +21,7 @@
     "test:e2e": "playwright test",
     "seed-memory": "tsx scripts/seed-memory.ts",
     "sync-indexes": "tsx scripts/sync-indexes.ts",
+    "polls:backfill-ends-at": "tsx scripts/backfill-poll-ends-at.ts",
     "recalculate-counters": "tsx scripts/recalculate-counters.ts",
     "audit-demo-content": "tsx scripts/audit-demo-content.ts",
     "reset-demo-content": "tsx scripts/reset-demo-content.ts"

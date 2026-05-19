@@ -6,6 +6,7 @@ import { LayoutDashboard, LogOut, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import SafeImage from "@/components/ui/SafeImage";
 import type { SafeUser } from "@/lib/auth";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 
 function dashboardHref(role: SafeUser["role"]) {
   if (role === "party") return "/party-dashboard";
@@ -16,6 +17,7 @@ function dashboardHref(role: SafeUser["role"]) {
 
 export default function UserMenu({ user }: { user: SafeUser }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const avatarSrc = user.avatarUrl || user.image;
   const fallback = <span className="grid h-9 w-9 place-items-center rounded-full bg-civic/10 text-sm font-bold text-civic">{user.name.slice(0, 1)}</span>;
@@ -40,7 +42,7 @@ export default function UserMenu({ user }: { user: SafeUser }) {
           </Link>
           <Link href={dashboardHref(user.role)} className="flex items-center gap-2 rounded px-3 py-2 hover:bg-civic/10" onClick={() => setOpen(false)}>
             <LayoutDashboard className="h-4 w-4" />
-            لوحتي
+            {t("nav.dashboard")}
           </Link>
           <button type="button" onClick={logout} className="flex w-full items-center gap-2 rounded px-3 py-2 text-right hover:bg-civic/10">
             <LogOut className="h-4 w-4" />

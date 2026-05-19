@@ -23,6 +23,8 @@ import LandingInsightsSections from "@/components/landing/LandingInsightsSection
 import LandingInteractions from "@/components/landing/LandingInteractions";
 import RelatedSitesSection from "@/components/landing/RelatedSitesSection";
 import RoyalQuotesSection from "@/components/landing/RoyalQuotesSection";
+import PlatformIndicatorsSection from "@/components/landing/PlatformIndicatorsSection";
+import { I18nText } from "@/components/i18n/LanguageProvider";
 import CountUpNumber from "@/components/ui/CountUpNumber";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -133,23 +135,23 @@ export default async function HomePage() {
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(15,25,33,.92)_0%,rgba(18,107,111,.74)_48%,rgba(15,25,33,.34)_100%)]" />
         <div className="container-page flex min-h-[560px] flex-col justify-center py-16 md:py-20">
           <div className="max-w-3xl text-shadow-sm">
-            <p className="mb-5 text-base font-black uppercase tracking-[0.18em] text-white/80">Nashmi / نشمي</p>
+            <p className="mb-5 text-base font-black uppercase tracking-[0.18em] text-white/80"><I18nText id="home.hero.eyebrow" /></p>
             <h1 id="hero-title" className="text-3xl font-black leading-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
-              نشمي… أن تكون حاضرًا حين يُصنع القرار، لا مجرد شاهد عليه.
+              <I18nText id="home.hero.title" />
             </h1>
             <p className="mt-7 max-w-2xl text-base leading-8 text-white/85 sm:text-xl sm:leading-9 md:text-2xl md:leading-[2.7rem]">
-              نشمي مساحة رقمية محايدة تساعد المواطنين والشباب على فهم المستجدات، متابعة الأحزاب، قراءة التشريعات، والمشاركة في حوار مسؤول دون ترشيح أو تفضيل أي جهة سياسية.
+              <I18nText id="home.hero.body" />
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/parties" className="focus-ring inline-flex items-center justify-center rounded-2xl bg-civic px-5 py-3 text-sm font-semibold text-white shadow-soft transition duration-200 hover:-translate-y-0.5 hover:bg-civic/90 active:scale-[0.98]">
-                ابدأ المشاركة
+                <I18nText id="home.hero.primary" />
               </Link>
               <Link href="/laws" className="focus-ring inline-flex items-center justify-center rounded-2xl border border-white/70 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition duration-200 hover:bg-white/20 hover:text-white active:scale-[0.98]">
-                افهم قانونك
+                <I18nText id="home.hero.secondary" />
               </Link>
             </div>
             <div className="mt-6 max-w-lg rounded-3xl border border-white/20 bg-white/15 p-4 text-sm leading-7 text-white/90 backdrop-blur sm:text-base">
-              المنصة مشروع تجريبي ولا ترشح أو تفضل أي حزب أو مرشح.
+              <I18nText id="home.hero.notice" />
             </div>
           </div>
         </div>
@@ -157,16 +159,18 @@ export default async function HomePage() {
 
       <RoyalQuotesSection />
 
+      <PlatformIndicatorsSection />
+
       <section className="container-page py-6" aria-label="تنويه المشروع التجريبي">
         <div className="reveal-on-scroll flex flex-col gap-4 rounded border border-amber-200 bg-amber-50 p-5 text-amber-950 shadow-sm md:flex-row md:items-center md:justify-between" data-reveal>
           <div className="flex gap-3">
             <Info className="mt-1 h-6 w-6 shrink-0 text-amber-700" />
             <p className="leading-8">
-              <strong>تنويه:</strong> هذا الموقع مشروع تجريبي تعليمي تم تطويره ضمن هاكاثون/مشروع جامعي، ولا يمثل الموقع الرسمي للهيئة المستقلة للانتخاب أو أي جهة حكومية. للحصول على المعلومات الرسمية يرجى الرجوع إلى موقع الهيئة المستقلة للانتخاب.
+              <strong><I18nText id="home.alert.title" /></strong> <I18nText id="home.alert.body" />
             </p>
           </div>
           <ExternalAnchor href="https://www.iec.jo/ar" className="focus-ring inline-flex shrink-0 items-center justify-center gap-2 rounded bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800">
-            زيارة الموقع الرسمي للهيئة
+            <I18nText id="home.alert.cta" />
             <ExternalLink className="h-4 w-4" />
           </ExternalAnchor>
         </div>
@@ -174,17 +178,17 @@ export default async function HomePage() {
 
       <section className="container-page grid gap-6 py-14 lg:grid-cols-[1fr_0.9fr]" id="about" aria-labelledby="about-title">
         <div className="reveal-on-scroll card p-6 lg:p-8" data-reveal>
-          <p className="mb-3 text-sm font-bold text-civic">عن المنصة</p>
-          <h2 id="about-title" className="text-3xl font-black">عن منصة نشمي</h2>
+          <p className="mb-3 text-sm font-bold text-civic"><I18nText id="home.about.eyebrow" /></p>
+          <h2 id="about-title" className="text-3xl font-black"><I18nText id="home.about.title" /></h2>
           <p className="mt-5 text-lg leading-9 text-ink/75">
-            نشمي منصة رقمية تجريبية تهدف إلى تعزيز المشاركة المدنية والسياسية لدى المواطنين، وتسهيل الوصول إلى المعلومات الانتخابية والحزبية، وفتح مساحة تفاعلية للحوار المسؤول بين المواطنين والجهات ذات العلاقة.
+            <I18nText id="home.about.body" />
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/updates" className="focus-ring rounded bg-civic px-5 py-3 font-semibold text-white hover:bg-civic/90">
-              استكشف المنصة
+              <I18nText id="home.about.primary" />
             </Link>
             <Link href="/chat" className="focus-ring rounded border border-line px-5 py-3 font-semibold text-civic hover:border-civic hover:bg-civic/5">
-              اسأل المساعد
+              <I18nText id="home.about.secondary" />
             </Link>
           </div>
         </div>
@@ -202,8 +206,8 @@ export default async function HomePage() {
       <section className="landing-pattern bg-ink py-16 text-white" id="values" aria-labelledby="values-title">
         <div className="container-page">
           <div className="reveal-on-scroll mb-8 max-w-2xl" data-reveal>
-            <p className="mb-2 text-sm font-bold text-emerald-200">الرؤية والرسالة</p>
-            <h2 id="values-title" className="text-3xl font-black">مبادئ نشمي</h2>
+            <p className="mb-2 text-sm font-bold text-emerald-200"><I18nText id="home.values.eyebrow" /></p>
+            <h2 id="values-title" className="text-3xl font-black"><I18nText id="home.values.title" /></h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {valuesCards.map((card) => {
@@ -224,8 +228,8 @@ export default async function HomePage() {
         <div className="container-page">
           <div className="reveal-on-scroll mb-8 flex flex-col justify-between gap-4 text-white md:flex-row md:items-end" data-reveal>
             <div>
-              <p className="mb-2 text-sm font-bold text-emerald-200">إحصاءات الأحزاب</p>
-              <h2 id="stats-title" className="text-3xl font-black">لمحة عن العضوية الحزبية</h2>
+              <p className="mb-2 text-sm font-bold text-emerald-200"><I18nText id="home.stats.eyebrow" /></p>
+              <h2 id="stats-title" className="text-3xl font-black"><I18nText id="home.stats.title" /></h2>
             </div>
             <p className="max-w-xl leading-8 text-white/75">أرقام ثابتة من لقطات مرجع إحصاءات الأحزاب المرفقة، تعرض هنا بصريًا دون إنشاء تبعية خلفية جديدة.</p>
           </div>
@@ -253,8 +257,8 @@ export default async function HomePage() {
       <section className="container-page py-14" id="services" aria-labelledby="services-title">
         <div className="reveal-on-scroll mb-8 flex items-end justify-between gap-4" data-reveal>
           <div>
-            <p className="mb-2 text-sm font-bold text-civic">وصول سريع</p>
-            <h2 id="services-title" className="text-3xl font-black">خدمات وبوابات المنصة</h2>
+            <p className="mb-2 text-sm font-bold text-civic"><I18nText id="home.services.eyebrow" /></p>
+            <h2 id="services-title" className="text-3xl font-black"><I18nText id="home.services.title" /></h2>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -266,7 +270,7 @@ export default async function HomePage() {
                 <h3 className="text-lg font-black">{card.title}</h3>
                 <p className="mt-3 min-h-20 text-sm leading-7 text-ink/70">{card.text}</p>
                 <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-civic">
-                  فتح المسار
+                  <I18nText id="common.openPath" />
                   <Zap className="h-4 w-4" />
                 </span>
               </Link>
@@ -287,12 +291,12 @@ export default async function HomePage() {
                 <p className="text-sm text-white/62">Nashmi civic demo</p>
               </div>
             </div>
-            <p className="leading-8 text-white/78">منصة نشمي مشروع رقمي تجريبي لتعزيز المشاركة المدنية والوعي الانتخابي.</p>
+            <p className="leading-8 text-white/78"><I18nText id="home.about.body" /></p>
             <p className="mt-4 rounded border border-white/15 bg-white/[0.08] p-3 text-sm leading-7 text-white/76">هذا المشروع تجريبي ولا يمثل جهة رسمية.</p>
           </section>
 
           <nav aria-label="روابط نشمي">
-            <h3 className="mb-4 text-lg font-black">القائمة الرئيسية</h3>
+            <h3 className="mb-4 text-lg font-black"><I18nText id="home.footer.links" /></h3>
             <ul className="space-y-3 text-white/78">
               {mainLinks.map((link) => (
                 <li key={link.href}>
@@ -312,7 +316,7 @@ export default async function HomePage() {
           <nav aria-label="روابط الهيئة الرسمية">
             <div className="mb-4 flex items-center gap-3">
               <Image src="/related/iec-logo.png" alt="شعار الهيئة المستقلة للانتخاب" width={48} height={48} className="h-12 w-12 rounded bg-white object-contain p-1" />
-              <h3 className="text-lg font-black">روابط الهيئة الرسمية</h3>
+            <h3 className="text-lg font-black"><I18nText id="home.footer.officialLinks" /></h3>
             </div>
             <ul className="space-y-3 text-white/78">
               {officialLinks.map((link) => (
@@ -327,8 +331,8 @@ export default async function HomePage() {
           </nav>
 
           <section>
-            <h3 className="mb-4 text-lg font-black">تنويه واتصال</h3>
-            <p className="leading-8 text-white/78">للمعلومات الرسمية يرجى زيارة موقع الهيئة المستقلة للانتخاب. لا تجمع نشمي أي صفة تمثيلية عن الهيئة أو أي جهة حكومية.</p>
+            <h3 className="mb-4 text-lg font-black"><I18nText id="home.footer.noticeTitle" /></h3>
+            <p className="leading-8 text-white/78"><I18nText id="home.footer.notice" /></p>
             <ExternalAnchor href="https://www.iec.jo/ar" className="focus-ring mt-5 inline-flex items-center gap-2 rounded bg-white px-4 py-2 font-bold text-civic hover:bg-emerald-50">
               الموقع الرسمي للهيئة
               <ExternalLink className="h-4 w-4" />
@@ -339,7 +343,7 @@ export default async function HomePage() {
             </a>
           </section>
         </div>
-        <div className="container-page mt-10 border-t border-white/[0.14] pt-5 text-sm text-white/70">© جميع الحقوق محفوظة لفريق جامعة الطفيلة التقنية: هيثم العوفي، نوال الرفوع، محمد طالب، محمد المصري، وعاصف أبو الرب.</div>
+        <div className="container-page mt-10 border-t border-white/[0.14] pt-5 text-sm text-white/70"><I18nText id="home.footer.rights" /></div>
       </footer>
     </main>
   );

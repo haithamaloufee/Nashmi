@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 
 type FieldErrors = {
   name?: string;
@@ -16,8 +17,8 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function validateName(value: string) {
   const clean = value.trim();
   if (!clean) return "الاسم مطلوب ولا يمكن أن يكون فارغا.";
-  if (clean.length < 2) return "اكتب اسما من حرفين على الأقل.";
-  if (clean.length > 80) return "الاسم طويل جدا.";
+  if (clean.length < 3) return "اكتب اسما من 3 أحرف على الأقل.";
+  if (clean.length > 20) return "الاسم طويل جدا.";
   return "";
 }
 
@@ -33,7 +34,7 @@ function validatePassword(value: string) {
   if (!value.trim()) return "كلمة المرور مطلوبة.";
   if (/\s/.test(value)) return "كلمة المرور لا تقبل المسافات.";
   if (value.length < 8) return "كلمة المرور يجب أن تكون 8 أحرف على الأقل.";
-  if (value.length > 128) return "كلمة المرور طويلة جدا.";
+  if (value.length > 20) return "كلمة المرور طويلة جدا.";
   return "";
 }
 
@@ -45,6 +46,7 @@ function validateConfirmPassword(password: string, confirmPassword: string) {
 
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [values, setValues] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
@@ -113,12 +115,12 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   return (
     <form onSubmit={submit} noValidate className="card mx-auto mt-10 max-w-md space-y-5 p-5 sm:p-6">
       <div>
-        <h1 className="text-3xl font-black leading-tight">{mode === "login" ? "تسجيل الدخول" : "إنشاء حساب مواطن"}</h1>
-        <p className="mt-2 text-sm text-ink/70 dark:text-slate-300">يتم حفظ الجلسة في Cookie آمن HttpOnly ولا تستخدم المنصة localStorage للتوكنات.</p>
+        <h1 className="text-3xl font-black leading-tight">{mode === "login" ? t("auth.login") : t("auth.signup")}</h1>
+        <p className="mt-2 text-sm text-ink/70 dark:text-slate-300">{t("auth.cookieNote")}</p>
       </div>
       {mode === "signup" ? (
         <label className="block text-sm font-medium">
-          الاسم
+          {t("auth.name")}
           <input
             name="name"
             value={values.name}
@@ -133,7 +135,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </label>
       ) : null}
       <label className="block text-sm font-medium">
-        البريد الإلكتروني
+        {t("auth.email")}
         <input
           name="email"
           type="email"
@@ -148,27 +150,8 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         />
         <span id="email-error">{fieldMessage("email")}</span>
       </label>
-      {mode === "signup" ? (
-        <label className="block text-sm font-medium">
-          تأكيد كلمة المرور
-          <span className="relative mt-1 block">
-            <input
-              name="confirmPassword"
-              type={showPassword ? "text" : "password"}
-              value={values.confirmPassword}
-              onChange={(event) => updateField("confirmPassword", event.target.value)}
-              onBlur={() => setTouched((current) => ({ ...current, confirmPassword: true }))}
-              className="w-full rounded-xl border border-line bg-white/95 px-4 py-3 pe-14 text-sm text-ink focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-[#101820] dark:text-white"
-              aria-invalid={Boolean(touched.confirmPassword && errors.confirmPassword)}
-              aria-describedby="confirm-password-error"
-              autoComplete="new-password"
-            />
-          </span>
-          <span id="confirm-password-error">{fieldMessage("confirmPassword")}</span>
-        </label>
-      ) : null}
       <label className="block text-sm font-medium">
-        كلمة المرور
+        {t("auth.password")}
         <span className="relative mt-1 block">
           <input
             name="password"
@@ -185,13 +168,33 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
             type="button"
             onClick={() => setShowPassword((value) => !value)}
             className="focus-ring absolute inset-y-0 end-3 grid h-full w-11 place-items-center rounded-full text-ink/55 hover:bg-civic/10 hover:text-civic dark:text-white/62 dark:hover:text-emerald-200"
-            aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+            aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </span>
         <span id="password-error">{fieldMessage("password")}</span>
       </label>
+      {mode === "signup" ? (
+        <label className="block text-sm font-medium">
+          {t("auth.confirmPassword")}
+          <span className="relative mt-1 block">
+            <input
+              name="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              value={values.confirmPassword}
+              onChange={(event) => updateField("confirmPassword", event.target.value)}
+              onBlur={() => setTouched((current) => ({ ...current, confirmPassword: true }))}
+              className="w-full rounded-xl border border-line bg-white/95 px-4 py-3 pe-14 text-sm text-ink focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-[#101820] dark:text-white"
+              aria-invalid={Boolean(touched.confirmPassword && errors.confirmPassword)}
+              aria-describedby="confirm-password-error"
+              autoComplete="new-password"
+            />
+          </span>
+          <span id="confirm-password-error">{fieldMessage("confirmPassword")}</span>
+        </label>
+      ) : null}
+
       {error ? (
         <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-400/40 dark:bg-red-950/20 dark:text-red-200" role="alert" aria-live="polite">
           {error}
@@ -202,7 +205,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         disabled={loading || hasVisibleErrors}
         className="w-full rounded-2xl bg-civic px-4 py-3 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-200 dark:text-[#101820] dark:hover:bg-emerald-100"
       >
-        {loading ? "جار التنفيذ..." : mode === "login" ? "دخول" : "إنشاء الحساب"}
+        {loading ? t("auth.processing") : mode === "login" ? t("auth.submitLogin") : t("auth.submitSignup")}
       </button>
     </form>
   );

@@ -5,6 +5,7 @@ import Navbar from "@/components/layout/Navbar";
 import FloatingAssistant from "@/components/layout/FloatingAssistant";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import RouteTransitionProvider from "@/components/navigation/RouteTransitionProvider";
+import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -35,16 +36,18 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("nashmi-theme");if(t!=="light"&&t!=="dark"){t="dark"}document.documentElement.classList.toggle("dark",t==="dark");document.documentElement.style.colorScheme=t}catch(e){}`
+            __html: `try{var t=localStorage.getItem("nashmi-theme");if(t!=="light"&&t!=="dark"){t="dark"}document.documentElement.classList.toggle("dark",t==="dark");document.documentElement.style.colorScheme=t;var l=localStorage.getItem("nashmi-language");if(l!=="en"&&l!=="ar"){l="ar"}document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}catch(e){}`
           }}
         />
       </head>
       <body className={cairo.variable} suppressHydrationWarning>
-        <ToastProvider>
-          <Navbar />
-          <RouteTransitionProvider>{children}</RouteTransitionProvider>
-          <FloatingAssistant />
-        </ToastProvider>
+        <LanguageProvider>
+          <ToastProvider>
+            <Navbar />
+            <RouteTransitionProvider>{children}</RouteTransitionProvider>
+            <FloatingAssistant />
+          </ToastProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
