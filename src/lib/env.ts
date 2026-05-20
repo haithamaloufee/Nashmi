@@ -61,6 +61,20 @@ export function getJwtSecret() {
   return secret;
 }
 
+export function getRateLimitSecret() {
+  const secret = getOptionalEnv("RATE_LIMIT_SECRET");
+  if (secret) {
+    if ((process.env.NODE_ENV === "production" || process.env.VERCEL) && secret.length < 32) {
+      throw new InvalidEnvError("RATE_LIMIT_SECRET", "must be at least 32 characters in production");
+    }
+    return secret;
+  }
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    throw new MissingEnvError("RATE_LIMIT_SECRET");
+  }
+  return getOptionalEnv("JWT_SECRET") || "development-assistant-rate-limit-secret";
+}
+
 export function getServerSelectionTimeoutMs() {
   const raw = getOptionalEnv("MONGODB_SERVER_SELECTION_TIMEOUT_MS") || "5000";
   const timeout = Number(raw);
@@ -143,6 +157,7 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
 
   if (options.requireDatabase) check("MONGODB_URI", getMongoUri);
   if (options.requireAuth || process.env.NODE_ENV === "production") check("JWT_SECRET", getJwtSecret);
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) check("RATE_LIMIT_SECRET", getRateLimitSecret);
   if (options.requireGemini) check("GEMINI_API_KEY", getGeminiApiKey);
   check("MONGODB_SERVER_SELECTION_TIMEOUT_MS", getServerSelectionTimeoutMs);
   check("MAX_UPLOAD_SIZE_MB", getMaxUploadSizeBytes);

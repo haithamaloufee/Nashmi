@@ -140,3 +140,57 @@ export async function handleChatMessage(params: {
     throw error;
   }
 }
+
+export async function handleGuestChatMessage(params: {
+  message: string;
+  history?: Array<{ role: "user" | "assistant"; content: string }>;
+  preferredLawId?: string;
+}) {
+  await connectToDatabase();
+  const config = getSharekAssistantConfig();
+  const cleanMessage = params.message.replace(/\s+/g, " ").trim();
+  if (!cleanMessage) throw new Error("BAD_REQUEST");
+
+  const lawContext = await retrieveRelevantLawContext(cleanMessage, params.preferredLawId, config.maxLawContextResults);
+  const history = (params.history || [])
+    .slice(-8)
+    .map((item) => ({ role: item.role, content: item.content.replace(/\s+/g, " ").trim().slice(0, 1200) }))
+    .filter((item) => item.content);
+
+  const answer = await generateSharekAssistantResponse({
+    message: cleanMessage,
+    history,
+    lawContext
+  });
+
+  if (answer.sourceLawIds.length > 0) {
+    await Law.updateMany({ _id: { $in: answer.sourceLawIds } }, { $inc: { askedChatbotCount: 1 } });
+  }
+
+  return {
+    session: null,
+    userMessage: {
+      _id: `guest-user-${Date.now()}`,
+      role: "user" as const,
+      content: cleanMessage,
+      sourceLawIds: params.preferredLawId && Types.ObjectId.isValid(params.preferredLawId) ? [params.preferredLawId] : [],
+      sourcePartyIds: [],
+      groundingSources: [],
+      safetyFlags: [],
+      createdAt: new Date()
+    },
+    assistantMessage: {
+      _id: `guest-assistant-${Date.now()}`,
+      role: "assistant" as const,
+      content: answer.content,
+      sourceLawIds: answer.sourceLawIds,
+      sourcePartyIds: [],
+      groundingSources: answer.groundingSources,
+      safetyFlags: answer.safetyFlags,
+      model: answer.model,
+      tokensUsed: answer.tokensUsed,
+      createdAt: new Date()
+    },
+    sources: answer.groundingSources
+  };
+}

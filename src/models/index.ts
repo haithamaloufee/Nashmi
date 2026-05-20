@@ -17,3 +17,4 @@ export { default as AuditLog } from "./AuditLog";
 export { default as SiteContent } from "./SiteContent";
 export { default as ChatSession } from "./ChatSession";
 export { default as ChatMessage } from "./ChatMessage";
+export { default as AssistantUsage } from "./AssistantUsage";

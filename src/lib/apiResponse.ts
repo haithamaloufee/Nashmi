@@ -59,10 +59,12 @@ export function handleApiError(error: unknown) {
     return fail("BAD_REQUEST", "معرّف غير صالح", 400);
   }
 
+  if (error instanceof Error && error.message === "BAD_REQUEST") return fail("BAD_REQUEST", undefined, 400);
   if (error instanceof Error && error.message === "UNAUTHORIZED") return fail("UNAUTHORIZED", undefined, 401);
   if (error instanceof Error && error.message === "FORBIDDEN") return fail("FORBIDDEN", undefined, 403);
   if (error instanceof Error && error.message === "NOT_FOUND") return fail("NOT_FOUND", undefined, 404);
   if (error instanceof Error && error.message === "RATE_LIMITED") return fail("RATE_LIMITED", undefined, 429);
+  if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") return fail("BAD_REQUEST", "Request body is too large", 413);
   if (error instanceof Error && error.message === "BLOB_STORAGE_NOT_CONFIGURED") {
     return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. أضف BLOB_READ_WRITE_TOKEN في بيئة النشر.", 500);
   }

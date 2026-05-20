@@ -9,6 +9,21 @@ export async function readJson<T>(request: Request, schema: ZodSchema<T>) {
   return schema.parse(body);
 }
 
+export async function readJsonWithLimit<T>(request: Request, schema: ZodSchema<T>, maxBytes: number) {
+  const contentLength = Number(request.headers.get("content-length") || "0");
+  if (contentLength && contentLength > maxBytes) throw new Error("PAYLOAD_TOO_LARGE");
+  const text = await request.text();
+  if (new TextEncoder().encode(text).length > maxBytes) throw new Error("PAYLOAD_TOO_LARGE");
+  let body: unknown = {};
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error("BAD_REQUEST");
+  }
+  assertNoDangerousKeys(body);
+  return schema.parse(body);
+}
+
 export function serialize<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }

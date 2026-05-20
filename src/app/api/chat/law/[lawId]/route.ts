@@ -1,45 +1,59 @@
 import { z } from "zod";
 import { fail, handleApiError, ok } from "@/lib/apiResponse";
-import { requireActiveUser } from "@/lib/auth";
+import { assistantLimitResponse, ASSISTANT_BODY_MAX_BYTES, consumeAssistantUsage, getAssistantUser } from "@/lib/assistantUsage";
 import { connectToDatabase } from "@/lib/db";
-import { CHAT_ALLOWED_ROLES, handleChatMessage, logSafeChatError } from "@/lib/ai/chatSession";
+import { handleChatMessage, handleGuestChatMessage, logSafeChatError } from "@/lib/ai/chatSession";
 import { SharekAiError } from "@/lib/ai/gemini";
-import { requireRateLimit, rateLimitWindows } from "@/lib/rateLimit";
-import { readJson, serialize } from "@/lib/routeUtils";
+import { isLanguage } from "@/lib/i18n";
+import { readJsonWithLimit, serialize } from "@/lib/routeUtils";
 import { objectIdSchema } from "@/lib/validators";
 import Law from "@/models/Law";
 
 type Context = { params: Promise<{ lawId: string }> };
 
 const schema = z.object({
-  message: z.string().trim().max(1200).optional(),
-  sessionId: objectIdSchema.optional()
+  message: z.string().trim().max(1500).optional(),
+  sessionId: objectIdSchema.optional(),
+  language: z.enum(["ar", "en"]).optional(),
+  history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(1200) })).max(8).optional()
 });
 
 export async function POST(request: Request, context: Context) {
   try {
-    const user = await requireActiveUser([...CHAT_ALLOWED_ROLES]);
-    requireRateLimit(`chat:message:${user.id}`, 12, rateLimitWindows.hour);
+    const user = await getAssistantUser();
     const { lawId } = await context.params;
-    const input = await readJson(request, schema);
+    const input = await readJsonWithLimit(request, schema, ASSISTANT_BODY_MAX_BYTES);
     await connectToDatabase();
     const law = await Law.findOne({ _id: lawId, status: "published" }).select("_id title").lean();
     if (!law) throw new Error("NOT_FOUND");
 
-    const result = await handleChatMessage({
-      user,
-      sessionId: input.sessionId,
-      message: input.message || `اشرح "${law.title}" بلغة مبسطة ومحايدة`,
-      preferredLawId: lawId,
-      request
-    });
+    const headerLanguage = request.headers.get("x-nashmi-language");
+    const language = input.language || (isLanguage(headerLanguage) ? headerLanguage : "ar");
+    const usageResult = await consumeAssistantUsage(request, user);
+    if (!usageResult.ok) return assistantLimitResponse(usageResult.usage, language);
+
+    const message = input.message || `اشرح "${law.title}" بلغة مبسطة ومحايدة`;
+    const result = user
+      ? await handleChatMessage({
+          user,
+          sessionId: input.sessionId,
+          message,
+          preferredLawId: lawId,
+          request
+        })
+      : await handleGuestChatMessage({
+          message,
+          preferredLawId: lawId,
+          history: input.history
+        });
 
     return ok({
       session: serialize(result.session),
       userMessage: serialize(result.userMessage),
       message: serialize(result.assistantMessage),
       sources: result.sources,
-      sourceLawIds: result.assistantMessage.sourceLawIds
+      sourceLawIds: result.assistantMessage.sourceLawIds,
+      usage: usageResult.usage
     });
   } catch (error) {
     if (error instanceof SharekAiError) {
