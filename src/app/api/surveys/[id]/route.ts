@@ -15,7 +15,8 @@ import {
   canViewSurveyResults,
   generateSurveySlug,
   getSurveyLifecycleStatus,
-  normalizeSurveyQuestionsForSave
+  normalizeSurveyQuestionsForSave,
+  surveyQuestionStructureChanged
 } from "@/lib/surveys";
 import Survey from "@/models/Survey";
 import SurveyResponse from "@/models/SurveyResponse";
@@ -97,7 +98,14 @@ export async function PATCH(request: Request, context: Context) {
       update.status = input.status;
       if (input.status === "published" && !survey.publishedAt) update.publishedAt = new Date();
     }
-    if (input.questions !== undefined) update.questions = normalizeSurveyQuestionsForSave(input.questions);
+    if (input.questions !== undefined) {
+      const nextQuestions = normalizeSurveyQuestionsForSave(input.questions);
+      const responsesCount = await SurveyResponse.countDocuments({ surveyId: survey._id });
+      if (responsesCount > 0 && surveyQuestionStructureChanged(survey.questions as any, nextQuestions as any)) {
+        return fail("BAD_REQUEST", "لا يمكن تعديل بنية الأسئلة أو الخيارات بعد وجود مشاركات، حفاظًا على دقة النتائج.", 400);
+      }
+      update.questions = nextQuestions;
+    }
     const nextQuestions = (update.questions as any[] | undefined) || survey.questions;
     update.searchNormalized = createSearchText([
       String(update.title ?? survey.title),

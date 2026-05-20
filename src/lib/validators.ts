@@ -226,6 +226,10 @@ const surveyQuestionInputSchema = z.object({
   if ((question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE") && question.options.length < 2) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["options"], message: "Choice questions require at least two options" });
   }
+  const labels = question.options.map((option) => option.label.trim()).filter(Boolean);
+  if (new Set(labels).size !== labels.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["options"], message: "Duplicate option labels are not allowed" });
+  }
   if ((question.type === "RATING" || question.type === "TEXT") && question.options.length > 0) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["options"], message: "This question type does not accept options" });
   }

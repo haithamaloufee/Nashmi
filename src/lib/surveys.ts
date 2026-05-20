@@ -156,6 +156,37 @@ export function normalizeSurveyQuestionsForSave(questions: SurveyQuestionLike[])
   });
 }
 
+export function surveyQuestionStructureChanged(existing: SurveyQuestionLike[] = [], next: SurveyQuestionLike[] = []) {
+  const currentQuestions = sortedSurveyQuestions(existing);
+  const nextQuestions = sortedSurveyQuestions(next);
+  if (currentQuestions.length !== nextQuestions.length) return true;
+
+  for (let index = 0; index < currentQuestions.length; index += 1) {
+    const current = currentQuestions[index];
+    const candidate = nextQuestions[index];
+    if (objectIdString(current._id || current.id) !== objectIdString(candidate._id || candidate.id)) return true;
+    if (current.title.trim() !== candidate.title.trim()) return true;
+    if ((current.description || "").trim() !== (candidate.description || "").trim()) return true;
+    if (current.type !== candidate.type) return true;
+    if ((current.required !== false) !== (candidate.required !== false)) return true;
+    if (Number(current.order ?? index) !== Number(candidate.order ?? index)) return true;
+
+    const currentOptions = sortedSurveyOptions(current.options || []);
+    const nextOptions = sortedSurveyOptions(candidate.options || []);
+    if (currentOptions.length !== nextOptions.length) return true;
+    for (let optionIndex = 0; optionIndex < currentOptions.length; optionIndex += 1) {
+      const currentOption = currentOptions[optionIndex];
+      const nextOption = nextOptions[optionIndex];
+      if (objectIdString(currentOption._id || currentOption.id) !== objectIdString(nextOption._id || nextOption.id)) return true;
+      if (currentOption.label.trim() !== nextOption.label.trim()) return true;
+      if ((currentOption.value || "").trim() !== (nextOption.value || "").trim()) return true;
+      if (Number(currentOption.order ?? optionIndex) !== Number(nextOption.order ?? optionIndex)) return true;
+    }
+  }
+
+  return false;
+}
+
 export function validateSurveyAnswers(survey: SurveyLike, answers: SurveyAnswerInput[]) {
   const questions = sortedSurveyQuestions(survey.questions || []);
   const answersByQuestion = new Map(answers.map((answer) => [answer.questionId, answer]));

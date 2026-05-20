@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getPartyDashboardData } from "@/lib/serverData";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
+import PublisherCreateHub from "@/components/dashboard/PublisherCreateHub";
 import StatCard from "@/components/ui/StatCard";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,7 @@ export default async function PartyDashboardPage() {
         <StatCard label="Community Pulse" value={(data.surveys || []).length} />
       </div>
       <p className="mt-5 rounded border border-line p-4 text-sm text-ink/70">تعرض اللوحة مؤشرات إجمالية فقط. لا تظهر هويات المصوتين أو سجلات التصويت الفردية.</p>
+      <PublisherCreateHub basePath="/party-dashboard" />
     </DashboardNav>
   );
 }

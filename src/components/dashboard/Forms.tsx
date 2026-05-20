@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import LoadingButton from "@/components/ui/LoadingButton";
 import MediaUploadField from "@/components/ui/MediaUploadField";
 import SafeImage from "@/components/ui/SafeImage";
@@ -36,12 +36,12 @@ function useApiMessage() {
   return { message, submit, loading };
 }
 
-function splitLines(value: FormDataEntryValue | null) {
-  return String(value || "").split("\n").map((item) => item.trim()).filter(Boolean);
-}
-
 function splitComma(value: FormDataEntryValue | null) {
   return String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function splitLines(value: FormDataEntryValue | null) {
+  return String(value || "").split("\n").map((item) => item.trim()).filter(Boolean);
 }
 
 export function PostCreateForm() {
@@ -49,17 +49,24 @@ export function PostCreateForm() {
   const { showToast } = useToast();
   const [media, setMedia] = useState<Array<{ id: string; url: string; type?: string; mimeType?: string }>>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [error, setError] = useState("");
 
   return (
     <form
       action={async (formData) => {
+        const trimmedContent = String(formData.get("content") || "").trim();
+        if (!trimmedContent) {
+          setError("محتوى المنشور مطلوب.");
+          return;
+        }
         if (uploadingMedia) {
           showToast("انتظر حتى يكتمل رفع الملف قبل النشر.", "error");
           return;
         }
+        setError("");
         const json = await api.submit("/api/posts", {
           title: formData.get("title") || null,
-          content: formData.get("content"),
+          content: trimmedContent,
           tags: splitComma(formData.get("tags")),
           mediaIds: media.map((item) => item.id).filter(Boolean)
         });
@@ -74,6 +81,7 @@ export function PostCreateForm() {
       <input name="title" className="w-full rounded border-line" placeholder="عنوان اختياري" />
       <textarea name="content" className="w-full rounded border-line" rows={5} placeholder="اكتب منشورًا..." required />
       <input name="tags" className="w-full rounded border-line" placeholder="وسوم مفصولة بفواصل" />
+      {error ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{error}</p> : null}
       <MediaUploadField
         label="مرفقات المنشور"
         imagesOnly={false}
@@ -107,6 +115,97 @@ export function PostCreateForm() {
 }
 
 export function PollCreateForm() {
+  const api = useApiMessage();
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [question, setQuestion] = useState("");
+  const [description, setDescription] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+  const [resultsVisibility, setResultsVisibility] = useState("always");
+  const [durationDays, setDurationDays] = useState(defaultPollDurationDays);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  function validatePoll() {
+    const trimmedOptions = options.map((option) => option.trim()).filter(Boolean);
+    const nextErrors: string[] = [];
+    if (!question.trim()) nextErrors.push("سؤال التصويت مطلوب.");
+    if (trimmedOptions.length < 2) nextErrors.push("أضف خيارين على الأقل.");
+    if (new Set(trimmedOptions).size !== trimmedOptions.length) nextErrors.push("لا يمكن تكرار خيارات التصويت.");
+    setErrors(nextErrors);
+    return nextErrors.length === 0 ? trimmedOptions : null;
+  }
+
+  return (
+    <form
+      action={async () => {
+        const trimmedOptions = validatePoll();
+        if (!trimmedOptions) return;
+        const json = await api.submit("/api/polls", {
+          question: question.trim(),
+          description: description.trim() || null,
+          options: trimmedOptions,
+          resultsVisibility,
+          durationDays
+        });
+        if (json?.ok) {
+          setQuestion("");
+          setDescription("");
+          setOptions(["", ""]);
+          setResultsVisibility("always");
+          setDurationDays(defaultPollDurationDays);
+          setErrors([]);
+          showToast("تم إنشاء التصويت بنجاح.", "success");
+        }
+      }}
+      className="card space-y-3 p-5"
+    >
+      <h2 className="text-xl font-bold">ØªØµÙˆÙŠØª Ø¬Ø¯ÙŠØ¯</h2>
+      <input value={question} onChange={(event) => setQuestion(event.target.value)} className="w-full rounded border-line" placeholder="Ø§Ù„Ø³Ø¤Ø§Ù„" aria-invalid={errors.some((item) => item.includes("سؤال"))} />
+      <textarea value={description} onChange={(event) => setDescription(event.target.value)} className="w-full rounded border-line" rows={2} placeholder="ÙˆØµÙ Ø§Ø®ØªÙŠØ§Ø±ÙŠ" />
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-bold">خيارات التصويت</span>
+          <button type="button" onClick={() => setOptions((current) => current.length >= 6 ? current : [...current, ""])} className="inline-flex items-center gap-1 rounded border border-line px-3 py-1.5 text-sm font-bold hover:border-civic">
+            <Plus className="h-4 w-4" />
+            إضافة خيار
+          </button>
+        </div>
+        {options.map((option, index) => (
+          <div key={index} className="flex gap-2">
+            <input value={option} onChange={(event) => setOptions((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className="min-w-0 flex-1 rounded border-line" placeholder={`خيار ${index + 1}`} />
+            <button type="button" onClick={() => setOptions((current) => current.filter((_, itemIndex) => itemIndex !== index))} disabled={options.length <= 2} className="rounded border border-line px-2 text-red-700 disabled:cursor-not-allowed disabled:opacity-45" aria-label="حذف الخيار">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+      {errors.length ? (
+        <div className="rounded border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+          {errors.map((item) => <p key={item}>{item}</p>)}
+        </div>
+      ) : null}
+      <select value={resultsVisibility} onChange={(event) => setResultsVisibility(event.target.value)} className="rounded border-line">
+        <option value="always">Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø¯Ø§Ø¦Ù…Ù‹Ø§</option>
+        <option value="after_vote">Ø¨Ø¹Ø¯ Ø§Ù„ØªØµÙˆÙŠØª</option>
+        <option value="after_close">Ø¨Ø¹Ø¯ Ø§Ù„Ø¥ØºÙ„Ø§Ù‚</option>
+      </select>
+      <label className="block text-sm font-semibold">
+        {t("poll.duration")}
+        <select value={durationDays} onChange={(event) => setDurationDays(Number(event.target.value))} className="mt-1 w-full rounded border-line">
+          {allowedPollDurationDays.map((days) => (
+            <option key={days} value={days}>
+              {t(`poll.duration.${days}` as never)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <LoadingButton loading={api.loading} className="bg-civic px-4 py-2 text-white hover:bg-civic/90">{api.loading ? "Ø¬Ø§Ø± Ø§Ù„Ø­ÙØ¸..." : "Ø¥Ù†Ø´Ø§Ø¡"}</LoadingButton>
+      {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
+    </form>
+  );
+}
+
+export function LegacyPollCreateForm() {
   const api = useApiMessage();
   const { t } = useTranslation();
   return (

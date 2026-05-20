@@ -16,6 +16,8 @@ import Report from "../src/models/Report";
 import AuditLog from "../src/models/AuditLog";
 import Law from "../src/models/Law";
 import PollVote from "../src/models/PollVote";
+import Survey from "../src/models/Survey";
+import SurveyResponse from "../src/models/SurveyResponse";
 import AuthorityProfile from "../src/models/AuthorityProfile";
 import { recalculateCounters } from "./recalculate-counters";
 import { demoLawCards } from "./demo-data";
@@ -97,6 +99,164 @@ function partySeedUpdate(party: JordanPartySeed) {
     isVerified: party.isVerified,
     searchNormalized: buildPartySearchText(party)
   };
+}
+
+function demoSurveySlug(partySlug: string) {
+  return `demo-community-pulse-${partySlug}`;
+}
+
+function demoSurveyQuestions() {
+  return [
+    {
+      title: "ما القضية التي تعتبرها الأكثر أولوية في المرحلة القادمة؟",
+      type: "SINGLE_CHOICE",
+      required: true,
+      order: 0,
+      options: ["فرص العمل", "التعليم", "الخدمات الصحية", "النقل والمواصلات", "المشاركة السياسية"].map((label, order) => ({ label, value: null, order }))
+    },
+    {
+      title: "ما المجالات التي ترغب أن تركز عليها الجهة الناشرة؟",
+      type: "MULTIPLE_CHOICE",
+      required: true,
+      order: 1,
+      options: ["دعم الشباب", "تمكين المرأة", "تحسين الخدمات", "الشفافية والمساءلة", "التوعية السياسية"].map((label, order) => ({ label, value: null, order }))
+    },
+    {
+      title: "هل تعتقد أن الاستبيانات الرقمية تساعد في إيصال رأي المواطنين؟",
+      type: "YES_NO",
+      required: true,
+      order: 2,
+      options: [
+        { label: "نعم", value: "yes", order: 0 },
+        { label: "لا", value: "no", order: 1 }
+      ]
+    },
+    {
+      title: "قيّم أهمية مشاركة المواطنين في صنع القرار من 1 إلى 5",
+      type: "RATING",
+      required: true,
+      order: 3,
+      options: []
+    },
+    {
+      title: "ما الاقتراح الذي ترغب بإيصاله للجهة الناشرة؟",
+      type: "TEXT",
+      required: false,
+      order: 4,
+      options: []
+    }
+  ];
+}
+
+function demoSurveyAnswers(survey: any, variant: number) {
+  const questions = [...(survey.questions || [])].sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  const pickOption = (questionIndex: number, optionIndex: number) => questions[questionIndex]?.options?.[optionIndex]?._id;
+  return [
+    {
+      questionId: questions[0]._id,
+      optionId: pickOption(0, variant % 5)
+    },
+    {
+      questionId: questions[1]._id,
+      optionIds: [pickOption(1, variant % 5), pickOption(1, (variant + 2) % 5)].filter(Boolean)
+    },
+    {
+      questionId: questions[2]._id,
+      optionId: pickOption(2, 0)
+    },
+    {
+      questionId: questions[3]._id,
+      valueNumber: Math.min(5, 3 + (variant % 3))
+    },
+    {
+      questionId: questions[4]._id,
+      valueText: ["تعزيز التواصل الدوري مع المواطنين.", "نشر ملخصات واضحة للبرامج والخطط.", "إتاحة مساحة أكبر لمقترحات الشباب."][variant % 3]
+    }
+  ].filter((answer) => answer.questionId);
+}
+
+async function seedDemoPartySurveys(sampleUsers: Array<{ _id: unknown }>) {
+  const parties = await Party.find({ status: "active" }).select("_id slug name logoUrl accountUserId").sort({ slug: 1 });
+  if (parties.length === 0) {
+    console.warn("No active parties found; skipping Community Pulse demo survey seed.");
+    return { seededSurveys: 0, seededResponses: 0 };
+  }
+
+  let seededSurveys = 0;
+  let seededResponses = 0;
+  for (const party of parties) {
+    if (!party.accountUserId) {
+      console.warn(`Skipping demo survey for ${party.slug}: no party owner account.`);
+      continue;
+    }
+
+    const slug = demoSurveySlug(party.slug);
+    let survey = await Survey.findOne({ slug });
+    if (!survey) {
+      survey = await Survey.create({
+        title: "استبيان أولويات المواطنين للمرحلة القادمة",
+        slug,
+        description: "يهدف هذا الاستبيان إلى قياس آراء المواطنين حول أبرز الأولويات الوطنية والخدمات والقضايا التي تهم المجتمع، بما يساعد الجهة الناشرة على فهم احتياجات الناس وتعزيز المشاركة العامة.",
+        authorType: "party",
+        authorUserId: party.accountUserId,
+        partyId: party._id,
+        publisherSnapshot: {
+          id: String(party._id),
+          name: party.name,
+          type: "party",
+          imageUrl: party.logoUrl || null,
+          href: `/parties/${party.slug}`,
+          badge: "حزب موثق"
+        },
+        status: "published",
+        resultsVisibility: "BEFORE_SUBMIT",
+        allowAnonymous: false,
+        startsAt: null,
+        endsAt: null,
+        publishedAt: new Date(),
+        questions: demoSurveyQuestions(),
+        searchNormalized: createSearchText([
+          "استبيان أولويات المواطنين للمرحلة القادمة",
+          "نبض المجتمع",
+          party.name,
+          ...demoSurveyQuestions().flatMap((question) => [question.title, ...question.options.map((option) => option.label)])
+        ])
+      });
+    } else {
+      await Survey.updateOne(
+        { _id: survey._id },
+        {
+          $set: {
+            title: "استبيان أولويات المواطنين للمرحلة القادمة",
+            description: "يهدف هذا الاستبيان إلى قياس آراء المواطنين حول أبرز الأولويات الوطنية والخدمات والقضايا التي تهم المجتمع، بما يساعد الجهة الناشرة على فهم احتياجات الناس وتعزيز المشاركة العامة.",
+            authorType: "party",
+            authorUserId: party.accountUserId,
+            partyId: party._id,
+            status: "published",
+            resultsVisibility: "BEFORE_SUBMIT",
+            publishedAt: survey.publishedAt || new Date()
+          }
+        }
+      );
+      survey = await Survey.findById(survey._id);
+    }
+    seededSurveys += 1;
+
+    for (let index = 0; index < Math.min(sampleUsers.length, 3); index += 1) {
+      const user = sampleUsers[index];
+      const result = await SurveyResponse.updateOne(
+        { surveyId: survey!._id, userId: user._id },
+        { $setOnInsert: { surveyId: survey!._id, userId: user._id, answers: demoSurveyAnswers(survey, index) } },
+        { upsert: true }
+      );
+      if (result.upsertedCount > 0) seededResponses += 1;
+    }
+    const totalResponses = await SurveyResponse.countDocuments({ surveyId: survey!._id });
+    await Survey.updateOne({ _id: survey!._id }, { $set: { totalResponses } });
+  }
+
+  console.log(`Community Pulse demo surveys verified for ${seededSurveys} parties; ${seededResponses} sample responses inserted.`);
+  return { seededSurveys, seededResponses };
 }
 
 async function upsertUser(email: string, role: string, name: string, password: string) {
@@ -294,6 +454,8 @@ async function main() {
     await PollVote.updateOne({ pollId: poll._id, userId: citizen._id }, { $setOnInsert: { pollId: poll._id, userId: citizen._id, optionId: option._id } }, { upsert: true });
   }
 
+  const surveySeedResult = await seedDemoPartySurveys([citizen, superAdmin, iec]);
+
   const reportTargets = [
     ["post", posts[0]._id],
     ["post", posts[1]._id],
@@ -323,7 +485,7 @@ async function main() {
       action: "seed.demo",
       targetType: "system",
       targetId: null,
-      metadata: { users: 10, parties: jordanProfiles.parties.length, laws: lawDocs.length },
+      metadata: { users: 10, parties: jordanProfiles.parties.length, laws: lawDocs.length, demoPartySurveys: surveySeedResult.seededSurveys },
       ipHash: null,
       userAgentHash: null
     });

@@ -11,6 +11,7 @@ import { pollResultsDisclaimer, readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import { calculatePollEndDate, normalizePollDurationDays } from "@/lib/polls";
 import Poll from "@/models/Poll";
+import PollVote from "@/models/PollVote";
 import Party from "@/models/Party";
 
 type Context = { params: Promise<{ id: string }> };
@@ -85,7 +86,8 @@ export async function PATCH(request: Request, context: Context) {
     if (input.status !== undefined && (moderationAuthorized || ownerAuthorized)) update.status = input.status;
     if (input.options !== undefined) {
       if (!ownerAuthorized) return fail("FORBIDDEN", "تعديل خيارات التصويت متاح للمالك فقط.", 403);
-      if (poll.totalVotes > 0) return fail("BAD_REQUEST", "لا يمكن تعديل الخيارات بعد أول تصويت.", 400);
+      const votesCount = Math.max(Number(poll.totalVotes || 0), await PollVote.countDocuments({ pollId: poll._id }));
+      if (votesCount > 0) return fail("BAD_REQUEST", "لا يمكن تعديل الخيارات بعد أول تصويت.", 400);
       const uniqueOptions = new Set(input.options.map((option) => option.trim()));
       if (uniqueOptions.size !== input.options.length) return fail("BAD_REQUEST", "لا يمكن تكرار خيارات التصويت.", 400);
       update.options = input.options.map((text) => ({ text, votesCount: 0 }));

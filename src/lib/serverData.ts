@@ -606,8 +606,8 @@ export async function getPartyDashboardData(userId: string) {
 }
 
 export async function getIecDashboardData() {
-  return safeData({ posts: [] as unknown[], laws: [] as unknown[], surveys: [] as unknown[] }, async () => {
-    const [posts, laws, surveys, authorityAuthor] = await Promise.all([
+  return safeData({ posts: [] as unknown[], polls: [] as unknown[], laws: [] as unknown[], surveys: [] as unknown[] }, async () => {
+    const [posts, polls, laws, surveys, authorityAuthor] = await Promise.all([
       Post.find({ authorType: "iec", status: { $ne: "deleted" } })
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt status")
         .populate({ path: "authorUserId", select: "name avatarUrl image role" })
@@ -616,11 +616,23 @@ export async function getIecDashboardData() {
         .sort({ createdAt: -1 })
         .limit(50)
         .lean(),
+      Poll.find({ authorType: "iec", status: { $ne: "deleted" } })
+        .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
       Law.find({}).sort({ updatedAt: -1 }).limit(50).lean(),
       Survey.find({ authorType: "iec", status: { $ne: "deleted" } }).sort({ createdAt: -1 }).limit(50).lean(),
       getAuthorityAuthor()
     ]);
-    return { posts: serialize(attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor)), laws: serialize(laws), surveys: serialize(attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor)) };
+    return {
+      posts: serialize(attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor)),
+      polls: serialize(attachAuthorityAuthor(polls as LeanItem[], authorityAuthor)),
+      laws: serialize(laws),
+      surveys: serialize(attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor))
+    };
   });
 }
 

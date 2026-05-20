@@ -45,6 +45,7 @@ export default function OwnerContentMenu({ type, item, onUpdated, onDeleted }: O
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [formError, setFormError] = useState("");
   const [title, setTitle] = useState(item?.title || "");
   const [content, setContent] = useState(item?.content || "");
   const [tags, setTags] = useState(Array.isArray(item?.tags) ? item.tags.join(", ") : "");
@@ -75,9 +76,29 @@ export default function OwnerContentMenu({ type, item, onUpdated, onDeleted }: O
   if (!isVisible) return null;
 
   async function saveEdit() {
+    setFormError("");
     if (uploading) {
       showToast("انتظر حتى يكتمل رفع الملف.", "error");
       return;
+    }
+    if (type === "post" && !content.trim()) {
+      setFormError("محتوى المنشور مطلوب.");
+      return;
+    }
+    if (type === "poll") {
+      const trimmedOptions = options.split("\n").map((option: string) => option.trim()).filter(Boolean);
+      if (!question.trim()) {
+        setFormError("سؤال التصويت مطلوب.");
+        return;
+      }
+      if (Number(item?.totalVotes || 0) === 0 && trimmedOptions.length < 2) {
+        setFormError("أضف خيارين على الأقل.");
+        return;
+      }
+      if (Number(item?.totalVotes || 0) === 0 && new Set(trimmedOptions).size !== trimmedOptions.length) {
+        setFormError("لا يمكن تكرار خيارات التصويت.");
+        return;
+      }
     }
     setSaving(true);
     const payload =
@@ -91,7 +112,7 @@ export default function OwnerContentMenu({ type, item, onUpdated, onDeleted }: O
         : {
             question: question.trim(),
             description: description.trim() || null,
-            ...(options !== (Array.isArray(item?.options) ? item.options.map((option: any) => option.text).join("\n") : "")
+            ...(Number(item?.totalVotes || 0) === 0 && options !== (Array.isArray(item?.options) ? item.options.map((option: any) => option.text).join("\n") : "")
               ? { options: options.split("\n").map((option: string) => option.trim()).filter(Boolean) }
               : {})
           };
@@ -190,6 +211,8 @@ export default function OwnerContentMenu({ type, item, onUpdated, onDeleted }: O
                 <textarea value={options} onChange={(event) => setOptions(event.target.value)} className="w-full rounded border-line" rows={5} placeholder="كل خيار في سطر" />
               </div>
             )}
+            {type === "poll" && Number(item?.totalVotes || 0) > 0 ? <p className="mt-3 rounded border border-civic/25 bg-civic/10 p-3 text-sm font-semibold text-civic">لا يمكن تعديل خيارات التصويت بعد وجود أصوات، حفاظًا على دقة النتائج.</p> : null}
+            {formError ? <p className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{formError}</p> : null}
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={() => setEditOpen(false)} className="rounded border border-line px-4 py-2 font-semibold">إلغاء</button>
               <button type="button" onClick={saveEdit} disabled={saving || uploading} className="rounded bg-civic px-4 py-2 font-semibold text-white disabled:opacity-60">

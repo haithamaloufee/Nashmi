@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getIecDashboardData } from "@/lib/serverData";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
+import PublisherCreateHub from "@/components/dashboard/PublisherCreateHub";
 import StatCard from "@/components/ui/StatCard";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function IecDashboardPage() {
         <StatCard label="مواد قانونية" value={(data.laws as any[]).length} />
         <StatCard label="Community Pulse" value={((data as any).surveys || []).length} />
       </div>
+      <PublisherCreateHub basePath="/iec-dashboard" />
     </DashboardNav>
   );
 }

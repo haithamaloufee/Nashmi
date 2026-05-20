@@ -76,6 +76,26 @@ function cleanQuestions(questions: BuilderQuestion[]) {
   }));
 }
 
+function validateBuilder(input: { title: string; mode: "party" | "iec" | "admin"; publisherType: string; partyId: string; questions: BuilderQuestion[] }) {
+  const errors: string[] = [];
+  if (!input.title.trim()) errors.push("عنوان الاستبيان مطلوب.");
+  if (input.mode === "admin" && input.publisherType === "party" && !input.partyId) errors.push("اختيار الحزب مطلوب عند النشر باسم حزب.");
+  if (!input.questions.length) errors.push("أضف سؤالًا واحدًا على الأقل.");
+
+  input.questions.forEach((question, questionIndex) => {
+    const prefix = `السؤال ${questionIndex + 1}`;
+    if (!question.title.trim()) errors.push(`${prefix}: نص السؤال مطلوب.`);
+    if (question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE") {
+      const labels = question.options.map((option) => option.label.trim()).filter(Boolean);
+      if (labels.length < 2) errors.push(`${prefix}: أضف خيارين على الأقل.`);
+      if (labels.length !== question.options.length) errors.push(`${prefix}: لا تترك خيارات فارغة.`);
+      if (new Set(labels).size !== labels.length) errors.push(`${prefix}: لا يمكن تكرار الخيارات.`);
+    }
+  });
+
+  return errors;
+}
+
 export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { surveys: Survey[]; mode: "party" | "iec" | "admin"; parties?: Array<{ _id: string; name: string }> }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -90,8 +110,10 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
   const [partyId, setPartyId] = useState("");
   const [questions, setQuestions] = useState<BuilderQuestion[]>([emptyQuestion()]);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
 
   const sortedSurveys = useMemo(() => [...surveys].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()), [surveys]);
+  const structureLocked = Boolean(editing && Number(editing.totalResponses || 0) > 0);
 
   function reset() {
     setEditing(null);
@@ -104,6 +126,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
     setPublisherType(mode === "iec" ? "iec" : mode === "party" ? "party" : "admin");
     setPartyId("");
     setQuestions([emptyQuestion()]);
+    setErrors([]);
   }
 
   function edit(survey: Survey) {
@@ -117,13 +140,16 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
     setPublisherType(survey.authorType || (mode === "admin" ? "admin" : mode));
     setPartyId(typeof survey.partyId === "object" ? survey.partyId?._id || "" : survey.partyId || "");
     setQuestions(fromSurvey(survey));
+    setErrors([]);
   }
 
   function updateQuestion(index: number, patch: Partial<BuilderQuestion>) {
+    if (structureLocked) return;
     setQuestions((current) => current.map((question, itemIndex) => itemIndex === index ? { ...question, ...patch } : question));
   }
 
   function moveQuestion(index: number, direction: -1 | 1) {
+    if (structureLocked) return;
     setQuestions((current) => {
       const next = [...current];
       const target = index + direction;
@@ -134,6 +160,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
   }
 
   function updateOption(questionIndex: number, optionIndex: number, label: string) {
+    if (structureLocked) return;
     setQuestions((current) => current.map((question, itemIndex) => {
       if (itemIndex !== questionIndex) return question;
       return { ...question, options: question.options.map((option, index) => index === optionIndex ? { ...option, label } : option) };
@@ -141,6 +168,12 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
   }
 
   async function submit() {
+    const validationErrors = validateBuilder({ title, mode, publisherType, partyId, questions });
+    if (validationErrors.length) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors([]);
     const payload = {
       title,
       description: description || null,
@@ -150,7 +183,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
       resultsVisibility,
       startsAt: startsAt || null,
       endsAt: endsAt || null,
-      questions: cleanQuestions(questions)
+      ...(structureLocked ? {} : { questions: cleanQuestions(questions) })
     };
     setLoading(true);
     try {
@@ -186,6 +219,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
   }
 
   async function archive(survey: Survey) {
+    if (!window.confirm("هل تريد أرشفة هذا الاستبيان؟")) return;
     const response = await fetch(`/api/surveys/${survey._id}`, { method: "DELETE" });
     const json = await response.json().catch(() => ({}));
     showToast(json.ok ? "تمت أرشفة الاستبيان." : json.error?.message || "تعذر الأرشفة.", json.ok ? "success" : "error");
@@ -202,6 +236,18 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
           </div>
           {editing ? <button type="button" onClick={reset} className="rounded border border-line px-3 py-1.5 text-sm font-bold">جديد</button> : null}
         </div>
+
+        {structureLocked ? (
+          <div className="rounded border border-civic/25 bg-civic/10 p-3 text-sm font-semibold leading-7 text-civic">
+            لا يمكن تعديل بنية الأسئلة أو الخيارات بعد وجود مشاركات، حفاظًا على دقة النتائج.
+          </div>
+        ) : null}
+
+        {errors.length ? (
+          <div className="rounded border border-red-200 bg-red-50 p-3 text-sm font-semibold leading-7 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+            {errors.map((error) => <p key={error}>{error}</p>)}
+          </div>
+        ) : null}
 
         {mode === "admin" ? (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -256,7 +302,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-black">الأسئلة</h3>
-            <button type="button" onClick={() => setQuestions((current) => [...current, { ...emptyQuestion(), order: current.length }])} className="inline-flex items-center gap-1 rounded border border-line px-3 py-1.5 text-sm font-bold hover:border-civic">
+            <button type="button" disabled={structureLocked} onClick={() => setQuestions((current) => [...current, { ...emptyQuestion(), order: current.length }])} className="inline-flex items-center gap-1 rounded border border-line px-3 py-1.5 text-sm font-bold hover:border-civic disabled:cursor-not-allowed disabled:opacity-50">
               <Plus className="h-4 w-4" />
               سؤال
             </button>
