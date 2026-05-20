@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Globe, Users } from "lucide-react";
 import SafeImage from "@/components/ui/SafeImage";
 import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 import { normalizeSafeImageUrl } from "@/lib/imageUrls";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { formatNumber } from "@/lib/localization";
 
 type Party = {
   _id: string;
@@ -24,6 +28,7 @@ function getPartyLogoSrc(party: Party) {
 }
 
 export default function PartyCard({ party }: { party: Party }) {
+  const { language, t } = useTranslation();
   const fallback = <div className="grid h-12 w-12 shrink-0 place-items-center rounded bg-civic/10 text-lg font-bold text-civic">{party.name.slice(0, 1)}</div>;
 
   return (
@@ -34,15 +39,15 @@ export default function PartyCard({ party }: { party: Party }) {
           <h3 className="font-bold">{party.name}</h3>
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink/60">
             {party.isVerified ? (
-              <DelayedTooltipBadge tooltip="حزب موثق على منصة نشمي اعتمادًا على البيانات الرسمية المتاحة." className="rounded-full border border-olive/20 bg-olive/10 px-2.5 py-1 font-bold text-olive shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-civic/25 dark:border-emerald-200/35 dark:bg-emerald-200/12 dark:text-emerald-100 dark:shadow-none">
-                موثق
+              <DelayedTooltipBadge tooltip={t("party.verifiedTooltip")} className="rounded-full border border-olive/20 bg-olive/10 px-2.5 py-1 font-bold text-olive shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-civic/25 dark:border-emerald-200/35 dark:bg-emerald-200/12 dark:text-emerald-100 dark:shadow-none">
+                {t("party.verified")}
               </DelayedTooltipBadge>
             ) : null}
             {party.foundedYear ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">{party.foundedYear}</span> : null}
-            {party.statistics?.branchesCount ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">{party.statistics.branchesCount} فرع</span> : null}
+            {party.statistics?.branchesCount ? <span className="rounded-full border border-line bg-slate-100 px-2.5 py-1 font-bold text-ink/70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">{formatNumber(party.statistics.branchesCount, language)} {t("party.branch")}</span> : null}
             {party.socialLinks?.website ? (
               <span className="inline-flex items-center gap-1 rounded-full border border-civic/15 bg-civic/10 px-2.5 py-1 font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">
-                <Globe className="h-3.5 w-3.5" /> موقع
+                <Globe className="h-3.5 w-3.5" /> {t("party.website")}
               </span>
             ) : null}
           </div>
@@ -51,11 +56,11 @@ export default function PartyCard({ party }: { party: Party }) {
       <p className="line-clamp-3 flex-1 text-sm leading-7 text-ink/70">{party.shortDescription}</p>
       <div className="mt-4 flex items-center justify-between gap-3">
         <span className="text-sm text-ink/60">
-          <Users className="ml-1 inline h-4 w-4" />
-          {party.followersCount} متابع
+          <Users className="me-1 inline h-4 w-4" />
+          {formatNumber(party.followersCount, language)} {party.followersCount === 1 ? t("party.follower") : t("party.followers")}
         </span>
         <span className="rounded bg-civic px-4 py-2 text-sm font-semibold text-white">
-          عرض
+          {t("common.view")}
         </span>
       </div>
     </Link>

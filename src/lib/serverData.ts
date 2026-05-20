@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { searchRegex } from "@/lib/arabicSearch";
+import { normalizeHashtag, textHasHashtag } from "@/lib/localization";
 import { attachPublisherSnapshots } from "@/lib/publisher";
 import { normalizePopulatedMediaItems } from "@/lib/media";
 import { serialize } from "@/lib/routeUtils";
@@ -255,6 +256,36 @@ export async function getUpdates(search?: string, filter = "all") {
         .sort((a, b) => dateTime(b.publishedAt) - dateTime(a.publishedAt))
         .slice(0, 18)
     );
+  });
+}
+
+export async function getHashtagResults(tag: string) {
+  return safeData({ posts: [] as unknown[], polls: [] as unknown[] }, async () => {
+    const normalized = normalizeHashtag(decodeURIComponent(tag || ""));
+    if (!normalized) return { posts: [], polls: [] };
+    const hashtagRegex = new RegExp(`#${normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i");
+    const [posts, polls, authorityAuthor] = await Promise.all([
+      Post.find({ status: "published", $or: [{ title: hashtagRegex }, { content: hashtagRegex }, { tags: hashtagRegex }] })
+        .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
+        .sort({ publishedAt: -1 })
+        .limit(50)
+        .lean(),
+      Poll.find({ status: { $in: ["active", "closed"] }, $or: [{ question: hashtagRegex }, { description: hashtagRegex }] })
+        .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
+        .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+        .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+        .sort({ publishedAt: -1 })
+        .limit(50)
+        .lean(),
+      getAuthorityAuthor()
+    ]);
+    const withPublisher = <T extends LeanItem>(items: T[]) => attachAuthorityAuthor(normalizePopulatedMediaItems(items), authorityAuthor);
+    const filteredPosts = withPublisher(posts as LeanItem[]).filter((post) => textHasHashtag(`${post.title || ""}\n${post.content || ""}\n${((post.tags as string[]) || []).map((item) => `#${item}`).join(" ")}`, normalized));
+    const filteredPolls = withPublisher(polls as LeanItem[]).filter((poll) => textHasHashtag(`${poll.question || ""}\n${poll.description || ""}`, normalized));
+    return { posts: serialize(filteredPosts), polls: serialize(filteredPolls) };
   });
 }
 

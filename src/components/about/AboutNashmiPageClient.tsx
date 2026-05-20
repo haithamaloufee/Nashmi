@@ -2,6 +2,7 @@
 
 import { youtubeEmbedUrl } from "@/lib/youtube";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { getLocalizedValue } from "@/lib/localization";
 
 type AboutContent = {
   titleAr?: string | null;
@@ -13,8 +14,8 @@ type AboutContent = {
 
 export default function AboutNashmiPageClient({ content }: { content: AboutContent }) {
   const { language, t } = useTranslation();
-  const title = language === "ar" ? content.titleAr || t("about.defaultTitle") : content.titleEn || t("about.defaultTitle");
-  const body = language === "ar" ? content.bodyAr || t("about.defaultBody") : content.bodyEn || t("about.defaultBody");
+  const title = getLocalizedValue(content, "title", language) || t("about.defaultTitle");
+  const body = getLocalizedValue(content, "body", language) || t("about.defaultBody");
   const embedUrl = content.youtubeVideoId ? youtubeEmbedUrl(content.youtubeVideoId) : null;
 
   return (

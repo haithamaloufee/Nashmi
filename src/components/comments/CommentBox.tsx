@@ -8,6 +8,8 @@ import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useToast } from "@/components/ui/ToastProvider";
 import ReportButton from "@/components/reports/ReportButton";
 import SafeImage from "@/components/ui/SafeImage";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { formatDate } from "@/lib/localization";
 
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
 
@@ -38,14 +40,14 @@ type Props = {
   onCountChange?: (delta: number) => void;
 };
 
-function authorName(comment: Comment) {
+function authorName(comment: Comment, fallback: string) {
   if (comment.author?.name) return comment.author.name;
   if (typeof comment.authorUserId === "object" && comment.authorUserId?.name) return comment.authorUserId.name;
-  return "مستخدم نشمي";
+  return fallback;
 }
 
-function avatarText(comment: Comment) {
-  return authorName(comment).trim().slice(0, 1) || "ن";
+function avatarText(comment: Comment, fallback: string) {
+  return authorName(comment, fallback).trim().slice(0, 1) || "ن";
 }
 
 function authorProfile(comment: Comment) {
@@ -60,12 +62,8 @@ function avatarUrl(comment: Comment) {
   return null;
 }
 
-function formatDate(value?: string) {
-  if (!value) return "الآن";
-  return new Intl.DateTimeFormat("ar-JO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
-}
-
 export default function CommentBox({ targetType, targetId, expanded, showModerationActions = false, onCountChange }: Props) {
+  const { language, t } = useTranslation();
   const [comments, setComments] = useState<Comment[]>([]);
   const [content, setContent] = useState("");
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -85,7 +83,7 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
       setLoading(false);
       setLoaded(true);
       if (!json.ok) {
-        showToast(json.error?.message || "تعذر تحميل التعليقات", "error");
+        showToast(json.error?.message || t("common.error"), "error");
         return;
       }
       setComments((current) => (cursor ? [...current, ...(json.data.comments || [])] : json.data.comments || []));
@@ -93,9 +91,9 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
     } catch {
       setLoading(false);
       setLoaded(true);
-      showToast("تعذر تحميل التعليقات", "error");
+      showToast(t("common.error"), "error");
     }
-  }, [showToast, targetId, targetType]);
+  }, [showToast, t, targetId, targetType]);
 
   useEffect(() => {
     if (expanded && !loaded && !loading) void loadComments();
@@ -109,7 +107,7 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
       _id: `pending-${Date.now()}`,
       content: clean,
       createdAt: new Date().toISOString(),
-      authorUserId: { name: "أنت" },
+      authorUserId: { name: t("comments.you") },
       pending: true
     };
     setContent("");
@@ -135,17 +133,17 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
       if (!json.ok) {
         setComments((current) => current.map((item) => (item._id === optimistic._id ? { ...item, pending: false, failed: true } : item)));
         onCountChange?.(-1);
-        showToast(json.error?.message || "تعذر إضافة التعليق", "error");
+        showToast(json.error?.message || t("common.error"), "error");
         return;
       }
 
       setComments((current) => current.map((item) => (item._id === optimistic._id ? json.data.comment : item)));
-      showToast("تمت إضافة التعليق", "success");
+      showToast(t("comments.added"), "success");
     } catch {
       setSubmitting(false);
       setComments((current) => current.map((item) => (item._id === optimistic._id ? { ...item, pending: false, failed: true } : item)));
       onCountChange?.(-1);
-      showToast("تعذر الاتصال بالخادم", "error");
+      showToast(t("poll.connectionFailed"), "error");
     }
   }
 
@@ -160,8 +158,8 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
           className="min-h-11 flex-1 resize-y rounded border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
           rows={2}
           maxLength={1000}
-          placeholder="اكتب تعليقًا "
-          aria-label="كتابة تعليق"
+          placeholder={t("comments.write")}
+          aria-label={t("comments.ariaWrite")}
         />
         <button
           onClick={submit}
@@ -170,7 +168,7 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
           type="button"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
-          تعليق
+          {t("comments.label")}
         </button>
       </div>
 
@@ -181,17 +179,17 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
             <div className="skeleton h-16 rounded" />
           </div>
         ) : null}
-        {loaded && comments.length === 0 ? <p className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300">لا توجد تعليقات بعد. كن أول من يعلق.</p> : null}
+        {loaded && comments.length === 0 ? <p className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300">{t("comments.empty")}</p> : null}
         {comments.map((comment) => (
           <div key={comment._id} className={`rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 ${comment.pending ? "opacity-75" : ""}`}>
             <div className="flex items-start gap-3">
               {authorProfile(comment) ? (
-                <Link href={authorProfile(comment) || "#"} className="focus-ring shrink-0 rounded-full" aria-label={`فتح ملف ${authorName(comment)}`}>
+                <Link href={authorProfile(comment) || "#"} className="focus-ring shrink-0 rounded-full" aria-label={authorName(comment, t("comments.user"))}>
                   <SafeImage
                     src={avatarUrl(comment)}
-                    alt={authorName(comment)}
+                    alt={authorName(comment, t("comments.user"))}
                     className="h-8 w-8 rounded-full object-cover ring-1 ring-civic/15 dark:ring-emerald-200/25"
-                    fallback={<div className="grid h-8 w-8 place-items-center rounded-full bg-civic/10 text-sm font-bold text-civic dark:bg-emerald-200/12 dark:text-emerald-100">{avatarText(comment)}</div>}
+                    fallback={<div className="grid h-8 w-8 place-items-center rounded-full bg-civic/10 text-sm font-bold text-civic dark:bg-emerald-200/12 dark:text-emerald-100">{avatarText(comment, t("comments.user"))}</div>}
                     localPrefixes={["/uploads/avatars/", "/uploads/", "/images/"]}
                     sizes="32px"
                   />
@@ -199,9 +197,9 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
               ) : (
                 <SafeImage
                   src={avatarUrl(comment)}
-                  alt={authorName(comment)}
+                  alt={authorName(comment, t("comments.user"))}
                   className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-civic/15 dark:ring-emerald-200/25"
-                  fallback={<div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-civic/10 text-sm font-bold text-civic dark:bg-emerald-200/12 dark:text-emerald-100">{avatarText(comment)}</div>}
+                  fallback={<div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-civic/10 text-sm font-bold text-civic dark:bg-emerald-200/12 dark:text-emerald-100">{avatarText(comment, t("comments.user"))}</div>}
                   localPrefixes={["/uploads/avatars/", "/uploads/", "/images/"]}
                   sizes="32px"
                 />
@@ -210,13 +208,13 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
                 <div className="flex flex-wrap items-center gap-2">
                   {authorProfile(comment) ? (
                     <Link href={authorProfile(comment) || "#"} className="focus-ring rounded font-semibold text-slate-900 hover:text-civic hover:underline dark:text-white dark:hover:text-emerald-200">
-                      {authorName(comment)}
+                      {authorName(comment, t("comments.user"))}
                     </Link>
                   ) : (
-                    <span className="font-semibold text-slate-900 dark:text-white">{authorName(comment)}</span>
+                    <span className="font-semibold text-slate-900 dark:text-white">{authorName(comment, t("comments.user"))}</span>
                   )}
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{comment.pending ? "قيد الإرسال" : formatDate(comment.createdAt)}</span>
-                  {comment.failed ? <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-950/45 dark:text-red-200">فشل الإرسال</span> : null}
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{comment.pending ? t("comments.pending") : formatDate(comment.createdAt, language, { dateStyle: "medium", timeStyle: "short" }) || t("comments.now")}</span>
+                  {comment.failed ? <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-950/45 dark:text-red-200">{t("comments.failed")}</span> : null}
                 </div>
                 <p className="mt-1 whitespace-pre-line break-words text-sm leading-7 text-slate-800 dark:text-slate-200">{comment.content}</p>
               </div>
@@ -238,7 +236,7 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
           disabled={loading}
           className="mt-3 rounded border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-civic transition hover:border-civic hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200 dark:hover:border-emerald-300 dark:hover:bg-slate-800"
         >
-          {loading ? "جار التحميل..." : "عرض المزيد من التعليقات"}
+          {loading ? t("common.loading") : t("comments.loadMore")}
         </button>
       ) : null}
       <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)} />

@@ -5,6 +5,7 @@ import { Vote } from "lucide-react";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { formatNumber } from "@/lib/localization";
 import { isPollEnded } from "@/lib/polls";
 
 type Poll = {
@@ -23,7 +24,7 @@ type Poll = {
 };
 
 export default function PollVote({ poll }: { poll: Poll }) {
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const [current, setCurrent] = useState(poll);
   const [selected, setSelected] = useState("");
   const [voted, setVoted] = useState(false);
@@ -81,7 +82,6 @@ export default function PollVote({ poll }: { poll: Poll }) {
 
   return (
     <div className="mt-3 space-y-3">
-      {current.description ? <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">{current.description}</p> : null}
       <div className="space-y-2">
         {current.options.map((option) => {
           const percentage = current.totalVotes > 0 ? Math.round((option.votesCount / current.totalVotes) * 100) : 0;
@@ -90,13 +90,13 @@ export default function PollVote({ poll }: { poll: Poll }) {
               <div className="flex items-start gap-2">
                 <input type="radio" name={`poll-${current._id}`} value={option._id} checked={selected === option._id} onChange={() => setSelected(option._id)} disabled={voted || loading || ended} className="mt-1 text-civic focus:ring-civic" />
                 <span className="min-w-0 flex-1 break-words font-semibold">{option.text}</span>
-                <span className="shrink-0 text-xs font-bold text-civic">{percentage}%</span>
+                <span className="shrink-0 text-xs font-bold text-civic">{formatNumber(percentage, language)}%</span>
               </div>
               <div className="mt-2 h-2.5 overflow-hidden rounded bg-slate-200 dark:bg-slate-800" aria-hidden="true">
                 <div className="h-full rounded bg-civic transition-all duration-300 dark:bg-emerald-400" style={{ width: `${percentage}%` }} />
               </div>
               <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                {current.totalVotes > 0 ? `${option.votesCount} ${t("poll.voteCount")}` : t("poll.noVotes")}
+                {current.totalVotes > 0 ? `${formatNumber(option.votesCount, language)} ${t("poll.voteCount")}` : t("poll.noVotes")}
               </span>
             </label>
           );

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { formatNumber } from "@/lib/localization";
 
 type Props = {
   targetType: "posts" | "polls";
@@ -13,6 +15,7 @@ type Props = {
 };
 
 export default function ReactionButtons({ targetType, targetId, likesCount, dislikesCount }: Props) {
+  const { language, t } = useTranslation();
   const [reaction, setReaction] = useState<"like" | "dislike" | null>(null);
   const [counts, setCounts] = useState({ like: likesCount, dislike: dislikesCount });
   const [loginOpen, setLoginOpen] = useState(false);
@@ -51,7 +54,7 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
       if (!json.ok) {
         setReaction(previous);
         setCounts(previousCounts);
-        showToast(json.error?.message || "تعذر تحديث التفاعل", "error");
+        showToast(json.error?.message || t("common.error"), "error");
         return;
       }
       if (typeof json.data?.likesCount === "number" && typeof json.data?.dislikesCount === "number") {
@@ -61,7 +64,7 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
       setPending(false);
       setReaction(previous);
       setCounts(previousCounts);
-      showToast("تعذر الاتصال بالخادم", "error");
+      showToast(t("poll.connectionFailed"), "error");
     }
   }
 
@@ -74,10 +77,10 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
         className={`inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-95 disabled:opacity-60 dark:hover:bg-emerald-200/10 ${
           reaction === "like" ? "bg-civic/10 text-civic ring-1 ring-civic/20 dark:bg-emerald-200/12 dark:text-emerald-100 dark:ring-emerald-200/25" : "text-slate-600 dark:text-slate-300"
         }`}
-        aria-label="إعجاب"
+        aria-label={t("reaction.like")}
       >
         <ThumbsUp className="h-4 w-4" />
-        {counts.like}
+        {formatNumber(counts.like, language)}
       </button>
       <button
         onClick={() => send(reaction === "dislike" ? null : "dislike")}
@@ -86,10 +89,10 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
         className={`inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-clay/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay active:scale-95 disabled:opacity-60 dark:hover:bg-amber-300/10 ${
           reaction === "dislike" ? "bg-clay/10 text-clay ring-1 ring-clay/20 dark:bg-amber-300/12 dark:text-amber-200 dark:ring-amber-200/20" : "text-slate-600 dark:text-slate-300"
         }`}
-        aria-label="عدم إعجاب"
+        aria-label={t("reaction.dislike")}
       >
         <ThumbsDown className="h-4 w-4" />
-        {counts.dislike}
+        {formatNumber(counts.dislike, language)}
       </button>
       <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>

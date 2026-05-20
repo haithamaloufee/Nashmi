@@ -34,9 +34,9 @@ export default async function Navbar() {
     <header className="sticky top-0 z-50 border-b border-line bg-paper/95 text-ink shadow-sm backdrop-blur dark:border-slate-700 dark:bg-[#101820]/95 dark:text-white">
       <div className="container-page flex min-h-16 items-center justify-between gap-3 py-2">
         <NavbarPrefetcher routes={links.map((link) => link.href)} />
-        <Link href="/" prefetch data-navbar-prefetch="/" className="focus-ring flex shrink-0 items-center gap-3 font-bold text-civic dark:text-emerald-200" aria-label="الانتقال إلى الصفحة الرئيسية">
-          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-civic/15 bg-white p-1.5 shadow-sm ring-1 ring-white/70 transition duration-200 dark:border-emerald-200/20 dark:bg-slate-900 dark:ring-slate-700 sm:h-16 sm:w-16">
-            <Image src="/images/nashmi logo.png" alt="شعار منصة نشمي" width={64} height={64} priority className="h-full w-full object-contain" />
+        <Link href="/" prefetch data-navbar-prefetch="/" className="focus-ring flex shrink-0 items-center gap-3 font-bold text-civic dark:text-emerald-200" aria-label="Nashmi home">
+          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-civic/15 bg-white shadow-sm ring-1 ring-white/70 transition duration-200 dark:border-emerald-200/20 dark:bg-slate-900 dark:ring-slate-700 sm:h-16 sm:w-16">
+            <Image src="/images/nashmi logo.png" alt="شعار منصة نشمي" fill sizes="64px" priority className="object-contain scale-110" />
           </div>
           <span className="hidden text-lg font-black sm:inline dark:text-emerald-200 dark:drop-shadow-sm">نشمي</span>
         </Link>
@@ -55,8 +55,8 @@ export default async function Navbar() {
         <div className="flex shrink-0 items-center gap-2">
           <LanguageToggle compact />
           <ThemeToggle />
-          <Link href="/chat" className="focus-ring inline-flex h-9 items-center rounded border border-civic/35 bg-white/70 px-3 text-sm font-semibold text-civic shadow-sm hover:border-civic hover:bg-civic hover:text-white active:scale-[0.98] dark:border-emerald-200/35 dark:bg-emerald-200/10 dark:text-emerald-100 dark:shadow-none dark:hover:border-emerald-200 dark:hover:bg-emerald-200/18 dark:hover:text-white" aria-label="المساعد الذكي">
-            <MessageCircle className="ml-2 h-4 w-4" />
+          <Link href="/chat" className="focus-ring inline-flex h-9 items-center rounded border border-civic/35 bg-white/70 px-3 text-sm font-semibold text-civic shadow-sm hover:border-civic hover:bg-civic hover:text-white active:scale-[0.98] dark:border-emerald-200/35 dark:bg-emerald-200/10 dark:text-emerald-100 dark:shadow-none dark:hover:border-emerald-200 dark:hover:bg-emerald-200/18 dark:hover:text-white" aria-label="Smart Assistant">
+            <MessageCircle className="me-2 h-4 w-4" />
             <span className="hidden sm:inline"><I18nText id="nav.chat" /></span>
           </Link>
           {user ? (

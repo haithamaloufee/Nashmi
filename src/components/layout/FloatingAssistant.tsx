@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, PointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowDown, Bot, MoveVertical, Send, Sparkles, X } from "lucide-react";
-import MarkdownMessage from "@/components/chat/MarkdownMessage";
 import TypingIndicator from "@/components/chat/TypingIndicator";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 
 type Message = {
   role: "user" | "assistant";
@@ -15,6 +16,7 @@ type Message = {
 const DEFAULT_PANEL_HEIGHT = 620;
 const MIN_PANEL_HEIGHT = 360;
 const DEFAULT_BOTTOM_OFFSET = 16;
+const MarkdownMessage = dynamic(() => import("@/components/chat/MarkdownMessage"), { ssr: false });
 
 const introMessage: Message = {
   role: "assistant",
@@ -30,6 +32,7 @@ function fallbackError(json: unknown) {
 }
 
 export default function FloatingAssistant() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -64,12 +67,12 @@ export default function FloatingAssistant() {
   useEffect(() => {
     if (!open) return;
     setSessionId(null);
-    setMessages([introMessage]);
+    setMessages([{ role: "assistant", content: t("updates.assistantBody") }]);
     setInput("");
     setError("");
     setShowScrollToBottom(false);
     window.setTimeout(() => inputRef.current?.focus(), 80);
-  }, [open]);
+  }, [open, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -211,7 +214,7 @@ export default function FloatingAssistant() {
         <section
           className="flex min-h-[360px] w-[calc(100vw-1rem)] max-w-[420px] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 sm:w-[420px]"
           style={{ height: `min(${panelHeight}px, calc(100vh - 2rem))` }}
-          aria-label="المساعد الذكي المصغر"
+          aria-label={t("nav.chat")}
           dir="rtl"
         >
           <button
@@ -229,8 +232,8 @@ export default function FloatingAssistant() {
                 <Bot className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <h2 className="text-base font-black leading-6">المساعد الذكي</h2>
-                <p className="mt-0.5 text-xs font-semibold leading-5 text-white/78">محادثة جديدة</p>
+                <h2 className="text-base font-black leading-6">{t("nav.chat")}</h2>
+                <p className="mt-0.5 text-xs font-semibold leading-5 text-white/78">{t("updates.openAssistant")}</p>
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">
@@ -294,7 +297,7 @@ export default function FloatingAssistant() {
               value={input}
               onChange={(event) => setInput(event.target.value)}
               className="min-w-0 flex-1 rounded-full border-slate-300 bg-white px-4 text-sm leading-6 text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
-              placeholder="اكتب سؤالك..."
+              placeholder={t("updates.assistantBody")}
               maxLength={1200}
               disabled={loading}
               aria-label="رسالة إلى المساعد الذكي"
@@ -310,13 +313,13 @@ export default function FloatingAssistant() {
             type="button"
             onClick={() => setOpen(true)}
             className="focus-ring inline-flex items-center gap-2 px-4 py-3 transition hover:bg-civic/90 active:scale-95 dark:hover:bg-[#20a59e]"
-            aria-label="فتح المساعد الذكي"
+            aria-label={t("nav.chat")}
           >
             <span className="relative grid h-9 w-9 place-items-center rounded-full bg-white/15 dark:bg-slate-900/80">
               <Bot className="h-5 w-5" />
               <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-white" />
             </span>
-            <span className="hidden text-sm sm:inline">المساعد الذكي</span>
+            <span className="hidden text-sm sm:inline">{t("nav.chat")}</span>
           </button>
           <button type="button" onPointerDown={startVerticalDrag} className="focus-ring grid h-14 w-11 touch-none place-items-center border-r border-white/15 text-white/90 hover:bg-white/10" aria-label="تحريك زر المساعد للأعلى أو الأسفل" title="تحريك المساعد">
             <MoveVertical className="h-4 w-4" />

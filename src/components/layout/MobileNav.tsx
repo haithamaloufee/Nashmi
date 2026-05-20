@@ -49,7 +49,7 @@ export default function MobileNav({ links, dashboardHref }: MobileNavProps) {
 
       {open ? (
         <div id="mobile-navigation" className="absolute inset-x-0 top-full z-50 border-b border-line bg-paper/98 px-4 pb-4 pt-2 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 sm:backdrop-blur">
-          <nav className="grid gap-2 text-sm font-semibold" aria-label="التنقل المختصر">
+          <nav className="grid gap-2 text-sm font-semibold" aria-label="Mobile navigation">
             <div className="flex justify-center py-1">
               <LanguageToggle />
             </div>

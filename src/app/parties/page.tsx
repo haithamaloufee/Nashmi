@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
 import PartyCard from "@/components/parties/PartyCard";
 import Alert from "@/components/ui/Alert";
 import { getPublicParties, getUpdates } from "@/lib/serverData";
 import { PartyCardSkeleton, SkeletonLine } from "@/components/ui/Skeletons";
+import { I18nText } from "@/components/i18n/LanguageProvider";
+import { SearchSubmitButton, TranslatedSearchInput } from "@/components/i18n/TranslatedFormControls";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ async function LatestPartyUpdates() {
     <section className="mb-8 grid gap-3 md:grid-cols-3">
       {latest.slice(0, 3).map((item) => (
         <Link key={`${item.type}-${item.item._id}`} href="/updates" className="card card-hover p-4 text-sm">
-          <span className="text-civic">{item.type === "post" ? "منشور" : "تصويت"}</span>
+          <span className="text-civic"><I18nText id={item.type === "post" ? "content.post" : "content.poll"} /></span>
           <p className="mt-2 line-clamp-2">{item.type === "post" ? item.item.title || item.item.content : item.item.question}</p>
         </Link>
       ))}
@@ -59,18 +60,16 @@ export default async function PartiesPage({ searchParams }: { searchParams: Prom
     <main className="container-page py-8">
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-black">بوابة الأحزاب</h1>
-          <p className="mt-2 text-ink/70">عرض محايد للأحزاب النشطة بترتيب ثابت غير مبني على الشعبية.</p>
+          <h1 className="text-3xl font-black"><I18nText id="party.portal.title" /></h1>
+          <p className="mt-2 text-ink/70"><I18nText id="party.portal.subtitle" /></p>
         </div>
         <form className="flex gap-2">
-          <input name="search" defaultValue={params.search || ""} className="w-64 rounded border-line focus:border-civic focus:ring-civic" placeholder="ابحث باسم الحزب أو وصفه" />
-          <button className="rounded bg-civic px-4 py-2 text-white hover:bg-civic/90">
-            <Search className="h-4 w-4" />
-          </button>
+          <TranslatedSearchInput defaultValue={params.search || ""} placeholderKey="party.portal.search" />
+          <SearchSubmitButton />
         </form>
       </div>
       <div className="mb-6">
-        <Alert>آخر المستجدات تظهر هنا كبداية للبوابة، مع الحفاظ على عدم ترتيب الأحزاب حسب التفاعل أو الشعبية.</Alert>
+        <Alert><I18nText id="party.portal.info" /></Alert>
       </div>
       <Suspense fallback={<LatestPartyUpdatesSkeleton />}>
         <LatestPartyUpdates />

@@ -27,31 +27,32 @@ import PlatformIndicatorsSection from "@/components/landing/PlatformIndicatorsSe
 import { I18nText } from "@/components/i18n/LanguageProvider";
 import CountUpNumber from "@/components/ui/CountUpNumber";
 import { getCurrentUser } from "@/lib/auth";
+import type { TranslationKey } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 const valuesCards = [
   {
-    title: "الرؤية",
-    text: "مجتمعٌ يشارك بوعي في صناعة القرار والسياسات العامة.",
+    titleKey: "home.values.vision",
+    textKey: "home.values.visionText",
     icon: Flag
   },
   {
-    title: "الرسالة",
-    text: "توفير تجربة رقمية سهلة تساعد المواطنين على متابعة المستجدات، فهم التشريعات، التفاعل مع التصويتات، والتواصل بطريقة مسؤولة.",
+    titleKey: "home.values.mission",
+    textKey: "home.values.missionText",
     icon: Target
   },
   {
-    title: "هدفنا",
-    text: "رفع الوعي السياسي والانتخابي وتشجيع الشباب على المشاركة الفاعلة في الحياة العامة.",
+    titleKey: "home.values.goal",
+    textKey: "home.values.goalText",
     icon: Award
   },
   {
-    title: "القيم الجوهرية",
-    text: "الشفافية، المسؤولية، الحياد، احترام الرأي الآخر، سهولة الوصول، وحماية المستخدم.",
+    titleKey: "home.values.core",
+    textKey: "home.values.coreText",
     icon: ShieldCheck
   }
-];
+] satisfies Array<{ titleKey: TranslationKey; textKey: TranslationKey; icon: typeof Flag }>;
 
 const officialLinks = [
   { label: "الهيئة المستقلة للانتخاب", href: "https://www.iec.jo/ar" },
@@ -63,12 +64,12 @@ const officialLinks = [
 ];
 
 const mainLinks = [
-  { label: "الرئيسية", href: "/" },
-  { label: "آخر المستجدات", href: "/updates" },
-  { label: "بوابة الأحزاب", href: "/parties" },
-  { label: "افهم قانونك", href: "/laws" },
-  { label: "المساعد الذكي", href: "/chat" }
-];
+  { labelKey: "nav.home", href: "/" },
+  { labelKey: "nav.updates", href: "/updates" },
+  { labelKey: "nav.parties", href: "/parties" },
+  { labelKey: "nav.laws", href: "/laws" },
+  { labelKey: "nav.chat", href: "/chat" }
+] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
 function ExternalAnchor({ href, children, className, ariaLabel }: { href: string; children: React.ReactNode; className?: string; ariaLabel?: string }) {
   return (
@@ -79,12 +80,12 @@ function ExternalAnchor({ href, children, className, ariaLabel }: { href: string
 }
 
 const partySnapshotStats = [
-  { label: "عدد الأحزاب السياسية", value: 32, icon: Building2 },
-  { label: "عدد الأعضاء", value: 86625, icon: Users },
-  { label: "ذكور", value: 49699, icon: Users },
-  { label: "إناث", value: 36926, icon: Users },
-  { label: "شباب 18-35", value: 30556, icon: Vote }
-];
+  { labelKey: "home.stats.parties", value: 32, icon: Building2 },
+  { labelKey: "home.stats.members", value: 86625, icon: Users },
+  { labelKey: "home.stats.male", value: 49699, icon: Users },
+  { labelKey: "home.stats.female", value: 36926, icon: Users },
+  { labelKey: "home.stats.youth", value: 30556, icon: Vote }
+] satisfies Array<{ labelKey: TranslationKey; value: number; icon: typeof Building2 }>;
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -92,34 +93,34 @@ export default async function HomePage() {
   const quickAccessCards = [
     {
       href: "/parties",
-      title: "بوابة الأحزاب",
-      text: "استعرض الأحزاب النشطة وملفاتها التعريفية ومحتواها المنشور داخل المنصة.",
+      titleKey: "nav.parties",
+      textKey: "party.portal.subtitle",
       icon: Building2
     },
     {
       href: "/updates",
-      title: "آخر المستجدات",
-      text: "تابع المنشورات والتصويتات العامة في تغذية موحدة وسهلة القراءة.",
+      titleKey: "nav.updates",
+      textKey: "updates.subtitle",
       icon: Newspaper
     },
     {
       href: "/chat",
-      title: "المساعد الذكي",
-      text: "اطرح أسئلة توعوية محايدة حول القوانين والمفاهيم الانتخابية.",
+      titleKey: "nav.chat",
+      textKey: "updates.assistantBody",
       icon: Bot
     },
     {
       href: "/laws",
-      title: "افهم قانونك",
-      text: "اقرأ شروحات مبسطة للتشريعات والمفاهيم مع روابط ومصادر واضحة.",
+      titleKey: "nav.laws",
+      textKey: "laws.subtitle",
       icon: Scale
     },
     ...(showAdminAccess
       ? [
           {
             href: "/admin",
-            title: "لوحة التحكم",
-            text: "إدارة المستخدمين والمحتوى والبلاغات ضمن صلاحيات الإدارة.",
+            titleKey: "nav.dashboard",
+            textKey: "admin.about.hint",
             icon: BarChart3
           }
         ]
@@ -132,7 +133,7 @@ export default async function HomePage() {
 
       <section className="relative isolate overflow-hidden border-b border-line bg-ink text-white" aria-labelledby="hero-title">
         <Image src="/images/sharek-hero.png" alt="" fill priority sizes="100vw" className="pointer-events-none absolute inset-0 -z-20 object-cover" />
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(15,25,33,.92)_0%,rgba(18,107,111,.74)_48%,rgba(15,25,33,.34)_100%)]" />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(15,25,33,.82)_0%,rgba(15,25,33,.58)_38%,rgba(18,107,111,.26)_68%,rgba(15,25,33,.18)_100%)]" />
         <div className="container-page flex min-h-[560px] flex-col justify-center py-16 md:py-20">
           <div className="max-w-3xl text-shadow-sm">
             <p className="mb-5 text-base font-black uppercase tracking-[0.18em] text-white/80"><I18nText id="home.hero.eyebrow" /></p>
@@ -197,8 +198,8 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(23,33,43,.86),rgba(18,107,111,.15))]" />
           <div className="absolute inset-x-5 bottom-5 rounded border border-white/20 bg-white/12 p-5 text-white backdrop-blur">
             <Sparkles className="mb-3 h-7 w-7 text-emerald-200" />
-            <p className="text-lg font-bold">تجربة مدنية رقمية بهوية نشمي</p>
-            <p className="mt-2 text-sm leading-7 text-white/78">تصميم مستوحى من بنية المواقع الرسمية، مع هوية مستقلة وواضحة كمشروع تعليمي تجريبي.</p>
+            <p className="text-lg font-bold"><I18nText id="home.visual.title" /></p>
+            <p className="mt-2 text-sm leading-7 text-white/78"><I18nText id="home.visual.body" /></p>
           </div>
         </div>
       </section>
@@ -213,10 +214,10 @@ export default async function HomePage() {
             {valuesCards.map((card) => {
               const Icon = card.icon;
               return (
-                <article key={card.title} className="reveal-on-scroll rounded border border-white/15 bg-white/10 p-6 backdrop-blur transition hover:-translate-y-1 hover:border-emerald-200/50 hover:bg-white/15 hover:shadow-soft" data-reveal>
+                <article key={card.titleKey} className="reveal-on-scroll rounded border border-white/15 bg-white/10 p-6 backdrop-blur transition hover:-translate-y-1 hover:border-emerald-200/50 hover:bg-white/15 hover:shadow-soft" data-reveal>
                   <Icon className="mb-5 h-10 w-10 text-emerald-200" />
-                  <h3 className="text-2xl font-black">{card.title}</h3>
-                  <p className="mt-3 leading-8 text-white/78">{card.text}</p>
+                  <h3 className="text-2xl font-black"><I18nText id={card.titleKey} /></h3>
+                  <p className="mt-3 leading-8 text-white/78"><I18nText id={card.textKey} /></p>
                 </article>
               );
             })}
@@ -231,18 +232,18 @@ export default async function HomePage() {
               <p className="mb-2 text-sm font-bold text-emerald-200"><I18nText id="home.stats.eyebrow" /></p>
               <h2 id="stats-title" className="text-3xl font-black"><I18nText id="home.stats.title" /></h2>
             </div>
-            <p className="max-w-xl leading-8 text-white/75">أرقام ثابتة من لقطات مرجع إحصاءات الأحزاب المرفقة، تعرض هنا بصريًا دون إنشاء تبعية خلفية جديدة.</p>
+            <p className="max-w-xl leading-8 text-white/75"><I18nText id="home.stats.note" /></p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {partySnapshotStats.map((stat) => {
               const Icon = stat.icon;
               return (
-                <div key={stat.label} className="reveal-on-scroll rounded border border-emerald-200/20 bg-white/[0.08] p-5 text-white shadow-soft transition hover:-translate-y-0.5 hover:border-emerald-200/45 hover:bg-white/[0.12] dark:bg-slate-950/35" data-reveal>
+                <div key={stat.labelKey} className="reveal-on-scroll rounded border border-emerald-200/20 bg-white/[0.08] p-5 text-white shadow-soft transition hover:-translate-y-0.5 hover:border-emerald-200/45 hover:bg-white/[0.12] dark:bg-slate-950/35" data-reveal>
                   <Icon className="mb-4 h-8 w-8 text-emerald-200" />
                   <span className="block text-4xl font-black leading-none text-white drop-shadow-sm">
                     <CountUpNumber value={stat.value} duration={1200} />
                   </span>
-                  <span className="mt-3 block text-sm font-semibold text-white/78">{stat.label}</span>
+                  <span className="mt-3 block text-sm font-semibold text-white/78"><I18nText id={stat.labelKey} /></span>
                 </div>
               );
             })}
@@ -267,8 +268,8 @@ export default async function HomePage() {
             return (
               <Link key={card.href} href={card.href} className="reveal-on-scroll card card-hover group p-5 focus-ring" data-reveal>
                 <Icon className="mb-4 h-8 w-8 text-civic transition group-hover:scale-110" />
-                <h3 className="text-lg font-black">{card.title}</h3>
-                <p className="mt-3 min-h-20 text-sm leading-7 text-ink/70">{card.text}</p>
+                <h3 className="text-lg font-black"><I18nText id={card.titleKey as TranslationKey} /></h3>
+                <p className="mt-3 min-h-20 text-sm leading-7 text-ink/70"><I18nText id={card.textKey as TranslationKey} /></p>
                 <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-civic">
                   <I18nText id="common.openPath" />
                   <Zap className="h-4 w-4" />
@@ -292,7 +293,7 @@ export default async function HomePage() {
               </div>
             </div>
             <p className="leading-8 text-white/78"><I18nText id="home.about.body" /></p>
-            <p className="mt-4 rounded border border-white/15 bg-white/[0.08] p-3 text-sm leading-7 text-white/76">هذا المشروع تجريبي ولا يمثل جهة رسمية.</p>
+            <p className="mt-4 rounded border border-white/15 bg-white/[0.08] p-3 text-sm leading-7 text-white/76"><I18nText id="home.footer.demo" /></p>
           </section>
 
           <nav aria-label="روابط نشمي">
@@ -301,13 +302,13 @@ export default async function HomePage() {
               {mainLinks.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="focus-ring hover:text-emerald-200 hover:underline">
-                    {link.label}
+                    <I18nText id={link.labelKey} />
                   </Link>
                 </li>
               ))}
               <li>
                 <Link href="#related" className="focus-ring hover:text-emerald-200 hover:underline">
-                  مواقع ذات صلة
+                  <I18nText id="common.relatedSites" />
                 </Link>
               </li>
             </ul>
@@ -334,12 +335,12 @@ export default async function HomePage() {
             <h3 className="mb-4 text-lg font-black"><I18nText id="home.footer.noticeTitle" /></h3>
             <p className="leading-8 text-white/78"><I18nText id="home.footer.notice" /></p>
             <ExternalAnchor href="https://www.iec.jo/ar" className="focus-ring mt-5 inline-flex items-center gap-2 rounded bg-white px-4 py-2 font-bold text-civic hover:bg-emerald-50">
-              الموقع الرسمي للهيئة
+              <I18nText id="home.footer.iecOfficial" />
               <ExternalLink className="h-4 w-4" />
             </ExternalAnchor>
             <a href="#top" className="focus-ring mt-6 inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white hover:border-emerald-200 hover:text-emerald-200" aria-label="العودة إلى أعلى الصفحة">
               <ChevronUp className="h-4 w-4" />
-              اذهب للأعلى
+              <I18nText id="common.goTop" />
             </a>
           </section>
         </div>

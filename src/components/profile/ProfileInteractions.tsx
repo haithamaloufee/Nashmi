@@ -19,7 +19,7 @@ export function ProfileTopScrollReset() {
   return null;
 }
 
-export function JumpToPostsButton({ label = "عرض المنشورات / View posts" }: { label?: string }) {
+export function JumpToPostsButton({ label = "عرض المنشورات / View posts" }: { label?: ReactNode }) {
   function handleClick() {
     document.getElementById("profile-posts")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -35,7 +35,7 @@ export function JumpToPostsButton({ label = "عرض المنشورات / View po
   );
 }
 
-export function ProfileAccordionCard({ title, children, defaultOpen = false }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
+export function ProfileAccordionCard({ title, children, defaultOpen = false }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
 

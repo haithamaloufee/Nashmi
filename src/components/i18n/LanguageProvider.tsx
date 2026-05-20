@@ -20,31 +20,41 @@ function applyDocumentLanguage(language: Language) {
   document.documentElement.dir = dir;
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(defaultLanguage);
+export function LanguageProvider({ children, initialLanguage = defaultLanguage }: { children: ReactNode; initialLanguage?: Language }) {
+  const [language, setLanguageState] = useState<Language>(initialLanguage);
+  const [ready, setReady] = useState(initialLanguage !== defaultLanguage);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(storageKey);
-    const next = isLanguage(stored) ? stored : defaultLanguage;
-    setLanguageState(next);
+    const next = isLanguage(stored) ? stored : initialLanguage;
+    document.cookie = `${storageKey}=${next}; path=/; max-age=31536000; SameSite=Lax`;
     applyDocumentLanguage(next);
-  }, []);
+    const timer = window.setTimeout(() => {
+      setLanguageState(next);
+      setReady(true);
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [initialLanguage]);
 
   const setLanguage = useCallback((next: Language) => {
+    setReady(true);
     setLanguageState(next);
     window.localStorage.setItem(storageKey, next);
+    document.cookie = `${storageKey}=${next}; path=/; max-age=31536000; SameSite=Lax`;
     applyDocumentLanguage(next);
     window.dispatchEvent(new CustomEvent("nashmi-language-change", { detail: next }));
   }, []);
 
+  const effectiveLanguage = ready ? language : defaultLanguage;
+
   const value = useMemo<LanguageContextValue>(
     () => ({
-      language,
-      dir: language === "ar" ? "rtl" : "ltr",
+      language: effectiveLanguage,
+      dir: effectiveLanguage === "ar" ? "rtl" : "ltr",
       setLanguage,
-      t: (key) => translate(language, key)
+      t: (key) => translate(effectiveLanguage, key)
     }),
-    [language, setLanguage]
+    [effectiveLanguage, setLanguage]
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

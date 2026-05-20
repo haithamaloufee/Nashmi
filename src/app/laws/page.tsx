@@ -1,12 +1,13 @@
 import { Suspense } from "react";
-import { Search } from "lucide-react";
 import LawCard from "@/components/laws/LawCard";
 import LawManagementControls from "@/components/laws/LawManagementControls";
+import LawsFilterForm from "@/components/laws/LawsFilterForm";
 import Alert from "@/components/ui/Alert";
 import { getCurrentUser } from "@/lib/auth";
 import { canManageLaws } from "@/lib/permissions";
 import { getPublicLaws } from "@/lib/serverData";
 import { SkeletonLine } from "@/components/ui/Skeletons";
+import { I18nText } from "@/components/i18n/LanguageProvider";
 
 export const dynamic = "force-dynamic";
 
@@ -36,14 +37,7 @@ async function LawsContent({ search, category }: { search?: string; category?: s
   const data = await getPublicLaws(search, category);
   return (
     <>
-      <form className="my-6 flex flex-wrap gap-2">
-        <input name="search" defaultValue={search || ""} className="w-72 rounded border-line focus:border-civic focus:ring-civic" placeholder="ابحث عن قانون أو مفهوم" />
-        <select name="category" defaultValue={category || ""} className="rounded border-line focus:border-civic focus:ring-civic">
-          <option value="">كل التصنيفات</option>
-          {data.categories.map((item) => <option key={item} value={item}>{item}</option>)}
-        </select>
-        <button className="rounded bg-civic px-4 py-2 text-white hover:bg-civic/90"><Search className="h-4 w-4" /></button>
-      </form>
+      <LawsFilterForm search={search} category={category} categories={data.categories} />
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {(data.laws as any[]).map((law) => <LawCard key={law._id} law={law} />)}
       </section>
@@ -59,13 +53,13 @@ export default async function LawsPage({ searchParams }: { searchParams: Promise
     <main className="container-page py-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
-          <h1 className="text-3xl font-black">افهم قانونك</h1>
-          <p className="mt-2 text-ink/70">شرح مبسط للقوانين والمفاهيم الانتخابية من مصادر منشورة.</p>
+          <h1 className="text-3xl font-black"><I18nText id="laws.title" /></h1>
+          <p className="mt-2 text-ink/70"><I18nText id="laws.subtitle" /></p>
         </div>
         {canManage ? <LawManagementControls mode="create" /> : null}
       </div>
       <div className="mt-5">
-        <Alert>شرح القوانين للتوعية العامة وليس استشارة قانونية رسمية.</Alert>
+        <Alert><I18nText id="laws.notice" /></Alert>
       </div>
       <Suspense fallback={<LawsContentSkeleton />}>
         <LawsContent search={params.search} category={params.category} />

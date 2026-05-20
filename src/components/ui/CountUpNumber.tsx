@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { formatNumber } from "@/lib/localization";
 
 type CountUpNumberProps = {
   value: number;
@@ -11,14 +13,8 @@ type CountUpNumberProps = {
   className?: string;
 };
 
-function formatValue(value: number, decimals: number, prefix: string, suffix: string) {
-  return `${prefix}${new Intl.NumberFormat("ar-JO", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  }).format(value)}${suffix}`;
-}
-
 export default function CountUpNumber({ value, duration = 1200, decimals = 0, prefix = "", suffix = "", className }: CountUpNumberProps) {
+  const { language } = useTranslation();
   const [displayValue, setDisplayValue] = useState(0);
   const [hasRun, setHasRun] = useState(false);
   const ref = useRef<HTMLSpanElement | null>(null);
@@ -68,7 +64,7 @@ export default function CountUpNumber({ value, duration = 1200, decimals = 0, pr
 
   return (
     <span ref={ref} className={`inline-block min-w-[3ch] tabular-nums ${className || ""}`}>
-      {formatValue(displayValue, decimals, prefix, suffix)}
+      {`${prefix}${formatNumber(displayValue, language, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`}
     </span>
   );
 }

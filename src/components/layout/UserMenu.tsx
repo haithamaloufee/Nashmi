@@ -38,7 +38,7 @@ export default function UserMenu({ user }: { user: SafeUser }) {
         <div className="absolute left-0 mt-2 w-48 rounded border border-line bg-white p-2 text-sm shadow-lg">
           <Link href="/account" className="flex items-center gap-2 rounded px-3 py-2 hover:bg-civic/10" onClick={() => setOpen(false)}>
             <UserRound className="h-4 w-4" />
-            حسابي
+            {t("nav.account")}
           </Link>
           <Link href={dashboardHref(user.role)} className="flex items-center gap-2 rounded px-3 py-2 hover:bg-civic/10" onClick={() => setOpen(false)}>
             <LayoutDashboard className="h-4 w-4" />
@@ -46,7 +46,7 @@ export default function UserMenu({ user }: { user: SafeUser }) {
           </Link>
           <button type="button" onClick={logout} className="flex w-full items-center gap-2 rounded px-3 py-2 text-right hover:bg-civic/10">
             <LogOut className="h-4 w-4" />
-            تسجيل الخروج
+            {t("nav.logout")}
           </button>
         </div>
       ) : null}

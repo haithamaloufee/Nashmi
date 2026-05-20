@@ -43,10 +43,10 @@ export default function PlatformIndicatorsSection() {
   }, []);
 
   const cards = [
-    { key: "citizensCount", label: t("indicators.citizens"), icon: Users, tone: "text-civic" },
-    { key: "partiesCount", label: t("indicators.parties"), icon: Building2, tone: "text-red-600 dark:text-red-300" },
-    { key: "openPollsCount", label: t("indicators.openPolls"), icon: CheckCircle2, tone: "text-emerald-600 dark:text-emerald-300" },
-    { key: "closedPollsCount", label: t("indicators.closedPolls"), icon: Clock, tone: "text-slate-600 dark:text-slate-300" }
+    { key: "citizensCount", label: t("indicators.citizens"), icon: Users },
+    { key: "partiesCount", label: t("indicators.parties"), icon: Building2 },
+    { key: "openPollsCount", label: t("indicators.openPolls"), icon: CheckCircle2 },
+    { key: "closedPollsCount", label: t("indicators.closedPolls"), icon: Clock }
   ] as const;
 
   return (
@@ -71,15 +71,15 @@ export default function PlatformIndicatorsSection() {
               const Icon = card.icon;
               const value = data?.[card.key] ?? 0;
               return (
-                <article key={card.key} className="rounded border border-white/18 bg-white p-5 text-ink shadow-soft transition hover:-translate-y-0.5 hover:border-emerald-200 dark:bg-slate-950/90 dark:text-white">
+                <article key={card.key} className="rounded border border-emerald-200/20 bg-white/[0.10] p-5 text-white shadow-soft backdrop-blur transition hover:-translate-y-0.5 hover:border-emerald-200/55 hover:bg-white/[0.14] dark:bg-slate-950/45 dark:text-white">
                   <div className="mb-5 flex items-center justify-between gap-3">
-                    <Icon className={`h-8 w-8 ${card.tone}`} />
+                    <Icon className="h-8 w-8 text-emerald-200" />
                     {loading ? <span className="h-3 w-16 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" /> : null}
                   </div>
-                  <div className="text-4xl font-black leading-none text-red-600 dark:text-red-300">
+                  <div className="text-4xl font-black leading-none text-white drop-shadow-sm">
                     {loading ? <span className="block h-10 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /> : <CountUpNumber value={value} duration={900} />}
                   </div>
-                  <p className="mt-3 text-base font-black text-ink dark:text-slate-100">{card.label}</p>
+                  <p className="mt-3 text-base font-black text-white/82">{card.label}</p>
                 </article>
               );
             })}

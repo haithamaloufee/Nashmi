@@ -10,6 +10,9 @@ import SafeImage from "@/components/ui/SafeImage";
 import ShareMenu from "@/components/ui/ShareMenu";
 import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 import OwnerContentMenu from "@/components/content/OwnerContentMenu";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+import HashtagText from "@/components/hashtags/HashtagText";
+import { formatNumber, formatRelativeTime, normalizeHashtag } from "@/lib/localization";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
@@ -59,26 +62,13 @@ type Post = {
   createdAt?: string;
 };
 
-function relativeTime(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
-  const abs = Math.abs(diffSeconds);
-  const formatter = new Intl.RelativeTimeFormat("ar-JO", { numeric: "auto" });
-  if (abs < 60) return formatter.format(diffSeconds, "second");
-  if (abs < 3600) return formatter.format(Math.round(diffSeconds / 60), "minute");
-  if (abs < 86400) return formatter.format(Math.round(diffSeconds / 3600), "hour");
-  if (abs < 604800) return formatter.format(Math.round(diffSeconds / 86400), "day");
-  return new Intl.DateTimeFormat("ar-JO", { dateStyle: "medium" }).format(date);
-}
-
-function authorInfo(post: Post) {
+function authorInfo(post: Post, t: ReturnType<typeof useTranslation>["t"]) {
   if (post.publisherSnapshot?.name) {
     return {
       name: post.publisherSnapshot.name,
       image: post.publisherSnapshot.imageUrl || null,
-      badge: post.publisherSnapshot.badge || (post.authorType === "iec" ? "هيئة" : post.authorType === "party" ? "حزب" : "إدارة"),
-      badgeTooltip: post.authorType === "iec" ? "الهيئة المستقلة للانتخاب جهة رسمية مستقلة وليست حزبًا سياسيًا." : "",
+      badge: post.publisherSnapshot.badge || (post.authorType === "iec" ? t("content.authority") : post.authorType === "party" ? t("content.officialAccount") : t("content.admin")),
+      badgeTooltip: post.authorType === "iec" ? t("content.officialAccountTooltip") : "",
       href: post.publisherSnapshot.href || null,
       fallback: post.publisherSnapshot.name.slice(0, 1)
     };
@@ -89,8 +79,8 @@ function authorInfo(post: Post) {
     return {
       name: party.name,
       image: party.logoUrl || user?.avatarUrl || user?.image || null,
-      badge: party.isVerified ? "حزب موثق" : "حزب",
-      badgeTooltip: party.isVerified ? "حزب موثق على منصة نشمي اعتمادًا على البيانات الرسمية المتاحة." : "",
+      badge: party.isVerified ? t("party.verifiedParty") : t("content.officialAccount"),
+      badgeTooltip: party.isVerified ? t("party.verifiedTooltip") : "",
       href: party.slug ? `/parties/${party.slug}` : null,
       fallback: party.name.slice(0, 1)
     };
@@ -99,16 +89,16 @@ function authorInfo(post: Post) {
     return {
       name: post.authorityAuthor?.name || user?.name || "الهيئة المستقلة للانتخاب",
       image: post.authorityAuthor?.logoUrl || user?.avatarUrl || user?.image || "/related/iec-logo.png",
-      badge: "هيئة",
-      badgeTooltip: "الهيئة المستقلة للانتخاب جهة رسمية مستقلة وليست حزبًا سياسيًا.",
+      badge: t("content.authority"),
+      badgeTooltip: t("content.officialAccountTooltip"),
       href: "/iec",
       fallback: "هـ"
     };
   }
   return {
-    name: user?.name || "مستخدم",
+    name: user?.name || t("content.user"),
     image: user?.avatarUrl || user?.image || null,
-    badge: post.authorType === "admin" ? "إدارة" : "مستخدم",
+    badge: post.authorType === "admin" ? t("content.admin") : t("content.user"),
     badgeTooltip: "",
     href: null,
     fallback: (user?.name || "م").slice(0, 1)
@@ -120,17 +110,22 @@ function mediaItems(post: Post) {
 }
 
 export default function PostCard({ post, compact = false, showModerationActions = false }: { post: Post; compact?: boolean; showModerationActions?: boolean }) {
+  const { language, t } = useTranslation();
   const [currentPost, setCurrentPost] = useState(post);
   const [deleted, setDeleted] = useState(false);
   const [expandedText, setExpandedText] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
+  const [timeReady, setTimeReady] = useState(false);
+  useEffect(() => {
+    setTimeReady(true);
+  }, []);
   useEffect(() => {
     setCurrentPost(post);
     setDeleted(false);
     setCommentsCount(post.commentsCount || 0);
   }, [post]);
-  const author = useMemo(() => authorInfo(currentPost), [currentPost]);
+  const author = useMemo(() => authorInfo(currentPost, t), [currentPost, t]);
   const media = useMemo(() => mediaItems(currentPost), [currentPost]);
   const isLong = currentPost.content.length > 360;
   const text = isLong && !expandedText ? `${currentPost.content.slice(0, 360)}...` : currentPost.content;
@@ -175,7 +170,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
                 <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{author.badge}</span>
               )}
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{relativeTime(currentPost.publishedAt || currentPost.createdAt)}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{timeReady ? formatRelativeTime(currentPost.publishedAt || currentPost.createdAt, language) : ""}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -186,19 +181,19 @@ export default function PostCard({ post, compact = false, showModerationActions 
       </div>
 
       {currentPost.title ? <h4 className="mt-4 text-lg font-bold leading-8 text-slate-950 dark:text-white">{currentPost.title}</h4> : null}
-      <p className="mt-3 whitespace-pre-line break-words leading-8 text-slate-800 dark:text-slate-200">{text}</p>
+      <p className="mt-3 whitespace-pre-line break-words leading-8 text-slate-800 dark:text-slate-200"><HashtagText text={text} /></p>
       {isLong ? (
         <button type="button" onClick={() => setExpandedText((value) => !value)} className="mt-1 text-sm font-semibold text-civic hover:underline">
-          {expandedText ? "عرض أقل" : "عرض المزيد"}
+          {expandedText ? t("common.showLess") : t("common.showMore")}
         </button>
       ) : null}
 
       {currentPost.tags?.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {currentPost.tags.map((tag) => (
-            <span key={tag} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+            <Link key={tag} href={`/hashtags/${encodeURIComponent(normalizeHashtag(tag))}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-civic hover:underline dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-200">
               #{tag.replace(/^#/, "")}
-            </span>
+            </Link>
           ))}
         </div>
       ) : null}
@@ -214,9 +209,9 @@ export default function PostCard({ post, compact = false, showModerationActions 
               <SafeImage
                 key={item._id || item.url}
                 src={item.url}
-                alt={currentPost.title || "وسائط المنشور"}
+                alt={currentPost.title || t("content.post")}
                 className="aspect-video max-h-[520px] w-full bg-white object-contain p-3 dark:bg-slate-950"
-                fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">تعذر عرض الصورة</div>}
+                fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">{t("common.error")}</div>}
                 localPrefixes={["/uploads/", "/images/", "/related/"]}
               />
             )
@@ -225,7 +220,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
       ) : null}
 
       <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-        <span>{commentsCount} تعليق</span>
+        <span>{formatNumber(commentsCount, language)} {t("comments.label")}</span>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -238,7 +233,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
             aria-expanded={commentsExpanded}
           >
             <MessageCircle className="h-4 w-4" />
-            تعليق
+            {t("comments.label")}
           </button>
         ) : null}
         <ShareMenu url={shareUrl} title={currentPost.title || author.name} text={currentPost.content.slice(0, 140)} />

@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { BookOpen, PlayCircle } from "lucide-react";
 import SafeImage from "@/components/ui/SafeImage";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { formatDate } from "@/lib/localization";
 
 type Law = {
   title: string;
@@ -13,11 +17,12 @@ type Law = {
 };
 
 export default function LawCard({ law }: { law: Law }) {
+  const { language, t } = useTranslation();
   return (
     <article className="card overflow-hidden">
       {law.thumbnailUrl ? (
         <div className="relative border-b border-line bg-slate-100">
-          <SafeImage src={law.thumbnailUrl} alt={law.title} className="aspect-video w-full object-cover" fallback={<div className="grid aspect-video place-items-center text-sm text-ink/60">تعذر عرض الصورة</div>} localPrefixes={["/uploads/", "/images/", "/related/"]} />
+          <SafeImage src={law.thumbnailUrl} alt={law.title} className="aspect-video w-full object-cover" fallback={<div className="grid aspect-video place-items-center text-sm text-ink/60">{t("common.error")}</div>} localPrefixes={["/uploads/", "/images/", "/related/"]} />
           {law.youtubeVideoId ? <PlayCircle className="absolute left-3 top-3 h-8 w-8 rounded-full bg-white/90 p-1 text-red-600 shadow" /> : null}
         </div>
       ) : null}
@@ -29,9 +34,9 @@ export default function LawCard({ law }: { law: Law }) {
         <h3 className="text-lg font-bold">{law.title}</h3>
         <p className="mt-3 line-clamp-3 leading-7 text-ink/70">{law.shortDescription}</p>
         <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="text-xs text-ink/55">{law.lastVerifiedAt ? `آخر تحقق: ${new Date(law.lastVerifiedAt).toLocaleDateString("ar-JO")}` : "بانتظار التحقق الدوري"}</span>
+          <span className="text-xs text-ink/55">{law.lastVerifiedAt ? `${t("common.lastVerified")} ${formatDate(law.lastVerifiedAt, language)}` : t("common.pendingVerification")}</span>
           <Link href={`/laws/${law.slug}`} className="rounded bg-civic px-4 py-2 text-sm font-semibold text-white">
-            قراءة
+            {t("common.read")}
           </Link>
         </div>
       </div>

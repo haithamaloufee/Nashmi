@@ -13,6 +13,8 @@ import ShareMenu from "@/components/ui/ShareMenu";
 import SafeImage from "@/components/ui/SafeImage";
 import OwnerContentMenu from "@/components/content/OwnerContentMenu";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
+import HashtagText from "@/components/hashtags/HashtagText";
+import { formatNumber, formatRelativeTime } from "@/lib/localization";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
@@ -41,29 +43,17 @@ type Poll = {
   createdAt?: string;
 };
 
-function relativeTime(value: string | undefined, language: "ar" | "en") {
-  if (!value) return "";
-  const date = new Date(value);
-  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
-  const abs = Math.abs(diffSeconds);
-  const formatter = new Intl.RelativeTimeFormat(language === "ar" ? "ar-JO" : "en-US", { numeric: "auto" });
-  if (abs < 60) return formatter.format(diffSeconds, "second");
-  if (abs < 3600) return formatter.format(Math.round(diffSeconds / 60), "minute");
-  if (abs < 86400) return formatter.format(Math.round(diffSeconds / 3600), "hour");
-  return new Intl.DateTimeFormat(language === "ar" ? "ar-JO" : "en-US", { dateStyle: "medium" }).format(date);
-}
-
 function mediaItems(poll: Poll) {
   return (poll.mediaIds || []).filter((media): media is { _id?: string; url: string; mimeType?: string; type?: "image" | "video" | "document"; status?: string } => typeof media === "object" && media.status !== "deleted" && Boolean(media.url));
 }
 
-function authorInfo(poll: Poll) {
+function authorInfo(poll: Poll, t: ReturnType<typeof useTranslation>["t"]) {
   if (poll.publisherSnapshot?.name) {
     return {
       name: poll.publisherSnapshot.name,
       image: poll.publisherSnapshot.imageUrl || null,
       href: poll.publisherSnapshot.href || null,
-      type: poll.publisherSnapshot.badge || (poll.authorType === "iec" ? "هيئة" : "حزب"),
+      type: poll.publisherSnapshot.badge || (poll.authorType === "iec" ? t("content.authority") : t("content.officialAccount")),
       fallback: poll.publisherSnapshot.name.slice(0, 1)
     };
   }
@@ -74,7 +64,7 @@ function authorInfo(poll: Poll) {
       name: party.name,
       image: party.logoUrl || user?.avatarUrl || user?.image || null,
       href: party.slug ? `/parties/${party.slug}` : null,
-      type: party.isVerified ? "حزب موثق" : "حزب",
+      type: party.isVerified ? t("party.verifiedParty") : t("content.officialAccount"),
       fallback: party.name.slice(0, 1)
     };
   }
@@ -83,11 +73,11 @@ function authorInfo(poll: Poll) {
       name: poll.authorityAuthor?.name || user?.name || "الهيئة المستقلة للانتخاب",
       image: poll.authorityAuthor?.logoUrl || user?.avatarUrl || user?.image || "/related/iec-logo.png",
       href: "/iec",
-      type: "هيئة",
+      type: t("content.authority"),
       fallback: "هـ"
     };
   }
-  return { name: user?.name || "مستخدم", image: user?.avatarUrl || user?.image || null, href: null, type: "مستخدم", fallback: "م" };
+  return { name: user?.name || t("content.user"), image: user?.avatarUrl || user?.image || null, href: null, type: t("content.user"), fallback: "م" };
 }
 
 export default function PollCard({ poll, compact = false, showModerationActions = false }: { poll: Poll; compact?: boolean; showModerationActions?: boolean }) {
@@ -96,12 +86,16 @@ export default function PollCard({ poll, compact = false, showModerationActions 
   const [deleted, setDeleted] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [commentsCount, setCommentsCount] = useState(poll.commentsCount || 0);
+  const [timeReady, setTimeReady] = useState(false);
+  useEffect(() => {
+    setTimeReady(true);
+  }, []);
   useEffect(() => {
     setCurrentPoll(poll);
     setDeleted(false);
     setCommentsCount(poll.commentsCount || 0);
   }, [poll]);
-  const author = useMemo(() => authorInfo(currentPoll), [currentPoll]);
+  const author = useMemo(() => authorInfo(currentPoll, t), [currentPoll, t]);
   const media = useMemo(() => mediaItems(currentPoll), [currentPoll]);
   const markEnded = useCallback(() => {
     setCurrentPoll((current) => (current.status === "closed" ? current : { ...current, status: "closed" }));
@@ -140,7 +134,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
               <span className="rounded-full bg-clay/10 px-2.5 py-1 text-xs font-bold text-clay dark:bg-amber-200/10 dark:text-amber-200">{t("poll.type")}</span>
               <PollStatusBadge poll={currentPoll} />
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{relativeTime(currentPoll.publishedAt || currentPoll.createdAt, language)}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{timeReady ? formatRelativeTime(currentPoll.publishedAt || currentPoll.createdAt, language) : ""}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -150,7 +144,8 @@ export default function PollCard({ poll, compact = false, showModerationActions 
         </div>
       </div>
 
-      <h3 className="text-lg font-bold leading-8 text-slate-950 dark:text-white">{currentPoll.question}</h3>
+      <h3 className="text-lg font-bold leading-8 text-slate-950 dark:text-white"><HashtagText text={currentPoll.question} /></h3>
+      {currentPoll.description ? <p className="mt-2 whitespace-pre-line break-words leading-7 text-slate-700 dark:text-slate-300"><HashtagText text={currentPoll.description} /></p> : null}
       <PollCountdown poll={currentPoll} onEnded={markEnded} />
       {media.length ? (
         <div className={`mt-4 grid gap-2 overflow-hidden rounded border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900 ${media.length > 1 ? "sm:grid-cols-2" : ""}`}>
@@ -163,9 +158,9 @@ export default function PollCard({ poll, compact = false, showModerationActions 
               <SafeImage
                 key={item._id || item.url}
                 src={item.url}
-                alt={currentPoll.question || "وسائط التصويت"}
+                alt={currentPoll.question || t("content.poll")}
                 className="aspect-video max-h-[520px] w-full bg-white object-contain p-3 dark:bg-slate-950"
-                fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">تعذر عرض الصورة</div>}
+                fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">{t("common.error")}</div>}
                 localPrefixes={["/uploads/", "/images/", "/related/"]}
               />
             )
@@ -174,7 +169,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
       ) : null}
       <PollVote poll={currentPoll} />
       <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-        <span>{commentsCount} {t("poll.comments")}</span>
+        <span>{formatNumber(commentsCount, language)} {t("poll.comments")}</span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <ReactionButtons targetType="polls" targetId={currentPoll._id} likesCount={currentPoll.likesCount} dislikesCount={currentPoll.dislikesCount} />

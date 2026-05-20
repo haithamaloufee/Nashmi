@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ChevronDown, ExternalLink, Globe2 } from "lucide-react";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 
 type RelatedSite = {
   title: string;
@@ -87,6 +88,7 @@ const optionalSites: RelatedSite[] = [
 ];
 
 function SiteCard({ site }: { site: RelatedSite }) {
+  const { t } = useTranslation();
   return (
     <a
       href={site.href}
@@ -110,7 +112,7 @@ function SiteCard({ site }: { site: RelatedSite }) {
         <span className="block min-w-0">
           <span className="block font-black text-ink">{site.title}</span>
           <span className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-civic">
-            زيارة الموقع
+            {t("home.related.visit")}
             <ExternalLink className="h-4 w-4" />
           </span>
         </span>
@@ -121,6 +123,7 @@ function SiteCard({ site }: { site: RelatedSite }) {
 }
 
 export default function RelatedSitesSection() {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const displayedSites = expanded ? [...primarySites, ...optionalSites] : primarySites;
 
@@ -129,9 +132,9 @@ export default function RelatedSitesSection() {
       <div className="container-page">
         <div className="reveal-on-scroll mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end" data-reveal>
           <div className="max-w-2xl">
-            <p className="mb-2 text-sm font-bold text-civic">روابط رسمية ومساندة</p>
-            <h2 id="related-title" className="text-3xl font-black">مواقع ذات صلة</h2>
-            <p className="mt-3 leading-8 text-ink/70">روابط خارجية تفتح في تبويب جديد، وتساعد المستخدم على الوصول للمصادر الرسمية والخدمات العامة ذات العلاقة.</p>
+            <p className="mb-2 text-sm font-bold text-civic">{t("home.related.eyebrow")}</p>
+            <h2 id="related-title" className="text-3xl font-black">{t("home.related.title")}</h2>
+            <p className="mt-3 leading-8 text-ink/70">{t("home.related.body")}</p>
           </div>
           <button
             type="button"
@@ -140,7 +143,7 @@ export default function RelatedSitesSection() {
             aria-expanded={expanded}
             aria-controls="related-extra-sites"
           >
-            {expanded ? "عرض أقل" : "عرض المزيد"}
+            {expanded ? t("common.showLess") : t("common.showMore")}
             <ChevronDown className={`h-4 w-4 transition ${expanded ? "rotate-180" : ""}`} />
           </button>
         </div>
