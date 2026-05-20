@@ -55,10 +55,14 @@ const suggestedQuestions = {
   ]
 };
 
-function fallbackError(json: unknown, fallback: string) {
+function fallbackError(json: unknown, fallback: string, tFunc: (k: any) => string) {
   if (typeof json === "object" && json !== null && "error" in json) {
-    const error = (json as { error?: { message?: string } }).error;
-    if (error?.message) return error.message;
+    const error = (json as { error?: { message?: string; code?: string; messageKey?: string } }).error || {};
+    if (error.messageKey) return tFunc(error.messageKey);
+    if (error.code === "MESSAGE_TOO_LONG") return tFunc("chat.errors.messageTooLong");
+    if (error.code === "PAYLOAD_TOO_LARGE") return tFunc("chat.errors.payloadTooLarge");
+    // Rate limit responses include a messageKey from assistantUsage, prefer that
+    if (error.code === "RATE_LIMITED" && (error as any).messageKey) return tFunc((error as any).messageKey);
   }
   return fallback;
 }
@@ -126,7 +130,7 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
         return;
       }
       if (!response.ok || !json.ok) {
-        setError(fallbackError(json, t("chat.error")));
+        setError(fallbackError(json, t("chat.error"), t));
         return;
       }
       const nextSessions = json.data.sessions || [];
@@ -197,7 +201,7 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
       return;
     }
     if (!response.ok || !json.ok) {
-      setError(fallbackError(json, t("chat.error")));
+      setError(fallbackError(json, t("chat.error"), t));
       return;
     }
     setMessages(json.data.messages?.length ? json.data.messages : [introMessage]);
@@ -222,7 +226,7 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
       return;
     }
     if (!response.ok || !json.ok) {
-      setError(fallbackError(json, t("chat.error")));
+      setError(fallbackError(json, t("chat.error"), t));
       return;
     }
     const session = json.data.session as Session;
@@ -247,7 +251,7 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
       return;
     }
     if (!response.ok || !json.ok) {
-      setError(fallbackError(json, t("chat.error")));
+      setError(fallbackError(json, t("chat.error"), t));
       return;
     }
 
@@ -272,7 +276,11 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
     setError(null);
     setShowLoginCta(false);
     setMessage("");
-    setMessages((items) => [...items, { role: "user", content: clean }]);
+    setMessages((items) => {
+      const last = items[items.length - 1];
+      if (last?.role === "user" && last.content === clean) return items;
+      return [...items, { role: "user", content: clean }];
+    });
     setLoading(true);
     window.requestAnimationFrame(() => {
       latestUserRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -302,14 +310,15 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
     }
 
     if (!response.ok || !json.ok) {
-      const friendlyError = fallbackError(json, t("chat.error"));
+      const friendlyError = fallbackError(json, t("chat.error"), t);
       const usageData = json.error?.usage as Usage | undefined;
       if (usageData) setUsage(usageData);
       setShowLoginCta(json.error?.messageKey === "chat.limit.guestReached");
       setError(friendlyError);
       setLastFailedPrompt(clean);
       pendingAssistantFocusRef.current = true;
-      setMessages((items) => [...items, { role: "assistant", content: friendlyError }]);
+      // Do NOT append backend/internal error text as a chat bubble. Errors
+      // are shown via the error banner above.
       return;
     }
 

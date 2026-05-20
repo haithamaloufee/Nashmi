@@ -277,7 +277,9 @@ export const moderationSchema = z.object({
 
 const chatHistoryItemSchema = z.object({
   role: z.enum(["user", "assistant"]),
-  content: z.string().trim().min(1).max(1200)
+  // Allow longer stored/displayed assistant messages. History items will be
+  // truncated server-side before sending to the AI provider (see chatSession).
+  content: z.string().trim().min(1).max(10000)
 });
 
 export const chatSchema = z.object({

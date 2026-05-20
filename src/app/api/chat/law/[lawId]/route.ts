@@ -15,7 +15,9 @@ const schema = z.object({
   message: z.string().trim().max(1500).optional(),
   sessionId: objectIdSchema.optional(),
   language: z.enum(["ar", "en"]).optional(),
-  history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(1200) })).max(8).optional()
+  // Allow long stored assistant messages here too; server will sanitize/truncate
+  // history items before forwarding to the AI provider.
+  history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(10000) })).max(8).optional()
 });
 
 export async function POST(request: Request, context: Context) {

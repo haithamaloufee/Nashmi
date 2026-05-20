@@ -27,10 +27,13 @@ const MIN_PANEL_HEIGHT = 360;
 const DEFAULT_BOTTOM_OFFSET = 16;
 const MarkdownMessage = dynamic(() => import("@/components/chat/MarkdownMessage"), { ssr: false });
 
-function fallbackError(json: unknown, fallback: string) {
+function fallbackError(json: unknown, fallback: string, tFunc: (k: any) => string) {
   if (typeof json === "object" && json !== null && "error" in json) {
-    const message = (json as { error?: { message?: string } }).error?.message;
-    if (message) return message;
+    const error = (json as { error?: { message?: string; code?: string; messageKey?: string } }).error || {};
+    if (error.messageKey) return tFunc(error.messageKey);
+    if (error.code === "MESSAGE_TOO_LONG") return tFunc("chat.errors.messageTooLong");
+    if (error.code === "PAYLOAD_TOO_LARGE") return tFunc("chat.errors.payloadTooLarge");
+    if (error.code === "RATE_LIMITED" && (error as any).messageKey) return tFunc((error as any).messageKey);
   }
   return fallback;
 }
@@ -225,8 +228,8 @@ export default function FloatingAssistant() {
         })
       });
       const json = await response.json().catch(() => ({}));
-      if (!response.ok || !json.ok) {
-        const friendly = fallbackError(json, t("chat.error"));
+        if (!response.ok || !json.ok) {
+        const friendly = fallbackError(json, t("chat.error"), t);
         const usageData = json.error?.usage as Usage | undefined;
         if (usageData) setUsage(usageData);
         setShowLoginCta(json.error?.messageKey === "chat.limit.guestReached");

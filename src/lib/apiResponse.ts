@@ -10,6 +10,8 @@ export type ApiErrorCode =
   | "CONFLICT"
   | "RATE_LIMITED"
   | "VALIDATION_ERROR"
+  | "MESSAGE_TOO_LONG"
+  | "PAYLOAD_TOO_LARGE"
   | "SERVER_ERROR";
 
 const messages: Record<ApiErrorCode, string> = {
@@ -20,6 +22,8 @@ const messages: Record<ApiErrorCode, string> = {
   CONFLICT: "يوجد تعارض في البيانات",
   RATE_LIMITED: "تم تجاوز الحد المسموح، حاول لاحقا",
   VALIDATION_ERROR: "البيانات المدخلة غير صحيحة",
+  MESSAGE_TOO_LONG: "رسالتك طويلة جدًا. اختصرها قليلًا وحاول مرة أخرى.",
+  PAYLOAD_TOO_LARGE: "حجم المحادثة كبير جدًا. افتح محادثة جديدة أو اختصر رسالتك.",
   SERVER_ERROR: "حدث خطأ غير متوقع"
 };
 
@@ -48,7 +52,15 @@ function safeErrorLog(error: unknown) {
 
 export function handleApiError(error: unknown) {
   if (error instanceof ZodError) {
-    return fail("VALIDATION_ERROR", error.issues[0]?.message || messages.VALIDATION_ERROR, 422);
+    const first = error.issues[0];
+    const path = first?.path?.map(String).join('.') || '';
+    // If the validation error is on the current user `message` field, return a
+    // friendly MESSAGE_TOO_LONG code instead of exposing raw validator text.
+    if (path.includes('message')) {
+      return fail('MESSAGE_TOO_LONG', messages.MESSAGE_TOO_LONG, 400);
+    }
+    // For other schema issues treat as generic validation error without leaking details
+    return fail('VALIDATION_ERROR', messages.VALIDATION_ERROR, 422);
   }
 
   if (error instanceof Error && error.name === "DangerousKeyError") {
@@ -64,7 +76,7 @@ export function handleApiError(error: unknown) {
   if (error instanceof Error && error.message === "FORBIDDEN") return fail("FORBIDDEN", undefined, 403);
   if (error instanceof Error && error.message === "NOT_FOUND") return fail("NOT_FOUND", undefined, 404);
   if (error instanceof Error && error.message === "RATE_LIMITED") return fail("RATE_LIMITED", undefined, 429);
-  if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") return fail("BAD_REQUEST", "Request body is too large", 413);
+  if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") return fail("PAYLOAD_TOO_LARGE", messages.PAYLOAD_TOO_LARGE, 413);
   if (error instanceof Error && error.message === "BLOB_STORAGE_NOT_CONFIGURED") {
     return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. أضف BLOB_READ_WRITE_TOKEN في بيئة النشر.", 500);
   }
