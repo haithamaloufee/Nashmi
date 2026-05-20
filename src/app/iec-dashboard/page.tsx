@@ -6,6 +6,7 @@ import StatCard from "@/components/ui/StatCard";
 
 export const dynamic = "force-dynamic";
 const links = [
+  { href: "/iec-dashboard/surveys", label: "Community Pulse" },
   { href: "/iec-dashboard", label: "الرئيسية" },
   { href: "/iec-dashboard/profile", label: "ملف الهيئة" },
   { href: "/iec-dashboard/posts", label: "منشورات الهيئة" },
@@ -18,9 +19,10 @@ export default async function IecDashboardPage() {
   const data = await getIecDashboardData();
   return (
     <DashboardNav title="لوحة الهيئة" links={links}>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="منشورات رسمية" value={(data.posts as any[]).length} />
         <StatCard label="مواد قانونية" value={(data.laws as any[]).length} />
+        <StatCard label="Community Pulse" value={((data as any).surveys || []).length} />
       </div>
     </DashboardNav>
   );

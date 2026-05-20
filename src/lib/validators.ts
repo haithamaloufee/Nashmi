@@ -4,6 +4,7 @@ import { roles } from "@/lib/permissions";
 import { normalizeYoutubeInput } from "@/lib/youtube";
 import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 import { allowedPollDurationDays, defaultPollDurationDays } from "@/lib/polls";
+import { surveyQuestionTypes, surveyResultVisibilities, surveyStatuses } from "@/lib/surveys";
 
 export const objectIdSchema = z.string().refine((value) => isValidObjectId(value), "معرف غير صالح");
 export const emailSchema = z.string().email("البريد الإلكتروني غير صالح").max(254);
@@ -204,6 +205,74 @@ export const pollUpdateSchema = pollCreateSchema.partial().extend({
 
 export const voteSchema = z.object({
   optionId: objectIdSchema
+});
+
+const surveyOptionInputSchema = z.object({
+  id: objectIdSchema.optional(),
+  label: z.string().trim().min(1).max(160),
+  value: z.string().trim().max(120).nullable().optional(),
+  order: z.coerce.number().int().min(0).default(0)
+});
+
+const surveyQuestionInputSchema = z.object({
+  id: objectIdSchema.optional(),
+  title: z.string().trim().min(3).max(300),
+  description: z.string().trim().max(800).nullable().optional(),
+  type: z.enum(surveyQuestionTypes),
+  required: z.boolean().default(true),
+  order: z.coerce.number().int().min(0).default(0),
+  options: z.array(surveyOptionInputSchema).max(12).default([])
+}).superRefine((question, context) => {
+  if ((question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE") && question.options.length < 2) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["options"], message: "Choice questions require at least two options" });
+  }
+  if ((question.type === "RATING" || question.type === "TEXT") && question.options.length > 0) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["options"], message: "This question type does not accept options" });
+  }
+});
+
+function validSurveyDateRange(input: { startsAt?: string | null; endsAt?: string | null }, context: z.RefinementCtx) {
+  if (!input.startsAt || !input.endsAt) return;
+  const startsAt = new Date(input.startsAt);
+  const endsAt = new Date(input.endsAt);
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["startsAt"], message: "Invalid survey date" });
+    return;
+  }
+  if (startsAt.getTime() >= endsAt.getTime()) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["endsAt"], message: "Survey end date must be after start date" });
+  }
+}
+
+const surveyBaseSchema = z.object({
+  title: z.string().trim().min(5).max(220),
+  slug: z.string().trim().min(2).max(100).regex(/^[\p{L}\p{N}-]+$/u).optional(),
+  description: z.string().trim().max(1500).nullable().optional(),
+  status: z.enum(surveyStatuses).default("draft"),
+  publisherType: z.enum(["party", "iec", "admin"]).optional(),
+  resultsVisibility: z.enum(surveyResultVisibilities).default("BEFORE_SUBMIT"),
+  startsAt: z.string().trim().max(80).nullable().optional(),
+  endsAt: z.string().trim().max(80).nullable().optional(),
+  partyId: objectIdSchema.optional().nullable(),
+  questions: z.array(surveyQuestionInputSchema).min(1).max(30)
+});
+
+export const surveyCreateSchema = surveyBaseSchema.superRefine(validSurveyDateRange);
+
+export const surveyUpdateSchema = surveyBaseSchema.partial().extend({
+  status: z.enum(surveyStatuses).optional()
+}).superRefine(validSurveyDateRange);
+
+export const surveyAnswerSchema = z.object({
+  questionId: objectIdSchema,
+  optionId: objectIdSchema.nullable().optional(),
+  optionIds: z.array(objectIdSchema).max(12).optional(),
+  valueText: z.string().trim().max(1000).nullable().optional(),
+  valueNumber: z.coerce.number().min(1).max(5).nullable().optional()
+});
+
+export const surveyResponseSchema = z.object({
+  answers: z.array(surveyAnswerSchema).max(60)
 });
 
 export const aboutNashmiSchema = z.object({

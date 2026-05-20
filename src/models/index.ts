@@ -6,6 +6,8 @@ export { default as PostReaction } from "./PostReaction";
 export { default as Poll } from "./Poll";
 export { default as PollVote } from "./PollVote";
 export { default as PollReaction } from "./PollReaction";
+export { default as Survey } from "./Survey";
+export { default as SurveyResponse } from "./SurveyResponse";
 export { default as Comment } from "./Comment";
 export { default as Report } from "./Report";
 export { default as ModerationAction } from "./ModerationAction";

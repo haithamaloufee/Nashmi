@@ -15,6 +15,7 @@ const links: Array<{ href: string; labelKey: TranslationKey }> = [
   { href: "/parties", labelKey: "nav.parties" },
   { href: "/iec", labelKey: "nav.iec" },
   { href: "/updates", labelKey: "nav.updates" },
+  { href: "/surveys", labelKey: "nav.surveys" },
   { href: "/laws", labelKey: "nav.laws" },
   { href: "/about-nashmi", labelKey: "nav.aboutNashmi" }
 ];

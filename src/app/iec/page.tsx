@@ -3,6 +3,7 @@ import { ArrowRight, Building2, CheckCircle2, ExternalLink, Globe, Mail, Phone, 
 import { notFound } from "next/navigation";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
+import SurveyCard from "@/components/surveys/SurveyCard";
 import { JumpToPostsButton, ProfileAccordionCard } from "@/components/profile/ProfileInteractions";
 import SafeImage from "@/components/ui/SafeImage";
 import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
@@ -30,7 +31,7 @@ export default async function IecPage() {
   const data = (await getAuthorityProfilePageData("independent-election-commission")) as any;
   if (!data?.authority) notFound();
 
-  const { authority, posts = [], polls = [] } = data;
+  const { authority, posts = [], polls = [], surveys = [] } = data;
   const contact = authority.contact || {};
   const socialLinks = authority.socialLinks || {};
   const officialLinks = authority.officialLinks || [];
@@ -179,7 +180,7 @@ export default async function IecPage() {
         </ProfileAccordionCard>
       </section>
 
-      <section id="profile-posts" className="scroll-mt-24 mt-8 grid gap-6 lg:grid-cols-2">
+      <section id="profile-posts" className="scroll-mt-24 mt-8 grid gap-6 xl:grid-cols-3">
         <div>
           <h2 className="mb-4 text-2xl font-bold"><I18nText id="iec.posts" /></h2>
           <div className="grid gap-4">
@@ -190,6 +191,12 @@ export default async function IecPage() {
           <h2 className="mb-4 text-2xl font-bold"><I18nText id="iec.polls" /></h2>
           <div className="grid gap-4">
             {polls.length > 0 ? polls.map((poll: any) => <PollCard key={poll._id} poll={poll} />) : <p className="rounded border border-line bg-white p-5 text-ink/60"><I18nText id="iec.noPolls" /></p>}
+          </div>
+        </div>
+        <div>
+          <h2 className="mb-4 text-2xl font-bold">Community Pulse</h2>
+          <div className="grid gap-4">
+            {surveys.length > 0 ? surveys.map((survey: any) => <SurveyCard key={survey._id} survey={survey} compact />) : <p className="rounded border border-line bg-white p-5 text-ink/60">لا توجد استبيانات منشورة حاليًا.</p>}
           </div>
         </div>
       </section>

@@ -6,6 +6,7 @@ import { snapshotFromPost } from "../src/lib/publisher";
 import { normalizeMediaAssets } from "../src/lib/media";
 import { hasValidUploadMagic, validateUploadFile, validateUploadMetadata } from "../src/lib/uploadValidation";
 import { postCreateSchema } from "../src/lib/validators";
+import { buildSurveyResultSummary, canRespondToSurvey, canViewSurveyResults, getSurveyLifecycleStatus, validateSurveyAnswers } from "../src/lib/surveys";
 
 function makeFile(name: string, type: string, size: number) {
   return new File([new Uint8Array(size || 1)], name, { type });
@@ -126,12 +127,62 @@ function testLogoAssetReferences() {
   assert.doesNotMatch(navbar, /nashmi logo_transparent|nashmi logo_cropped/);
 }
 
+function testSurveyUtilities() {
+  const survey = {
+    _id: "665000000000000000000001",
+    status: "published",
+    startsAt: new Date(Date.now() - 1000).toISOString(),
+    endsAt: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+    resultsVisibility: "AFTER_SUBMIT",
+    questions: [
+      {
+        _id: "665000000000000000000101",
+        title: "Question one",
+        type: "SINGLE_CHOICE" as const,
+        required: true,
+        order: 0,
+        options: [
+          { _id: "665000000000000000000201", label: "A", order: 0 },
+          { _id: "665000000000000000000202", label: "B", order: 1 }
+        ]
+      },
+      {
+        _id: "665000000000000000000102",
+        title: "Rating",
+        type: "RATING" as const,
+        required: false,
+        order: 1,
+        options: []
+      }
+    ]
+  };
+
+  assert.equal(getSurveyLifecycleStatus(survey), "open");
+  assert.equal(canRespondToSurvey(survey, { id: "u1", role: "citizen", status: "active" }, false), true);
+  assert.equal(canViewSurveyResults({ survey, viewer: null, hasResponded: false, isManager: false }), false);
+  assert.equal(canViewSurveyResults({ survey, viewer: { id: "u1", role: "citizen" }, hasResponded: true, isManager: false }), true);
+  assert.throws(() => validateSurveyAnswers(survey, []), /REQUIRED_ANSWER_MISSING/);
+  assert.deepEqual(validateSurveyAnswers(survey, [{ questionId: "665000000000000000000101", optionId: "665000000000000000000201" }]), [
+    { questionId: "665000000000000000000101", optionId: "665000000000000000000201" }
+  ]);
+
+  const summary = buildSurveyResultSummary(survey, [
+    { answers: [{ questionId: "665000000000000000000101", optionId: "665000000000000000000201" }, { questionId: "665000000000000000000102", valueNumber: 5 }] },
+    { answers: [{ questionId: "665000000000000000000101", optionId: "665000000000000000000202" }, { questionId: "665000000000000000000102", valueNumber: 3 }] }
+  ]);
+  assert.equal(summary.totalResponses, 2);
+  assert.equal(summary.questions[0].options[0].count, 1);
+  assert.equal(summary.questions[0].options[0].percentage, 50);
+  assert.equal(summary.questions[1].averageRating, 4);
+}
+
 async function main() {
   await testPartyMatching();
   await testUploadValidation();
   await testMissingBlobToken();
   await testPublisherSnapshot();
   testLogoAssetReferences();
+  testSurveyUtilities();
   testPostMediaUrlRejection();
   testDefaultPostMediaFiltering();
   console.log("Critical tests passed.");

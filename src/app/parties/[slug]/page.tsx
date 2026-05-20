@@ -3,6 +3,7 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import FollowButton from "@/components/parties/FollowButton";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
+import SurveyCard from "@/components/surveys/SurveyCard";
 import { JumpToPostsButton, ProfileAccordionCard, ProfileTopScrollReset } from "@/components/profile/ProfileInteractions";
 import ReportButton from "@/components/reports/ReportButton";
 import PartyVerificationActions from "@/components/admin/PartyVerificationActions";
@@ -42,7 +43,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
   const user = await getCurrentUser();
   const data = (await getPartyBySlug(slug, user?.id)) as any;
   if (!data) notFound();
-  const { party, posts, polls, isFollowing } = data;
+  const { party, posts, polls, surveys = [], isFollowing } = data;
 
   const websiteUrl = safeUrl(party.socialLinks?.website || party.contact?.website || party.officialRegistry?.registryUrl);
   const facebookUrl = safeUrl(party.socialLinks?.facebook);
@@ -205,7 +206,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
         </div>
       </section>
 
-      <section id="profile-posts" className="scroll-mt-24 mt-8 grid gap-6 lg:grid-cols-2">
+      <section id="profile-posts" className="scroll-mt-24 mt-8 grid gap-6 xl:grid-cols-3">
         <div>
           <h2 className="mb-4 text-2xl font-bold">منشورات الحزب</h2>
           <div className="grid gap-4">{posts.map((post: any) => <PostCard key={post._id} post={post} />)}</div>
@@ -213,6 +214,12 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
         <div>
           <h2 className="mb-4 text-2xl font-bold">تصويتات الحزب</h2>
           <div className="grid gap-4">{polls.map((poll: any) => <PollCard key={poll._id} poll={poll} />)}</div>
+        </div>
+        <div>
+          <h2 className="mb-4 text-2xl font-bold">Community Pulse</h2>
+          <div className="grid gap-4">
+            {surveys.length > 0 ? surveys.map((survey: any) => <SurveyCard key={survey._id} survey={survey} compact />) : <p className="rounded border border-line bg-white p-5 text-ink/60">لا توجد استبيانات منشورة حاليًا.</p>}
+          </div>
         </div>
       </section>
     </main>

@@ -7,6 +7,7 @@ import { DashboardNav } from "@/components/dashboard/DashboardNav";
 export const dynamic = "force-dynamic";
 
 const links = [
+  { href: "/admin/surveys", label: "Community Pulse" },
   { href: "/admin", label: "الرئيسية" },
   { href: "/admin/users", label: "المستخدمون" },
   { href: "/admin/parties", label: "الأحزاب" },
@@ -39,6 +40,7 @@ export default async function AdminPage() {
 
   const stats = await getAdminStats();
   const cards = [
+    { label: "Community Pulse", value: stats.surveys, href: "/admin/surveys", hint: "إدارة الاستبيانات متعددة الأسئلة ونتائجها" },
     { label: "المستخدمون", value: stats.users, href: "/admin/users", hint: "إدارة الحسابات والأدوار والحالة" },
     { label: "المواطنون", value: stats.citizens, href: "/admin/users?role=citizen", hint: "مراجعة حسابات المواطنين" },
     { label: "حسابات الأحزاب", value: stats.partyAccounts, href: "/admin/users?role=party", hint: "الحسابات الحزبية النشطة" },
