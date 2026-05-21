@@ -3,6 +3,7 @@ import { ArrowLeft, ClipboardList } from "lucide-react";
 import SurveyDateMeta from "@/components/surveys/SurveyDateMeta";
 import SurveyStatusBadge from "@/components/surveys/SurveyStatusBadge";
 import SafeImage from "@/components/ui/SafeImage";
+import { getSurveyHref } from "@/lib/surveys";
 
 type Survey = {
   _id: string;
@@ -19,7 +20,7 @@ type Survey = {
 
 export default function SurveyCard({ survey, compact = false }: { survey: Survey; compact?: boolean }) {
   const publisher = survey.publisherSnapshot;
-  const href = `/surveys/${survey.slug || survey._id}`;
+  const href = getSurveyHref(survey);
   return (
     <article className="card card-hover bg-white p-5 dark:bg-slate-950">
       <div className="mb-4 flex items-start justify-between gap-3">
@@ -48,10 +49,17 @@ export default function SurveyCard({ survey, compact = false }: { survey: Survey
       <div className="mt-4">
         <SurveyDateMeta startsAt={survey.startsAt} endsAt={survey.endsAt} totalResponses={survey.totalResponses} />
       </div>
-      <Link href={href} className="mt-4 inline-flex items-center gap-2 rounded bg-civic px-4 py-2 text-sm font-bold text-white hover:bg-civic/90">
-        عرض الاستبيان
-        <ArrowLeft className="h-4 w-4" />
-      </Link>
+      {href ? (
+        <Link href={href} className="mt-4 inline-flex items-center gap-2 rounded bg-civic px-4 py-2 text-sm font-bold text-white hover:bg-civic/90">
+          عرض الاستبيان
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      ) : (
+        <span className="mt-4 inline-flex cursor-not-allowed items-center gap-2 rounded bg-slate-300 px-4 py-2 text-sm font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          عرض الاستبيان
+          <ArrowLeft className="h-4 w-4" />
+        </span>
+      )}
     </article>
   );
 }

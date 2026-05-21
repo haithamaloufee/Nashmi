@@ -8,6 +8,7 @@ import SafeImage from "@/components/ui/SafeImage";
 import ShareMenu from "@/components/ui/ShareMenu";
 import { getCurrentUser } from "@/lib/auth";
 import { getSurveyBySlug } from "@/lib/serverData";
+import { getSurveyHref } from "@/lib/surveys";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function SurveyDetailsPage({ params }: { params: Promise<{ 
   const survey = (await getSurveyBySlug(slug, user)) as any;
   if (!survey) notFound();
   const publisher = survey.publisherSnapshot || {};
+  const surveyHref = getSurveyHref(survey) || `/surveys/${encodeURIComponent(slug)}`;
 
   return (
     <main className="container-page py-8">
@@ -25,8 +27,8 @@ export default async function SurveyDetailsPage({ params }: { params: Promise<{ 
         العودة إلى Community Pulse
       </Link>
 
-      <section className="card overflow-hidden bg-white dark:bg-slate-950">
-        <div className="bg-[linear-gradient(135deg,rgba(18,107,111,0.13),rgba(168,93,60,0.08))] p-6 dark:bg-none">
+      <section className="overflow-hidden rounded border border-line bg-white shadow-sm dark:bg-slate-950">
+        <div className="border-b border-line bg-zinc-100 p-6 dark:bg-slate-900/80">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
             <div className="flex min-w-0 gap-4">
               <SafeImage
@@ -47,7 +49,7 @@ export default async function SurveyDetailsPage({ params }: { params: Promise<{ 
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <ShareMenu url={`/surveys/${survey.slug || survey._id}`} title={survey.title} text={survey.description || survey.title} />
+              <ShareMenu url={surveyHref} title={survey.title} text={survey.description || survey.title} />
               <span className="inline-flex items-center gap-1 rounded border border-line bg-white px-3 py-2 text-sm font-bold text-ink/65 dark:bg-slate-900 dark:text-slate-300">
                 <Share2 className="h-4 w-4 text-civic" />
                 مشاركة مسؤولة

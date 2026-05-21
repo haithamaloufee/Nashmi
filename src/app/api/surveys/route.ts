@@ -8,7 +8,7 @@ import { surveyCreateSchema } from "@/lib/validators";
 import { buildPublisherSnapshot, getAuthorityAuthor } from "@/lib/publisher";
 import { readJson, requirePartyForUser, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
-import { generateSurveySlug, getSurveyLifecycleStatus, normalizeSurveyQuestionsForSave } from "@/lib/surveys";
+import { generateSurveySlug, getSurveyLifecycleStatus, normalizeSurveyQuestionsForSave, normalizeSurveySlug } from "@/lib/surveys";
 import Survey from "@/models/Survey";
 import Party from "@/models/Party";
 
@@ -16,6 +16,17 @@ function parseDate(value: string | null | undefined) {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function uniqueSurveySlug(base: string) {
+  const normalizedBase = normalizeSurveySlug(base);
+  let candidate = normalizedBase;
+  let suffix = 1;
+  while (await Survey.exists({ slug: candidate })) {
+    suffix += 1;
+    candidate = `${normalizedBase}-${suffix}`;
+  }
+  return candidate;
 }
 
 async function resolveAuthor(input: { user: { id: string; name: string; role: any; avatarUrl?: string | null; image?: string | null }; partyId?: string | null; publisherType?: "party" | "iec" | "admin" }) {
@@ -87,7 +98,7 @@ export async function POST(request: Request) {
     const author = await resolveAuthor({ user, partyId: input.partyId, publisherType: input.publisherType });
     const questions = normalizeSurveyQuestionsForSave(input.questions);
     const publishedAt = input.status === "published" ? new Date() : null;
-    const slug = input.slug || generateSurveySlug(input.title);
+    const slug = await uniqueSurveySlug(input.slug || generateSurveySlug(input.title));
     const publisherSnapshot = await buildPublisherSnapshot({
       authorType: author.authorType,
       partyId: author.partyId,

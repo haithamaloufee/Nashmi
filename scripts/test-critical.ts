@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { Types } from "mongoose";
 import { storePublicFile } from "../src/lib/storage";
 import { buildPartyMatchIndexes, matchPartyByName, normalizeArabicPartyName, normalizePartyLogoRecord } from "../src/lib/partyMatching";
 import { snapshotFromPost } from "../src/lib/publisher";
 import { normalizeMediaAssets } from "../src/lib/media";
 import { hasValidUploadMagic, validateUploadFile, validateUploadMetadata } from "../src/lib/uploadValidation";
 import { postCreateSchema } from "../src/lib/validators";
-import { buildSurveyResultSummary, canRespondToSurvey, canViewSurveyResults, getSurveyLifecycleStatus, validateSurveyAnswers } from "../src/lib/surveys";
+import { buildSurveyResultSummary, canRespondToSurvey, canViewSurveyResults, getSurveyHref, getSurveyLifecycleStatus, objectIdString, validateSurveyAnswers } from "../src/lib/surveys";
 
 function makeFile(name: string, type: string, size: number) {
   return new File([new Uint8Array(size || 1)], name, { type });
@@ -128,6 +129,14 @@ function testLogoAssetReferences() {
 }
 
 function testSurveyUtilities() {
+  const realQuestionId = new Types.ObjectId();
+  const realOptionId = new Types.ObjectId();
+  assert.equal(objectIdString(realQuestionId), realQuestionId.toHexString());
+  assert.equal(objectIdString({ _id: realQuestionId }), realQuestionId.toHexString());
+  assert.equal(getSurveyHref({ slug: "community-pulse-test" }), "/surveys/community-pulse-test");
+  assert.equal(getSurveyHref({ _id: realQuestionId }), `/surveys/${realQuestionId.toHexString()}`);
+  assert.equal(getSurveyHref({}), null);
+
   const survey = {
     _id: "665000000000000000000001",
     status: "published",
@@ -174,6 +183,26 @@ function testSurveyUtilities() {
   assert.equal(summary.questions[0].options[0].count, 1);
   assert.equal(summary.questions[0].options[0].percentage, 50);
   assert.equal(summary.questions[1].averageRating, 4);
+
+  const realObjectIdSurvey = {
+    status: "published",
+    questions: [
+      {
+        _id: realQuestionId,
+        title: "Real ObjectId question",
+        type: "SINGLE_CHOICE" as const,
+        required: true,
+        order: 0,
+        options: [{ _id: realOptionId, label: "Real option", order: 0 }]
+      }
+    ]
+  };
+  const realObjectIdSummary = buildSurveyResultSummary(realObjectIdSurvey, [
+    { answers: [{ questionId: realQuestionId.toHexString(), optionId: realOptionId.toHexString() }] }
+  ]);
+  assert.equal(realObjectIdSummary.questions[0].id, realQuestionId.toHexString());
+  assert.equal(realObjectIdSummary.questions[0].options[0].id, realOptionId.toHexString());
+  assert.equal(realObjectIdSummary.questions[0].options[0].count, 1);
 }
 
 async function main() {

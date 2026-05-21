@@ -1,19 +1,14 @@
-import { isValidObjectId } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
 import { surveyResponseSchema } from "@/lib/validators";
 import { requireRateLimit } from "@/lib/rateLimit";
 import { isDuplicateKeyError, readJson, serialize } from "@/lib/routeUtils";
-import { buildSurveyResultSummary, canRespondToSurvey, validateSurveyAnswers } from "@/lib/surveys";
+import { buildSurveyResultSummary, canRespondToSurvey, surveyIdentifierLookup, validateSurveyAnswers } from "@/lib/surveys";
 import Survey from "@/models/Survey";
 import SurveyResponse from "@/models/SurveyResponse";
 
 type Context = { params: Promise<{ id: string }> };
-
-function surveyLookup(id: string) {
-  return isValidObjectId(id) ? { $or: [{ _id: id }, { slug: id }] } : { slug: id };
-}
 
 export async function POST(request: Request, context: Context) {
   try {
@@ -22,7 +17,9 @@ export async function POST(request: Request, context: Context) {
     const { id } = await context.params;
     const input = await readJson(request, surveyResponseSchema);
     await connectToDatabase();
-    const survey = await Survey.findOne(surveyLookup(id));
+    const lookup = surveyIdentifierLookup(id);
+    if (!lookup) throw new Error("NOT_FOUND");
+    const survey = await Survey.findOne(lookup);
     if (!survey || survey.status !== "published") throw new Error("NOT_FOUND");
     const hasResponded = Boolean(await SurveyResponse.exists({ surveyId: survey._id, userId: user.id }));
     if (!canRespondToSurvey(survey, user, hasResponded)) return fail("BAD_REQUEST", hasResponded ? "لقد شاركت سابقًا في هذا الاستبيان." : "الاستبيان غير متاح للمشاركة حاليًا.", 400);

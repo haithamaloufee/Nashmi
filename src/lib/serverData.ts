@@ -22,7 +22,7 @@ import PollReaction from "@/models/PollReaction";
 import PollVote from "@/models/PollVote";
 import ChatSession from "@/models/ChatSession";
 import ChatMessage from "@/models/ChatMessage";
-import { buildSurveyResultSummary, canManageSurvey, canRespondToSurvey, canViewSurveyResults, getSurveyLifecycleStatus } from "@/lib/surveys";
+import { buildSurveyResultSummary, canManageSurvey, canRespondToSurvey, canViewSurveyResults, getSurveyLifecycleStatus, surveyIdentifierLookup } from "@/lib/surveys";
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -265,7 +265,8 @@ export async function getSurveys(search = "", filter = "all", sort = "newest") {
 
 export async function getSurveyBySlug(slug: string, viewer?: { id: string; role: any; status?: string } | null) {
   return safeData(null as unknown, async () => {
-    const lookup = /^[a-f\d]{24}$/i.test(slug) ? { $or: [{ slug }, { _id: slug }] } : { slug };
+    const lookup = surveyIdentifierLookup(slug);
+    if (!lookup) return null;
     const survey = await Survey.findOne({ ...lookup, status: { $ne: "deleted" } })
       .populate({ path: "authorUserId", select: "name avatarUrl image role" })
       .populate({ path: "partyId", select: "name slug logoUrl isVerified" })

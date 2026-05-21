@@ -1,5 +1,4 @@
 import { revalidatePath } from "next/cache";
-import { isValidObjectId } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { getCurrentUser, requireActiveUser } from "@/lib/auth";
@@ -15,7 +14,9 @@ import {
   canViewSurveyResults,
   generateSurveySlug,
   getSurveyLifecycleStatus,
+  normalizeSurveySlug,
   normalizeSurveyQuestionsForSave,
+  surveyIdentifierLookup,
   surveyQuestionStructureChanged
 } from "@/lib/surveys";
 import Survey from "@/models/Survey";
@@ -30,8 +31,15 @@ function parseDate(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function surveyLookup(id: string) {
-  return isValidObjectId(id) ? { $or: [{ _id: id }, { slug: id }] } : { slug: id };
+async function uniqueSurveySlug(base: string, surveyId: unknown) {
+  const normalizedBase = normalizeSurveySlug(base);
+  let candidate = normalizedBase;
+  let suffix = 1;
+  while (await Survey.exists({ slug: candidate, _id: { $ne: surveyId } })) {
+    suffix += 1;
+    candidate = `${normalizedBase}-${suffix}`;
+  }
+  return candidate;
 }
 
 async function revalidateSurveySurfaces(survey: { slug?: string; partyId?: unknown; authorType?: string }) {
@@ -49,7 +57,9 @@ export async function GET(_request: Request, context: Context) {
     const { id } = await context.params;
     await connectToDatabase();
     const viewer = await getCurrentUser();
-    const survey = await Survey.findOne(surveyLookup(id))
+    const lookup = surveyIdentifierLookup(id);
+    if (!lookup) throw new Error("NOT_FOUND");
+    const survey = await Survey.findOne(lookup)
       .populate({ path: "authorUserId", select: "name avatarUrl image role" })
       .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
       .lean();
@@ -83,14 +93,16 @@ export async function PATCH(request: Request, context: Context) {
     const { id } = await context.params;
     const input = await readJson(request, surveyUpdateSchema);
     await connectToDatabase();
-    const survey = await Survey.findOne(surveyLookup(id));
+    const lookup = surveyIdentifierLookup(id);
+    if (!lookup) throw new Error("NOT_FOUND");
+    const survey = await Survey.findOne(lookup);
     if (!survey || survey.status === "deleted") throw new Error("NOT_FOUND");
     if (!canManageSurvey(user, survey)) return fail("FORBIDDEN", "تعديل الاستبيان متاح للناشر أو الإدارة فقط.", 403);
 
     const update: Record<string, unknown> = {};
     if (input.title !== undefined) update.title = input.title;
     if (input.description !== undefined) update.description = input.description || null;
-    if (input.slug !== undefined) update.slug = input.slug || generateSurveySlug(input.title || survey.title);
+    if (input.slug !== undefined) update.slug = await uniqueSurveySlug(input.slug || generateSurveySlug(input.title || survey.title), survey._id);
     if (input.resultsVisibility !== undefined) update.resultsVisibility = input.resultsVisibility;
     if (input.startsAt !== undefined) update.startsAt = parseDate(input.startsAt);
     if (input.endsAt !== undefined) update.endsAt = parseDate(input.endsAt);
@@ -127,7 +139,9 @@ export async function DELETE(request: Request, context: Context) {
     const user = await requireActiveUser(contentCreatorRoles);
     const { id } = await context.params;
     await connectToDatabase();
-    const survey = await Survey.findOne(surveyLookup(id));
+    const lookup = surveyIdentifierLookup(id);
+    if (!lookup) throw new Error("NOT_FOUND");
+    const survey = await Survey.findOne(lookup);
     if (!survey || survey.status === "deleted") throw new Error("NOT_FOUND");
     if (!canManageSurvey(user, survey)) return fail("FORBIDDEN", "أرشفة الاستبيان متاحة للناشر أو الإدارة فقط.", 403);
     survey.status = "archived";

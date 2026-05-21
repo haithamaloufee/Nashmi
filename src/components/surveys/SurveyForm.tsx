@@ -89,8 +89,8 @@ export default function SurveyForm({ survey, isLoggedIn }: { survey: Survey; isL
   return (
     <div className="space-y-5">
       <SurveyResultsSummary summary={resultSummary} blocked={!canViewResults} />
-      <section className="space-y-4">
-        <div>
+      <section className="space-y-4 rounded-lg border border-line bg-zinc-50 p-4 dark:bg-slate-900/40">
+        <div className="border-b border-line pb-3">
           <h2 className="text-2xl font-black">أسئلة الاستبيان</h2>
           <p className="mt-1 text-sm text-ink/65 dark:text-slate-300">تستخدم إجابتك لأغراض إحصائية داخل المنصة.</p>
         </div>

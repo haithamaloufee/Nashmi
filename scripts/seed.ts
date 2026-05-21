@@ -19,6 +19,7 @@ import PollVote from "../src/models/PollVote";
 import Survey from "../src/models/Survey";
 import SurveyResponse from "../src/models/SurveyResponse";
 import AuthorityProfile from "../src/models/AuthorityProfile";
+import { normalizeSurveySlug } from "../src/lib/surveys";
 import { recalculateCounters } from "./recalculate-counters";
 import { demoLawCards } from "./demo-data";
 import jordanProfiles from "./sharek-jordan-parties-and-iec-profiles.json";
@@ -103,6 +104,43 @@ function partySeedUpdate(party: JordanPartySeed) {
 
 function demoSurveySlug(partySlug: string) {
   return `demo-community-pulse-${partySlug}`;
+}
+
+async function uniqueSurveySlug(base: string, surveyId: unknown) {
+  const normalizedBase = normalizeSurveySlug(base).replace(/^-+|-+$/g, "") || `community-pulse-${String(surveyId).slice(-8)}`;
+  let candidate = normalizedBase;
+  let suffix = 1;
+  while (await Survey.exists({ slug: candidate, _id: { $ne: surveyId } })) {
+    suffix += 1;
+    candidate = `${normalizedBase}-${suffix}`;
+  }
+  return candidate;
+}
+
+async function backfillMissingSurveySlugs() {
+  const surveys = await Survey.find({ $or: [{ slug: { $exists: false } }, { slug: null }, { slug: "" }] })
+    .select("_id title authorType partyId")
+    .lean();
+  let updated = 0;
+
+  for (const survey of surveys) {
+    const party = survey.partyId ? await Party.findById(survey.partyId).select("slug").lean() : null;
+    const shortId = String(survey._id).slice(-8);
+    const base = party?.slug
+      ? `community-pulse-${party.slug}-priorities`
+      : survey.title
+        ? `${normalizeSurveySlug(survey.title)}-${shortId}`
+        : `community-pulse-${shortId}`;
+    const slug = await uniqueSurveySlug(base, survey._id);
+    const result = await Survey.updateOne(
+      { _id: survey._id, $or: [{ slug: { $exists: false } }, { slug: null }, { slug: "" }] },
+      { $set: { slug } }
+    );
+    updated += result.modifiedCount;
+  }
+
+  if (updated > 0) console.log(`Backfilled missing Community Pulse survey slugs: ${updated}.`);
+  return updated;
 }
 
 function demoSurveyQuestions() {
@@ -455,6 +493,7 @@ async function main() {
   }
 
   const surveySeedResult = await seedDemoPartySurveys([citizen, superAdmin, iec]);
+  await backfillMissingSurveySlugs();
 
   const reportTargets = [
     ["post", posts[0]._id],

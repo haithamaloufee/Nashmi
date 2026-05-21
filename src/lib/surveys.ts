@@ -22,6 +22,7 @@ export type SurveyQuestionLike = {
 export type SurveyLike = {
   _id?: unknown;
   id?: unknown;
+  slug?: unknown;
   status?: string | null;
   startsAt?: string | Date | null;
   endsAt?: string | Date | null;
@@ -57,16 +58,57 @@ function toDate(value: string | Date | null | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function safeDecodeURIComponent(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export function objectIdString(value: unknown) {
   if (!value) return "";
-  if (typeof value === "string") return value;
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "bigint") return String(value);
   if (typeof value === "object") {
-    const record = value as { _id?: unknown; id?: unknown; toString?: () => string };
-    if (record._id) return objectIdString(record._id);
-    if (record.id) return objectIdString(record.id);
-    if (typeof record.toString === "function") return record.toString();
+    const record = value as { _id?: unknown; id?: unknown; toHexString?: () => string; toString?: () => string };
+    if (typeof record.toHexString === "function") {
+      const hex = record.toHexString();
+      if (hex) return hex;
+    }
+    if (record._id && record._id !== value) return objectIdString(record._id);
+    if (record.id && record.id !== value) return objectIdString(record.id);
+    if (typeof record.toString === "function") {
+      const text = record.toString().trim();
+      return text === "[object Object]" ? "" : text;
+    }
   }
   return String(value);
+}
+
+export function normalizeSurveyIdentifier(identifier: string) {
+  return safeDecodeURIComponent(String(identifier || "")).trim();
+}
+
+export function isSurveyObjectIdIdentifier(identifier: string) {
+  return /^[a-f\d]{24}$/i.test(normalizeSurveyIdentifier(identifier));
+}
+
+export function surveyIdentifierLookup(identifier: string) {
+  const normalized = normalizeSurveyIdentifier(identifier);
+  if (!normalized) return null;
+  return isSurveyObjectIdIdentifier(normalized) ? { $or: [{ slug: normalized }, { _id: normalized }] } : { slug: normalized };
+}
+
+function surveyRouteToken(value: unknown) {
+  const text = (typeof value === "string" ? value : objectIdString(value)).trim();
+  if (!text || text === "undefined" || text === "null" || text === "[object Object]") return "";
+  return encodeURIComponent(text);
+}
+
+export function getSurveyHref(survey: SurveyLike | null | undefined) {
+  const token = surveyRouteToken(survey?.slug) || surveyRouteToken(survey?.id) || surveyRouteToken(survey?._id);
+  return token ? `/surveys/${token}` : null;
 }
 
 export function sortedSurveyQuestions<T extends SurveyQuestionLike>(questions: T[] = []) {
