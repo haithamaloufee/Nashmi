@@ -59,6 +59,15 @@ function dateTime(value: unknown) {
   return new Date(value instanceof Date || typeof value === "string" || typeof value === "number" ? value : 0).getTime();
 }
 
+function shuffleItems<T>(items: T[]) {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]];
+  }
+  return shuffled;
+}
+
 function logSafeDataError(error: unknown) {
   if (!(error instanceof Error)) {
     console.error({ name: "UnknownError" });
@@ -146,7 +155,7 @@ export async function getPublicParties(search?: string) {
     const regex = search ? searchRegex(search) : null;
     const query = regex ? { status: "active", searchNormalized: regex } : { status: "active" };
     const parties = await Party.find(query).populate({ path: "logoMediaId", select: "url status" }).sort({ slug: 1 }).lean();
-    return serialize(parties);
+    return serialize(shuffleItems(parties));
   });
 }
 
@@ -295,16 +304,24 @@ export async function getUpdates(search?: string, filter = "all") {
     const regex = search ? searchRegex(search) : null;
     const postQuery: Record<string, unknown> = { status: "published" };
     const pollQuery: Record<string, unknown> = { status: { $in: ["active", "closed"] } };
+    const surveyQuery: Record<string, unknown> = { status: { $in: ["published", "closed"] } };
     if (filter === "iec") {
       postQuery.authorType = "iec";
       pollQuery.authorType = "iec";
+      surveyQuery.authorType = "iec";
+    }
+    if (filter === "parties") {
+      postQuery.authorType = "party";
+      pollQuery.authorType = "party";
+      surveyQuery.authorType = "party";
     }
     if (regex) {
       postQuery.searchNormalized = regex;
       pollQuery.searchNormalized = regex;
+      surveyQuery.searchNormalized = regex;
     }
-    const [posts, polls, authorityAuthor] = await Promise.all([
-      filter === "polls"
+    const [posts, polls, surveys, authorityAuthor] = await Promise.all([
+      filter === "polls" || filter === "surveys"
         ? []
         : Post.find(postQuery)
             .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt")
@@ -314,10 +331,19 @@ export async function getUpdates(search?: string, filter = "all") {
             .sort({ publishedAt: -1 })
             .limit(12)
             .lean(),
-      filter === "posts"
+      filter === "posts" || filter === "surveys"
         ? []
         : Poll.find(pollQuery)
             .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
+            .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+            .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+            .sort({ publishedAt: -1 })
+            .limit(12)
+            .lean(),
+      filter === "posts" || filter === "polls"
+        ? []
+        : Survey.find(surveyQuery)
+            .select("authorType authorUserId partyId publisherSnapshot title slug description totalResponses startsAt endsAt status resultsVisibility publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .sort({ publishedAt: -1 })
@@ -328,7 +354,12 @@ export async function getUpdates(search?: string, filter = "all") {
     return serialize(
       [
         ...attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
-        ...attachAuthorityAuthor(normalizePopulatedMediaItems(polls as LeanItem[]), authorityAuthor).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
+        ...attachAuthorityAuthor(normalizePopulatedMediaItems(polls as LeanItem[]), authorityAuthor).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll })),
+        ...attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor).map((survey) => ({
+          type: "survey",
+          publishedAt: survey.publishedAt || survey.createdAt,
+          item: { ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) }
+        }))
       ]
         .sort((a, b) => dateTime(b.publishedAt) - dateTime(a.publishedAt))
         .slice(0, 18)

@@ -14,7 +14,7 @@ const links = [
   { href: "/admin/users", label: "المستخدمون" },
   { href: "/admin/parties", label: "الأحزاب" },
   { href: "/admin/moderation", label: "الإشراف" },
-  { href: "/admin/surveys", label: "Community Pulse" },
+  { href: "/admin/surveys", label: "الاستبيانات" },
   { href: "/admin/about-nashmi", label: "عن نشمي" },
   { href: "/admin/logs", label: "سجل التدقيق" }
 ];

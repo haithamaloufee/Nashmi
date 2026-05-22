@@ -11,7 +11,7 @@ const links = [
   { href: "/iec-dashboard/profile", label: "ملف الهيئة" },
   { href: "/iec-dashboard/posts", label: "منشورات الهيئة" },
   { href: "/iec-dashboard/laws", label: "القوانين" },
-  { href: "/iec-dashboard/surveys", label: "Community Pulse" }
+  { href: "/iec-dashboard/surveys", label: "الاستبيانات" }
 ];
 
 export default async function IecSurveysPage() {

@@ -7,7 +7,7 @@ import StatCard from "@/components/ui/StatCard";
 
 export const dynamic = "force-dynamic";
 const links = [
-  { href: "/party-dashboard/surveys", label: "Community Pulse" },
+  { href: "/party-dashboard/surveys", label: "الاستبيانات" },
   { href: "/party-dashboard", label: "الرئيسية" },
   { href: "/party-dashboard/profile", label: "تعديل الملف" },
   { href: "/party-dashboard/posts", label: "المنشورات" },
@@ -27,7 +27,7 @@ export default async function PartyDashboardPage() {
         <StatCard label="المنشورات" value={data.posts.length} />
         <StatCard label="التصويتات" value={data.polls.length} />
         <StatCard label="التعليقات" value={data.comments} />
-        <StatCard label="Community Pulse" value={(data.surveys || []).length} />
+        <StatCard label="الاستبيانات" value={(data.surveys || []).length} />
       </div>
       <p className="mt-5 rounded border border-line p-4 text-sm text-ink/70">تعرض اللوحة مؤشرات إجمالية فقط. لا تظهر هويات المصوتين أو سجلات التصويت الفردية.</p>
       <PublisherCreateHub basePath="/party-dashboard" />

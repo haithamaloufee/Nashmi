@@ -21,7 +21,7 @@ export default async function PartyPostsPage() {
   return (
     <DashboardNav title="لوحة الحزب" links={links}>
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-        <PostCreateForm />
+        <PostCreateForm currentUser={user} />
         <div className="space-y-4">{data.posts.map((post: any) => <PostCard key={post._id} post={post} compact />)}</div>
       </div>
     </DashboardNav>

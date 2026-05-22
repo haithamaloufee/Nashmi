@@ -1,12 +1,25 @@
-import { Clock, CheckCircle2, Archive, Lock, Radio } from "lucide-react";
+"use client";
 
-const labels: Record<string, string> = {
-  draft: "مسودة",
-  upcoming: "قادم",
-  open: "مفتوح",
-  closed: "مغلق",
-  archived: "مؤرشف",
-  deleted: "محذوف"
+import { Clock, CheckCircle2, Archive, Lock, Radio } from "lucide-react";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+
+const labels: Record<"ar" | "en", Record<string, string>> = {
+  ar: {
+    draft: "مسودة",
+    upcoming: "قادم",
+    open: "مفتوح",
+    closed: "مغلق",
+    archived: "مؤرشف",
+    deleted: "محذوف"
+  },
+  en: {
+    draft: "Draft",
+    upcoming: "Upcoming",
+    open: "Open",
+    closed: "Closed",
+    archived: "Archived",
+    deleted: "Deleted"
+  }
 };
 
 const styles: Record<string, string> = {
@@ -28,12 +41,13 @@ const icons: Record<string, typeof Clock> = {
 };
 
 export default function SurveyStatusBadge({ status }: { status?: string | null }) {
+  const { language } = useTranslation();
   const value = status || "draft";
   const Icon = icons[value] || CheckCircle2;
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${styles[value] || styles.draft}`}>
       <Icon className="h-3.5 w-3.5" />
-      {labels[value] || value}
+      {labels[language][value] || value}
     </span>
   );
 }

@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
@@ -39,6 +40,9 @@ export async function POST(request: Request, context: Context) {
     }
 
     await Survey.updateOne({ _id: survey._id }, { $inc: { totalResponses: 1 } });
+    revalidatePath("/updates");
+    revalidatePath("/surveys");
+    if (survey.slug) revalidatePath(`/surveys/${survey.slug}`);
     const responses = await SurveyResponse.find({ surveyId: survey._id }).lean();
     return ok({ hasResponded: true, resultSummary: buildSurveyResultSummary(survey, serialize(responses) as any, false) });
   } catch (error) {

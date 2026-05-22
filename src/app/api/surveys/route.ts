@@ -123,6 +123,7 @@ export async function POST(request: Request) {
     });
 
     revalidatePath("/surveys");
+    revalidatePath("/updates");
     if (author.authorType === "iec") revalidatePath("/iec");
     if (author.partyId) {
       const party = await Party.findById(author.partyId).select("slug").lean();

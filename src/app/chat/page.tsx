@@ -17,7 +17,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
           <Alert><I18nText id="chat.notice" /></Alert>
         </div>
       </div>
-      <ChatClient lawId={params.lawId} authenticated={Boolean(user)} />
+      <ChatClient lawId={params.lawId} authenticated={Boolean(user)} currentUser={user} />
     </main>
   );
 }

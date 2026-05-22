@@ -8,6 +8,7 @@ type ShareMenuProps = {
   title: string;
   text?: string;
   label?: string;
+  menuPlacement?: "top" | "bottom";
 };
 
 function buildMailto(title: string, url: string, text?: string) {
@@ -20,7 +21,7 @@ function buildWhatsApp(url: string, text?: string) {
   return `https://wa.me/?text=${encodeURIComponent(`${text ? `${text} ` : ""}${url}`)}`;
 }
 
-export default function ShareMenu({ url, title, text, label = "مشاركة" }: ShareMenuProps) {
+export default function ShareMenu({ url, title, text, label = "مشاركة", menuPlacement = "top" }: ShareMenuProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
@@ -100,9 +101,9 @@ export default function ShareMenu({ url, title, text, label = "مشاركة" }: 
       </button>
 
       {open ? (
-        <div className="absolute bottom-full left-0 z-30 mb-2 w-72 rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100" role="menu">
+        <div className={`absolute left-0 z-30 w-72 rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 ${menuPlacement === "bottom" ? "top-full mt-2" : "bottom-full mb-2"}`} role="menu">
           <div className="mb-1 flex items-center justify-between px-2 py-1">
-            <p className="font-bold">مشاركة المنشور</p>
+            <p className="font-bold">خيارات المشاركة</p>
             <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-7 w-7 place-items-center rounded-full text-slate-500 hover:bg-civic/10 hover:text-civic dark:text-slate-400 dark:hover:text-emerald-200" aria-label="إغلاق خيارات المشاركة">
               <X className="h-4 w-4" />
             </button>

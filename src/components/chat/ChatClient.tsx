@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Archive, ArrowDown, Loader2, MessageSquare, Plus, Send, Trash2 } from "lucide-react";
+import ChatAvatar from "@/components/chat/ChatAvatar";
 import MarkdownMessage from "@/components/chat/MarkdownMessage";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
@@ -38,6 +39,14 @@ type Usage = {
   resetAt: string;
 };
 
+type ChatUser = {
+  name?: string | null;
+  image?: string | null;
+  imageUrl?: string | null;
+  avatarUrl?: string | null;
+  profileImage?: string | null;
+} | null;
+
 const suggestedQuestions = {
   ar: [
     "ما هو حق تأسيس الأحزاب في الأردن؟",
@@ -72,7 +81,11 @@ function sourceLabel(sourceType: string, language: "ar" | "en") {
   return language === "en" ? "Nashmi source" : "مصدر من نشمي";
 }
 
-export default function ChatClient({ lawId, authenticated }: { lawId?: string; authenticated: boolean }) {
+function userAvatarUrl(user: ChatUser) {
+  return user?.avatarUrl || user?.image || user?.imageUrl || user?.profileImage || null;
+}
+
+export default function ChatClient({ lawId, authenticated, currentUser = null }: { lawId?: string; authenticated: boolean; currentUser?: ChatUser }) {
   const { dir, language, t } = useTranslation();
   const introMessage = useMemo<Message>(() => ({ role: "assistant", content: t("chat.welcome") }), [t]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -439,10 +452,12 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
         <div className="relative">
           <div ref={scrollRef} className="assistant-scrollbar h-[min(560px,calc(100vh-18rem))] space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#071217]" aria-live="polite">
             {messages.map((item, index) => (
-              <div key={item._id || `${item.role}-${index}`} className={`flex ${item.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={item._id || `${item.role}-${index}`} dir="ltr" className={`flex items-end gap-2 ${item.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
+                <ChatAvatar role={item.role} name={item.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={item.role === "user" ? userAvatarUrl(currentUser) : null} />
                 <div
                   ref={item.role === "user" && index === messages.length - 1 ? latestUserRef : item.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
-                  className={`min-w-0 max-w-[88%] rounded-2xl p-4 text-start leading-8 shadow-sm ${item.role === "user" ? "bg-civic text-white dark:bg-[#1b8f89]" : "border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+                  dir={dir}
+                  className={`min-w-0 max-w-[78%] rounded-2xl p-4 text-start leading-8 shadow-sm sm:max-w-[84%] ${item.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-bl-md border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
                 >
                   {item.role === "assistant" ? <MarkdownMessage content={item.content} /> : <div className="whitespace-pre-wrap break-words text-white">{item.content}</div>}
                   {item.role === "assistant" && item.groundingSources?.length ? (
@@ -486,7 +501,8 @@ export default function ChatClient({ lawId, authenticated }: { lawId?: string; a
             ) : null}
 
             {loading ? (
-              <div className="flex justify-start">
+              <div dir="ltr" className="flex items-end justify-start gap-2">
+                <ChatAvatar role="assistant" compact />
                 <TypingIndicator label={t("chat.sending")} />
               </div>
             ) : null}

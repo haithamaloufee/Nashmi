@@ -44,6 +44,7 @@ async function uniqueSurveySlug(base: string, surveyId: unknown) {
 
 async function revalidateSurveySurfaces(survey: { slug?: string; partyId?: unknown; authorType?: string }) {
   revalidatePath("/surveys");
+  revalidatePath("/updates");
   if (survey.slug) revalidatePath(`/surveys/${survey.slug}`);
   if (survey.authorType === "iec") revalidatePath("/iec");
   if (survey.partyId) {

@@ -5,6 +5,12 @@ import { defaultPollDurationDays } from "@/lib/polls";
 import User from "@/models/User";
 import Party from "@/models/Party";
 import Poll from "@/models/Poll";
+import Post from "@/models/Post";
+import Survey from "@/models/Survey";
+import SurveyResponse from "@/models/SurveyResponse";
+import Law from "@/models/Law";
+import Comment from "@/models/Comment";
+import PollVote from "@/models/PollVote";
 
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -34,15 +40,49 @@ export async function GET() {
       ]
     };
 
-    const [citizensCount, partiesCount, openPollsCount, closedPollsCount] = await Promise.all([
+    const [
+      citizensCount,
+      usersCount,
+      partiesCount,
+      openPollsCount,
+      closedPollsCount,
+      postsCount,
+      pollsCount,
+      surveysCount,
+      surveyResponsesCount,
+      lawsCount,
+      commentsCount,
+      pollVotesCount
+    ] = await Promise.all([
       User.countDocuments({ role: "citizen", status: "active" }),
+      User.countDocuments({ status: "active" }),
       Party.countDocuments({ status: "active" }),
       Poll.countDocuments(openPollQuery),
-      Poll.countDocuments(closedPollQuery)
+      Poll.countDocuments(closedPollQuery),
+      Post.countDocuments({ status: "published" }),
+      Poll.countDocuments({ status: { $in: ["active", "closed"] } }),
+      Survey.countDocuments({ status: { $in: ["published", "closed"] } }),
+      SurveyResponse.countDocuments(),
+      Law.countDocuments({ status: "published" }),
+      Comment.countDocuments({ status: "published" }),
+      PollVote.countDocuments()
     ]);
 
     return ok(
-      { citizensCount, partiesCount, openPollsCount, closedPollsCount },
+      {
+        citizensCount,
+        usersCount,
+        partiesCount,
+        openPollsCount,
+        closedPollsCount,
+        postsCount,
+        pollsCount,
+        surveysCount,
+        surveyResponsesCount,
+        lawsCount,
+        updatesCount: postsCount + pollsCount + surveysCount,
+        participationsCount: commentsCount + pollVotesCount + surveyResponsesCount
+      },
       { headers: cacheHeaders(CACHE_HEADERS.publicFeed) }
     );
   } catch (error) {

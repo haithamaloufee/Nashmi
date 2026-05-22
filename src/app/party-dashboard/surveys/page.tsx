@@ -11,7 +11,7 @@ const links = [
   { href: "/party-dashboard/profile", label: "ملف الحزب" },
   { href: "/party-dashboard/posts", label: "المنشورات" },
   { href: "/party-dashboard/polls", label: "التصويتات" },
-  { href: "/party-dashboard/surveys", label: "Community Pulse" }
+  { href: "/party-dashboard/surveys", label: "الاستبيانات" }
 ];
 
 export default async function PartySurveysPage() {

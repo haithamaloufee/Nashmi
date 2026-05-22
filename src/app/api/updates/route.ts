@@ -12,6 +12,8 @@ import Party from "@/models/Party";
 import PartyFollower from "@/models/PartyFollower";
 import Post from "@/models/Post";
 import Poll from "@/models/Poll";
+import Survey from "@/models/Survey";
+import { getSurveyLifecycleStatus } from "@/lib/surveys";
 import "@/models/MediaAsset";
 import "@/models/User";
 
@@ -37,6 +39,7 @@ export async function GET(request: Request) {
 
     const basePostQuery: Record<string, unknown> = { status: "published" };
     const basePollQuery: Record<string, unknown> = { status: { $in: ["active", "closed"] } };
+    const baseSurveyQuery: Record<string, unknown> = { status: { $in: ["published", "closed"] } };
     const publishedAtRange: Record<string, Date> = {};
     const fromDate = from ? new Date(from) : null;
     const toDate = to ? new Date(to) : null;
@@ -48,21 +51,26 @@ export async function GET(request: Request) {
     if (Object.keys(publishedAtRange).length) {
       basePostQuery.publishedAt = publishedAtRange;
       basePollQuery.publishedAt = publishedAtRange;
+      baseSurveyQuery.publishedAt = publishedAtRange;
     }
     if (sinceDate && !Number.isNaN(sinceDate.getTime())) {
       basePostQuery.publishedAt = { $gt: sinceDate };
       basePollQuery.publishedAt = { $gt: sinceDate };
+      baseSurveyQuery.publishedAt = { $gt: sinceDate };
     } else if (cursorDate && !Number.isNaN(cursorDate.getTime())) {
       basePostQuery.publishedAt = { $lt: cursorDate };
       basePollQuery.publishedAt = { $lt: cursorDate };
+      baseSurveyQuery.publishedAt = { $lt: cursorDate };
     }
     if (filter === "iec") {
       basePostQuery.authorType = "iec";
       basePollQuery.authorType = "iec";
+      baseSurveyQuery.authorType = "iec";
     }
     if (filter === "parties") {
       basePostQuery.authorType = "party";
       basePollQuery.authorType = "party";
+      baseSurveyQuery.authorType = "party";
     }
     if (filter === "followed") {
       const user = await getCurrentUser();
@@ -71,16 +79,19 @@ export async function GET(request: Request) {
       const ids = follows.map((follow) => follow.partyId);
       basePostQuery.partyId = { $in: ids };
       basePollQuery.partyId = { $in: ids };
+      baseSurveyQuery.partyId = { $in: ids };
     }
     if (regex) {
       const searchClause = [{ searchNormalized: regex }, { partyId: { $in: matchingPartyIds } }];
       basePostQuery.$or = searchClause;
       basePollQuery.$or = searchClause;
+      baseSurveyQuery.$or = searchClause;
     }
     if (hashtag) {
       const hashtagRegex = new RegExp(`#${hashtag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i");
       basePostQuery.$and = [...((basePostQuery.$and as unknown[]) || []), { $or: [{ content: hashtagRegex }, { title: hashtagRegex }, { tags: hashtagRegex }] }];
       basePollQuery.$and = [...((basePollQuery.$and as unknown[]) || []), { $or: [{ question: hashtagRegex }, { description: hashtagRegex }] }];
+      baseSurveyQuery.$and = [...((baseSurveyQuery.$and as unknown[]) || []), { $or: [{ title: hashtagRegex }, { description: hashtagRegex }] }];
     }
     const now = new Date();
     const soon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
@@ -93,10 +104,11 @@ export async function GET(request: Request) {
 
     const fetchLimit = sort === "newest" || sort === "oldest" ? limit : Math.max(limit * 4, 40);
 
-    const includePosts = filter !== "polls";
-    const includePolls = filter !== "posts";
+    const includePosts = filter !== "polls" && filter !== "surveys";
+    const includePolls = filter !== "posts" && filter !== "surveys";
+    const includeSurveys = filter !== "posts" && filter !== "polls";
 
-    const [posts, polls, postsCount, pollsCount, authorityAuthor] = await Promise.all([
+    const [posts, polls, surveys, postsCount, pollsCount, surveysCount, authorityAuthor] = await Promise.all([
       !includePosts
         ? []
         : Post.find(basePostQuery)
@@ -116,8 +128,18 @@ export async function GET(request: Request) {
             .sort({ publishedAt: -1 })
             .limit(fetchLimit)
             .lean(),
+      !includeSurveys
+        ? []
+        : Survey.find(baseSurveyQuery)
+            .select("authorType authorUserId partyId publisherSnapshot title slug description totalResponses startsAt endsAt status resultsVisibility publishedAt createdAt")
+            .populate({ path: "authorUserId", select: "name avatarUrl image role" })
+            .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
+            .sort({ publishedAt: -1 })
+            .limit(fetchLimit)
+            .lean(),
       includePosts ? Post.countDocuments(basePostQuery) : 0,
       includePolls ? Poll.countDocuments(basePollQuery) : 0,
+      includeSurveys ? Survey.countDocuments(baseSurveyQuery) : 0,
       getAuthorityAuthor()
     ]);
 
@@ -126,14 +148,20 @@ export async function GET(request: Request) {
 
     let updates = [
       ...withPublisher(normalizePopulatedMediaItems(posts as any[])).map((post) => ({ type: "post", publishedAt: post.publishedAt, item: post })),
-      ...withPublisher(normalizePopulatedMediaItems(polls as any[])).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll }))
+      ...withPublisher(normalizePopulatedMediaItems(polls as any[])).map((poll) => ({ type: "poll", publishedAt: poll.publishedAt, item: poll })),
+      ...withPublisher(surveys as any[]).map((survey) => ({
+        type: "survey",
+        publishedAt: survey.publishedAt || survey.createdAt,
+        item: { ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey) }
+      }))
     ];
 
     if (hashtag) {
       updates = updates.filter((update) => {
         const item = update.item;
         if (update.type === "post") return textHasHashtag(`${item.title || ""}\n${item.content || ""}\n${(item.tags || []).map((tag: string) => `#${tag}`).join(" ")}`, hashtag);
-        return textHasHashtag(`${item.question || ""}\n${item.description || ""}`, hashtag);
+        if (update.type === "poll") return textHasHashtag(`${item.question || ""}\n${item.description || ""}`, hashtag);
+        return textHasHashtag(`${item.title || ""}\n${item.description || ""}`, hashtag);
       });
     }
 
@@ -156,7 +184,7 @@ export async function GET(request: Request) {
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
 
-    const totalCount = hashtag ? updates.length : postsCount + pollsCount;
+    const totalCount = hashtag ? updates.length : postsCount + pollsCount + surveysCount;
     updates = updates.slice(0, limit);
 
     const supportsCursor = sort === "newest";

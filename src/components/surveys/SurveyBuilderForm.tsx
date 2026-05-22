@@ -231,7 +231,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
       <form action={() => { void submit(); }} className="card h-fit space-y-4 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-black">{editing ? "تعديل Community Pulse" : "Community Pulse جديد"}</h2>
+            <h2 className="text-xl font-black">{editing ? "تعديل الاستبيان" : "استبيان جديد"}</h2>
             <p className="mt-1 text-sm text-ink/60 dark:text-slate-300">أنشئ استبيانًا بعدة أسئلة ونتائج قابلة للعرض.</p>
           </div>
           {editing ? <button type="button" onClick={reset} className="rounded border border-line px-3 py-1.5 text-sm font-bold">جديد</button> : null}

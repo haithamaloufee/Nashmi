@@ -27,7 +27,7 @@ export default function SurveyCard({ survey, compact = false }: { survey: Survey
         <div className="flex min-w-0 items-center gap-3">
           <SafeImage
             src={publisher?.imageUrl || null}
-            alt={publisher?.name || "Community Pulse"}
+            alt={publisher?.name || "استبيان"}
             className="h-11 w-11 shrink-0 rounded bg-white object-contain ring-1 ring-line dark:bg-slate-900"
             fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded bg-civic/10 text-lg font-black text-civic">{(publisher?.name || "N").slice(0, 1)}</div>}
             localPrefixes={["/uploads/", "/images/", "/related/"]}
@@ -36,7 +36,7 @@ export default function SurveyCard({ survey, compact = false }: { survey: Survey
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-full bg-clay/10 px-2.5 py-1 text-xs font-black text-clay dark:bg-amber-200/10 dark:text-amber-100">
                 <ClipboardList className="h-3.5 w-3.5" />
-                Community Pulse
+                استبيان
               </span>
               <SurveyStatusBadge status={survey.lifecycleStatus || survey.status} />
             </div>

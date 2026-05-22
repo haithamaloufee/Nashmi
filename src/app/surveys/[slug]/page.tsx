@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Share2 } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import SurveyDateMeta from "@/components/surveys/SurveyDateMeta";
 import SurveyForm from "@/components/surveys/SurveyForm";
 import SurveyStatusBadge from "@/components/surveys/SurveyStatusBadge";
@@ -22,12 +22,12 @@ export default async function SurveyDetailsPage({ params }: { params: Promise<{ 
 
   return (
     <main className="container-page py-8">
-      <Link href="/surveys" className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-civic hover:underline">
+      <Link href="/updates?filter=surveys" className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-civic hover:underline">
         <ArrowRight className="h-4 w-4" />
-        العودة إلى Community Pulse
+        العودة إلى استبيانات آخر المستجدات
       </Link>
 
-      <section className="overflow-hidden rounded border border-line bg-white shadow-sm dark:bg-slate-950">
+      <section className="overflow-visible rounded border border-line bg-white shadow-sm dark:bg-slate-950">
         <div className="border-b border-line bg-zinc-100 p-6 dark:bg-slate-900/80">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
             <div className="flex min-w-0 gap-4">
@@ -40,7 +40,7 @@ export default async function SurveyDetailsPage({ params }: { params: Promise<{ 
               />
               <div className="min-w-0">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-civic shadow-sm dark:bg-slate-900">Community Pulse</span>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-civic shadow-sm dark:bg-slate-900">استبيان</span>
                   <SurveyStatusBadge status={survey.lifecycleStatus} />
                   {publisher.badge ? <span className="inline-flex items-center gap-1 rounded-full bg-civic/10 px-2.5 py-1 text-xs font-bold text-civic"><ShieldCheck className="h-3.5 w-3.5" />{publisher.badge}</span> : null}
                 </div>
@@ -49,11 +49,7 @@ export default async function SurveyDetailsPage({ params }: { params: Promise<{ 
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <ShareMenu url={surveyHref} title={survey.title} text={survey.description || survey.title} />
-              <span className="inline-flex items-center gap-1 rounded border border-line bg-white px-3 py-2 text-sm font-bold text-ink/65 dark:bg-slate-900 dark:text-slate-300">
-                <Share2 className="h-4 w-4 text-civic" />
-                مشاركة مسؤولة
-              </span>
+              <ShareMenu url={surveyHref} title={survey.title} text={survey.description || survey.title} menuPlacement="bottom" />
             </div>
           </div>
           {survey.description ? <p className="mt-5 max-w-5xl whitespace-pre-line leading-8 text-ink/75 dark:text-slate-300">{survey.description}</p> : null}

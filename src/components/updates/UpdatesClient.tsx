@@ -5,22 +5,24 @@ import Link from "next/link";
 import { Bot, Compass, Filter, Hash, Loader2, RotateCcw, Search } from "lucide-react";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
+import SurveyFeedCard from "@/components/surveys/SurveyFeedCard";
 import { PostCardSkeleton, SidebarSkeleton } from "@/components/ui/Skeletons";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { extractHashtags, formatNumber, normalizeHashtag } from "@/lib/localization";
 
-type UpdateItem = { type: "post" | "poll"; publishedAt: string; item: any };
+type UpdateItem = { type: "post" | "poll" | "survey"; publishedAt: string; item: any };
 
 const pageSize = 10;
 const refreshIntervalMs = 45000;
 
-const filters = ["all", "posts", "polls", "iec", "parties"] as const;
+const filters = ["all", "posts", "polls", "surveys", "iec", "parties"] as const;
 const sortOptions = ["newest", "oldest", "mostCommented", "mostLiked", "pollsEndingSoon"] as const;
 const filterLabelKeys = {
   all: "updates.all",
   posts: "updates.posts",
   polls: "updates.polls",
+  surveys: "updates.surveys",
   iec: "updates.authority",
   parties: "updates.parties"
 } as const;
@@ -219,7 +221,9 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
     updates.forEach((update) => {
       const text = update.type === "post"
         ? `${update.item.title || ""}\n${update.item.content || ""}\n${(update.item.tags || []).map((tag: string) => `#${tag}`).join(" ")}`
-        : `${update.item.question || ""}\n${update.item.description || ""}`;
+        : update.type === "poll"
+          ? `${update.item.question || ""}\n${update.item.description || ""}`
+          : `${update.item.title || ""}\n${update.item.description || ""}`;
       extractHashtags(text).forEach((tag) => counts.set(tag, (counts.get(tag) || 0) + 1));
     });
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -233,6 +237,15 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
     });
     return [...map.values()].slice(0, 5);
   }, [updates]);
+
+  const showResultsCount = Boolean(
+    debouncedSearch ||
+    filter !== "all" ||
+    sort !== "newest" ||
+    fromDate ||
+    toDate ||
+    hashtag.trim()
+  );
 
   function resetFilters() {
     setSearch("");
@@ -319,9 +332,11 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <p className="rounded-full bg-civic/10 px-3 py-2 text-sm font-black text-civic dark:bg-emerald-200/12 dark:text-emerald-100">
-                {t("updates.resultsCount")} {formatNumber(totalCount, language)}
-              </p>
+              {showResultsCount ? (
+                <p className="rounded-full bg-civic/10 px-3 py-2 text-sm font-black text-civic dark:bg-emerald-200/12 dark:text-emerald-100">
+                  {t("updates.resultsCount")} {formatNumber(totalCount, language)}
+                </p>
+              ) : null}
               <button type="button" onClick={() => setMobileFiltersOpen((value) => !value)} className="focus-ring inline-flex items-center gap-2 rounded border border-line px-3 py-2 text-sm font-bold text-civic lg:hidden">
                 <Filter className="h-4 w-4" />
                 {t("updates.advancedSearch")}
@@ -349,7 +364,13 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
         {!loading ? (
           <div className="space-y-4">
             {updates.map((update) =>
-              update.type === "post" ? <PostCard key={`post-${update.item._id}`} post={update.item} /> : <PollCard key={`poll-${update.item._id}`} poll={update.item} />
+              update.type === "post" ? (
+                <PostCard key={`post-${update.item._id}`} post={update.item} />
+              ) : update.type === "poll" ? (
+                <PollCard key={`poll-${update.item._id}`} poll={update.item} />
+              ) : (
+                <SurveyFeedCard key={`survey-${update.item._id}`} survey={update.item} />
+              )
             )}
           </div>
         ) : null}

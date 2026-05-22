@@ -1,15 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart3, Building2, CheckCircle2, Clock, Users } from "lucide-react";
+import { BarChart3, Building2, ClipboardList, MessageCircle, Newspaper, Scale, Users } from "lucide-react";
 import CountUpNumber from "@/components/ui/CountUpNumber";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 
 type Indicators = {
   citizensCount: number;
+  usersCount: number;
   partiesCount: number;
   openPollsCount: number;
   closedPollsCount: number;
+  updatesCount: number;
+  surveysCount: number;
+  surveyResponsesCount: number;
+  lawsCount: number;
+  participationsCount: number;
 };
 
 export default function PlatformIndicatorsSection() {
@@ -43,10 +49,12 @@ export default function PlatformIndicatorsSection() {
   }, []);
 
   const cards = [
-    { key: "citizensCount", label: t("indicators.citizens"), icon: Users },
+    { key: "usersCount", label: t("indicators.users"), icon: Users },
     { key: "partiesCount", label: t("indicators.parties"), icon: Building2 },
-    { key: "openPollsCount", label: t("indicators.openPolls"), icon: CheckCircle2 },
-    { key: "closedPollsCount", label: t("indicators.closedPolls"), icon: Clock }
+    { key: "updatesCount", label: t("indicators.updates"), icon: Newspaper },
+    { key: "surveysCount", label: t("indicators.surveys"), icon: ClipboardList },
+    { key: "surveyResponsesCount", label: t("indicators.surveyResponses"), icon: MessageCircle },
+    { key: "lawsCount", label: t("indicators.laws"), icon: Scale }
   ] as const;
 
   return (
@@ -66,7 +74,7 @@ export default function PlatformIndicatorsSection() {
         {failed ? (
           <div className="rounded border border-white/20 bg-white/10 p-5 text-sm font-semibold text-white/80">{t("common.error")}</div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {cards.map((card) => {
               const Icon = card.icon;
               const value = data?.[card.key] ?? 0;

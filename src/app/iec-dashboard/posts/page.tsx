@@ -20,7 +20,7 @@ export default async function IecPostsPage() {
   return (
     <DashboardNav title="لوحة الهيئة" links={links}>
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-        <PostCreateForm />
+        <PostCreateForm currentUser={user} />
         <div className="space-y-4">{(data.posts as any[]).map((post) => <PostCard key={post._id} post={post} compact />)}</div>
       </div>
     </DashboardNav>

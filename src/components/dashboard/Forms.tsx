@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { Hash, ImagePlus, Plus, Send, Trash2, UserRound } from "lucide-react";
 import LoadingButton from "@/components/ui/LoadingButton";
 import MediaUploadField from "@/components/ui/MediaUploadField";
 import SafeImage from "@/components/ui/SafeImage";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
+import type { TranslationKey } from "@/lib/i18n";
 import { allowedPollDurationDays, defaultPollDurationDays } from "@/lib/polls";
 
 function useApiMessage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   async function submit(url: string, payload: unknown, method = "POST") {
@@ -24,12 +26,12 @@ function useApiMessage() {
       });
       const json = await response.json().catch(() => ({}));
       setLoading(false);
-      setMessage(json.ok ? "تم الحفظ" : json.error?.message || "تعذر الحفظ");
+      setMessage(json.ok ? t("common.saved") : json.error?.message || t("common.saveFailed"));
       if (json.ok) router.refresh();
       return json;
     } catch {
       setLoading(false);
-      setMessage("تعذر الاتصال بالخادم");
+      setMessage(t("common.connectionFailed"));
       return { ok: false };
     }
   }
@@ -44,7 +46,159 @@ function splitLines(value: FormDataEntryValue | null) {
   return String(value || "").split("\n").map((item) => item.trim()).filter(Boolean);
 }
 
-export function PostCreateForm() {
+type ComposerUser = {
+  name?: string | null;
+  image?: string | null;
+  avatarUrl?: string | null;
+} | null;
+
+function composerAvatarUrl(user: ComposerUser) {
+  return user?.avatarUrl || user?.image || null;
+}
+
+type PollCreateErrorKey = Extract<
+  TranslationKey,
+  | "poll.create.error.questionRequired"
+  | "poll.create.error.minOptions"
+  | "poll.create.error.duplicateOptions"
+>;
+
+export function PostCreateForm({ currentUser = null }: { currentUser?: ComposerUser }) {
+  const api = useApiMessage();
+  const { showToast } = useToast();
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [media, setMedia] = useState<Array<{ id: string; url: string; type?: string; mimeType?: string }>>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [error, setError] = useState("");
+  const [content, setContent] = useState("");
+  const displayName = currentUser?.name || "حساب ناشر";
+  const avatarFallback = (
+    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic/10 text-base font-black text-civic ring-1 ring-line dark:bg-emerald-200/10 dark:text-emerald-100">
+      {displayName ? displayName.slice(0, 1) : <UserRound className="h-5 w-5" />}
+    </div>
+  );
+
+  return (
+    <form
+      ref={formRef}
+      action={async (formData) => {
+        const trimmedContent = String(formData.get("content") || "").trim();
+        if (!trimmedContent) {
+          setError("محتوى المنشور مطلوب.");
+          return;
+        }
+        if (uploadingMedia) {
+          showToast("انتظر حتى يكتمل رفع الملف قبل النشر.", "error");
+          return;
+        }
+        setError("");
+        const json = await api.submit("/api/posts", {
+          title: formData.get("title") || null,
+          content: trimmedContent,
+          tags: splitComma(formData.get("tags")),
+          mediaIds: media.map((item) => item.id).filter(Boolean)
+        });
+        if (json?.ok) {
+          setMedia([]);
+          setContent("");
+          formRef.current?.reset();
+          showToast("تم نشر المنشور", "success");
+        }
+      }}
+      className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100"
+    >
+      <div className="border-b border-slate-200 px-5 py-4 text-center dark:border-slate-700">
+        <h2 className="text-lg font-black">إنشاء منشور</h2>
+      </div>
+
+      <div className="space-y-4 p-5">
+        <div className="flex items-center gap-3">
+          <SafeImage
+            src={composerAvatarUrl(currentUser)}
+            alt={displayName}
+            className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line dark:bg-slate-900"
+            fallback={avatarFallback}
+            localPrefixes={["/uploads/", "/images/"]}
+          />
+          <div className="min-w-0">
+            <p className="truncate font-black">{displayName}</p>
+            <p className="text-xs font-semibold text-ink/55 dark:text-slate-400">منشور عام على منصة نشمي</p>
+          </div>
+        </div>
+
+        <input name="title" className="w-full rounded-xl border-line bg-slate-50 px-4 py-3 font-semibold text-ink placeholder:text-ink/40 focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white" placeholder="عنوان اختياري" />
+        <textarea
+          name="content"
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          className="min-h-40 w-full resize-y rounded-2xl border-0 bg-slate-50 px-4 py-4 text-base leading-8 text-ink placeholder:text-ink/40 focus:ring-2 focus:ring-civic dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500"
+          placeholder="ماذا تريد أن تنشر اليوم؟"
+          required
+        />
+
+        <label className="relative block">
+          <Hash className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" />
+          <input name="tags" className="w-full rounded-xl border-line bg-white py-3 ps-10 text-sm font-semibold text-ink placeholder:text-ink/40 focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white" placeholder="وسوم مفصولة بفواصل" />
+        </label>
+
+        {error ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{error}</p> : null}
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-900/55">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm font-black text-ink dark:text-white">
+              <ImagePlus className="h-4 w-4 text-civic dark:text-emerald-200" />
+              أدوات المنشور
+            </div>
+            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-ink/55 ring-1 ring-line dark:bg-slate-950 dark:text-slate-400">صور أو فيديو</span>
+          </div>
+          <MediaUploadField
+            label="مرفقات المنشور"
+            imagesOnly={false}
+            helper="يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF، أو فيديو MP4/WEBM حتى 100MB."
+            fallbackText="+"
+            purpose="post"
+            onUploaded={(asset) => setMedia((current) => current.length >= 6 ? current : [...current, { id: asset._id, url: asset.url, type: asset.type, mimeType: asset.mimeType }])}
+            onUploadingChange={setUploadingMedia}
+          />
+        </div>
+
+        {media.length ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {media.map((item) => (
+              <div key={item.id || item.url} className="rounded-xl border border-line bg-white p-2 dark:bg-slate-900">
+                {item.type === "video" || item.mimeType?.startsWith("video/") ? (
+                  <video src={item.url} className="h-32 w-full rounded-lg bg-black object-contain" controls />
+                ) : (
+                  <SafeImage src={item.url} alt="معاينة المرفق" className="h-32 w-full rounded-lg object-contain" fallback={<div className="grid h-32 place-items-center text-sm text-ink/60">تعذر عرض الصورة</div>} localPrefixes={["/uploads/", "/images/", "/related/"]} />
+                )}
+                <button type="button" onClick={() => setMedia((current) => current.filter((mediaItem) => mediaItem.id !== item.id))} className="mt-2 inline-flex items-center gap-1 rounded px-2 py-1 text-sm font-semibold text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30">
+                  <Trash2 className="h-4 w-4" />
+                  حذف
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="border-t border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/60">
+        <LoadingButton loading={api.loading || uploadingMedia} disabled={uploadingMedia || !content.trim()} className="w-full rounded-xl bg-civic px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-civic/90 disabled:opacity-55">
+          {uploadingMedia ? "جاري رفع الملف" : api.loading ? "جاري النشر" : (
+            <>
+              <Send className="h-4 w-4" />
+              نشر
+            </>
+          )}
+        </LoadingButton>
+        {api.message ? <p className="mt-2 text-center text-sm text-ink/60">{api.message}</p> : null}
+      </div>
+    </form>
+  );
+}
+
+// Kept briefly as an internal fallback while the composer UI is polished.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function LegacyPostCreateForm() {
   const api = useApiMessage();
   const { showToast } = useToast();
   const [media, setMedia] = useState<Array<{ id: string; url: string; type?: string; mimeType?: string }>>([]);
@@ -123,14 +277,14 @@ export function PollCreateForm() {
   const [options, setOptions] = useState(["", ""]);
   const [resultsVisibility, setResultsVisibility] = useState("always");
   const [durationDays, setDurationDays] = useState(defaultPollDurationDays);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [errors, setErrors] = useState<PollCreateErrorKey[]>([]);
 
   function validatePoll() {
     const trimmedOptions = options.map((option) => option.trim()).filter(Boolean);
-    const nextErrors: string[] = [];
-    if (!question.trim()) nextErrors.push("سؤال التصويت مطلوب.");
-    if (trimmedOptions.length < 2) nextErrors.push("أضف خيارين على الأقل.");
-    if (new Set(trimmedOptions).size !== trimmedOptions.length) nextErrors.push("لا يمكن تكرار خيارات التصويت.");
+    const nextErrors: PollCreateErrorKey[] = [];
+    if (!question.trim()) nextErrors.push("poll.create.error.questionRequired");
+    if (trimmedOptions.length < 2) nextErrors.push("poll.create.error.minOptions");
+    if (new Set(trimmedOptions).size !== trimmedOptions.length) nextErrors.push("poll.create.error.duplicateOptions");
     setErrors(nextErrors);
     return nextErrors.length === 0 ? trimmedOptions : null;
   }
@@ -154,26 +308,26 @@ export function PollCreateForm() {
           setResultsVisibility("always");
           setDurationDays(defaultPollDurationDays);
           setErrors([]);
-          showToast("تم إنشاء التصويت بنجاح.", "success");
+          showToast(t("poll.create.success"), "success");
         }
       }}
       className="card space-y-3 p-5"
     >
-      <h2 className="text-xl font-bold">ØªØµÙˆÙŠØª Ø¬Ø¯ÙŠØ¯</h2>
-      <input value={question} onChange={(event) => setQuestion(event.target.value)} className="w-full rounded border-line" placeholder="Ø§Ù„Ø³Ø¤Ø§Ù„" aria-invalid={errors.some((item) => item.includes("سؤال"))} />
-      <textarea value={description} onChange={(event) => setDescription(event.target.value)} className="w-full rounded border-line" rows={2} placeholder="ÙˆØµÙ Ø§Ø®ØªÙŠØ§Ø±ÙŠ" />
+      <h2 className="text-xl font-bold">{t("poll.create.title")}</h2>
+      <input value={question} onChange={(event) => setQuestion(event.target.value)} className="w-full rounded border-line" placeholder={t("poll.create.questionPlaceholder")} aria-invalid={errors.includes("poll.create.error.questionRequired")} />
+      <textarea value={description} onChange={(event) => setDescription(event.target.value)} className="w-full rounded border-line" rows={2} placeholder={t("poll.create.descriptionPlaceholder")} />
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-bold">خيارات التصويت</span>
+          <span className="text-sm font-bold">{t("poll.create.options")}</span>
           <button type="button" onClick={() => setOptions((current) => current.length >= 6 ? current : [...current, ""])} className="inline-flex items-center gap-1 rounded border border-line px-3 py-1.5 text-sm font-bold hover:border-civic">
             <Plus className="h-4 w-4" />
-            إضافة خيار
+            {t("poll.create.addOption")}
           </button>
         </div>
         {options.map((option, index) => (
           <div key={index} className="flex gap-2">
-            <input value={option} onChange={(event) => setOptions((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className="min-w-0 flex-1 rounded border-line" placeholder={`خيار ${index + 1}`} />
-            <button type="button" onClick={() => setOptions((current) => current.filter((_, itemIndex) => itemIndex !== index))} disabled={options.length <= 2} className="rounded border border-line px-2 text-red-700 disabled:cursor-not-allowed disabled:opacity-45" aria-label="حذف الخيار">
+            <input value={option} onChange={(event) => setOptions((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className="min-w-0 flex-1 rounded border-line" placeholder={`${t("poll.create.option")} ${index + 1}`} />
+            <button type="button" onClick={() => setOptions((current) => current.filter((_, itemIndex) => itemIndex !== index))} disabled={options.length <= 2} className="rounded border border-line px-2 text-red-700 disabled:cursor-not-allowed disabled:opacity-45" aria-label={t("poll.create.deleteOption")}>
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
@@ -181,14 +335,17 @@ export function PollCreateForm() {
       </div>
       {errors.length ? (
         <div className="rounded border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
-          {errors.map((item) => <p key={item}>{item}</p>)}
+          {errors.map((item) => <p key={item}>{t(item)}</p>)}
         </div>
       ) : null}
-      <select value={resultsVisibility} onChange={(event) => setResultsVisibility(event.target.value)} className="rounded border-line">
-        <option value="always">Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø¯Ø§Ø¦Ù…Ù‹Ø§</option>
-        <option value="after_vote">Ø¨Ø¹Ø¯ Ø§Ù„ØªØµÙˆÙŠØª</option>
-        <option value="after_close">Ø¨Ø¹Ø¯ Ø§Ù„Ø¥ØºÙ„Ø§Ù‚</option>
-      </select>
+      <label className="block text-sm font-semibold">
+        {t("poll.create.resultsVisibility")}
+        <select value={resultsVisibility} onChange={(event) => setResultsVisibility(event.target.value)} className="mt-1 w-full rounded border-line">
+          <option value="always">{t("poll.create.results.always")}</option>
+          <option value="after_vote">{t("poll.create.results.afterVote")}</option>
+          <option value="after_close">{t("poll.create.results.afterClose")}</option>
+        </select>
+      </label>
       <label className="block text-sm font-semibold">
         {t("poll.duration")}
         <select value={durationDays} onChange={(event) => setDurationDays(Number(event.target.value))} className="mt-1 w-full rounded border-line">
@@ -199,7 +356,7 @@ export function PollCreateForm() {
           ))}
         </select>
       </label>
-      <LoadingButton loading={api.loading} className="bg-civic px-4 py-2 text-white hover:bg-civic/90">{api.loading ? "Ø¬Ø§Ø± Ø§Ù„Ø­ÙØ¸..." : "Ø¥Ù†Ø´Ø§Ø¡"}</LoadingButton>
+      <LoadingButton loading={api.loading} className="bg-civic px-4 py-2 text-white hover:bg-civic/90">{api.loading ? t("poll.create.publishing") : t("poll.create.publish")}</LoadingButton>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
@@ -221,15 +378,18 @@ export function LegacyPollCreateForm() {
       }
       className="card space-y-3 p-5"
     >
-      <h2 className="text-xl font-bold">تصويت جديد</h2>
-      <input name="question" className="w-full rounded border-line" placeholder="السؤال" required />
-      <textarea name="description" className="w-full rounded border-line" rows={2} placeholder="وصف اختياري" />
-      <textarea name="options" className="w-full rounded border-line" rows={5} placeholder={"كل خيار في سطر\nمثال: أوافق\nلا أوافق"} required />
-      <select name="resultsVisibility" className="rounded border-line">
-        <option value="always">النتائج دائمًا</option>
-        <option value="after_vote">بعد التصويت</option>
-        <option value="after_close">بعد الإغلاق</option>
-      </select>
+      <h2 className="text-xl font-bold">{t("poll.create.title")}</h2>
+      <input name="question" className="w-full rounded border-line" placeholder={t("poll.create.questionPlaceholder")} required />
+      <textarea name="description" className="w-full rounded border-line" rows={2} placeholder={t("poll.create.descriptionPlaceholder")} />
+      <textarea name="options" className="w-full rounded border-line" rows={5} placeholder={t("poll.create.optionsHelp")} required />
+      <label className="block text-sm font-semibold">
+        {t("poll.create.resultsVisibility")}
+        <select name="resultsVisibility" className="mt-1 w-full rounded border-line">
+          <option value="always">{t("poll.create.results.always")}</option>
+          <option value="after_vote">{t("poll.create.results.afterVote")}</option>
+          <option value="after_close">{t("poll.create.results.afterClose")}</option>
+        </select>
+      </label>
       <label className="block text-sm font-semibold">
         {t("poll.duration")}
         <select name="durationDays" defaultValue={defaultPollDurationDays} className="mt-1 w-full rounded border-line">
@@ -240,7 +400,7 @@ export function LegacyPollCreateForm() {
           ))}
         </select>
       </label>
-      <button className="block rounded bg-civic px-4 py-2 text-white">إنشاء</button>
+      <button className="block rounded bg-civic px-4 py-2 text-white">{t("poll.create.publish")}</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );

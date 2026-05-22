@@ -24,11 +24,11 @@ export default async function SurveysPage({ searchParams }: { searchParams: Prom
     <main className="container-page py-8">
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <span className="rounded-full bg-civic/10 px-3 py-1 text-sm font-black text-civic">Community Pulse</span>
+          <span className="rounded-full bg-civic/10 px-3 py-1 text-sm font-black text-civic">استبيانات المجتمع</span>
           <h1 className="mt-3 text-3xl font-black">نبض المجتمع</h1>
           <p className="mt-2 max-w-3xl leading-7 text-ink/70 dark:text-slate-300">استبيانات تفاعلية من الأحزاب والجهات الرسمية والمنصة لقياس الرأي والمشاركة المدنية.</p>
         </div>
-        <Link href="/updates" className="rounded border border-line px-4 py-2 text-sm font-bold hover:border-civic hover:text-civic">آخر المستجدات</Link>
+        <Link href="/updates?filter=surveys" className="rounded border border-line px-4 py-2 text-sm font-bold hover:border-civic hover:text-civic">آخر المستجدات</Link>
       </div>
 
       <form className="card mb-6 grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_180px_210px_auto]">

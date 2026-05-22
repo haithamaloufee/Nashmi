@@ -194,7 +194,7 @@ export default async function IecPage() {
           </div>
         </div>
         <div>
-          <h2 className="mb-4 text-2xl font-bold">Community Pulse</h2>
+          <h2 className="mb-4 text-2xl font-bold">الاستبيانات</h2>
           <div className="grid gap-4">
             {surveys.length > 0 ? surveys.map((survey: any) => <SurveyCard key={survey._id} survey={survey} compact />) : <p className="rounded border border-line bg-white p-5 text-ink/60">لا توجد استبيانات منشورة حاليًا.</p>}
           </div>

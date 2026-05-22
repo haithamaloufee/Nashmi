@@ -3,6 +3,7 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 
 const markdownComponents: Components = {
   h1: ({ children }) => <h3 className="mb-2 mt-3 text-base font-black leading-7 text-ink dark:text-white first:mt-0">{children}</h3>,
@@ -56,8 +57,9 @@ const markdownComponents: Components = {
 };
 
 export default function MarkdownMessage({ content }: { content: string }) {
+  const { dir } = useTranslation();
   return (
-    <div className="chat-markdown min-w-0 max-w-full whitespace-normal break-words text-sm leading-8 text-slate-800 dark:text-slate-100" dir="rtl">
+    <div className="chat-markdown min-w-0 max-w-full whitespace-normal break-words text-sm leading-8 text-slate-800 dark:text-slate-100" dir={dir}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={markdownComponents}>
         {content}
       </ReactMarkdown>

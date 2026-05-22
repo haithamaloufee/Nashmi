@@ -15,8 +15,8 @@ async function LatestPartyUpdates() {
     <section className="mb-8 grid gap-3 md:grid-cols-3">
       {latest.slice(0, 3).map((item) => (
         <Link key={`${item.type}-${item.item._id}`} href="/updates" className="card card-hover p-4 text-sm">
-          <span className="text-civic"><I18nText id={item.type === "post" ? "content.post" : "content.poll"} /></span>
-          <p className="mt-2 line-clamp-2">{item.type === "post" ? item.item.title || item.item.content : item.item.question}</p>
+          <span className="text-civic"><I18nText id={item.type === "post" ? "content.post" : item.type === "poll" ? "content.poll" : "content.survey"} /></span>
+          <p className="mt-2 line-clamp-2">{item.type === "post" ? item.item.title || item.item.content : item.type === "poll" ? item.item.question : item.item.title}</p>
         </Link>
       ))}
     </section>

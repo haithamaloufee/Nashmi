@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowDown, Bot, MoveVertical, Send, Sparkles, X } from "lucide-react";
+import ChatAvatar from "@/components/chat/ChatAvatar";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { formatNumber } from "@/lib/localization";
@@ -22,6 +23,14 @@ type Usage = {
   resetAt: string;
 };
 
+type AssistantUser = {
+  name?: string | null;
+  image?: string | null;
+  imageUrl?: string | null;
+  avatarUrl?: string | null;
+  profileImage?: string | null;
+} | null;
+
 const DEFAULT_PANEL_HEIGHT = 620;
 const MIN_PANEL_HEIGHT = 360;
 const DEFAULT_BOTTOM_OFFSET = 16;
@@ -38,6 +47,10 @@ function fallbackError(json: unknown, fallback: string, tFunc: (k: any) => strin
   return fallback;
 }
 
+function userAvatarUrl(user: AssistantUser) {
+  return user?.avatarUrl || user?.image || user?.imageUrl || user?.profileImage || null;
+}
+
 export default function FloatingAssistant() {
   const { dir, language, t } = useTranslation();
   const pathname = usePathname();
@@ -49,6 +62,8 @@ export default function FloatingAssistant() {
   const [error, setError] = useState("");
   const [showLoginCta, setShowLoginCta] = useState(false);
   const [usage, setUsage] = useState<Usage | null>(null);
+  const [currentUser, setCurrentUser] = useState<AssistantUser>(null);
+  const [currentUserLoading, setCurrentUserLoading] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [panelHeight, setPanelHeight] = useState(DEFAULT_PANEL_HEIGHT);
   const [bottomOffset, setBottomOffset] = useState(DEFAULT_BOTTOM_OFFSET);
@@ -107,6 +122,27 @@ export default function FloatingAssistant() {
       cancelled = true;
     };
   }, [language, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    async function loadCurrentUser() {
+      setCurrentUserLoading(true);
+      try {
+        const response = await fetch("/api/auth/me", { cache: "no-store" });
+        const json = await response.json().catch(() => ({}));
+        if (!cancelled) setCurrentUser(response.ok && json.ok ? json.data.user : null);
+      } catch {
+        if (!cancelled) setCurrentUser(null);
+      } finally {
+        if (!cancelled) setCurrentUserLoading(false);
+      }
+    }
+    void loadCurrentUser();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -234,8 +270,6 @@ export default function FloatingAssistant() {
         if (usageData) setUsage(usageData);
         setShowLoginCta(json.error?.messageKey === "chat.limit.guestReached");
         setError(friendly);
-        pendingAssistantFocusRef.current = true;
-        setMessages((items) => [...items, { role: "assistant", content: friendly }]);
         return;
       }
       setSessionId(json.data.session?._id || null);
@@ -245,8 +279,6 @@ export default function FloatingAssistant() {
     } catch {
       const friendly = t("chat.connectionError");
       setError(friendly);
-      pendingAssistantFocusRef.current = true;
-      setMessages((items) => [...items, { role: "assistant", content: friendly }]);
     } finally {
       setLoading(false);
     }
@@ -304,10 +336,12 @@ export default function FloatingAssistant() {
           <div className="relative min-h-0 flex-1">
             <div ref={messagesRef} className="assistant-scrollbar h-full space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#101820]" aria-live="polite">
               {messages.map((message, index) => (
-                <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div key={`${message.role}-${index}`} dir="ltr" className={`flex items-end gap-2 ${message.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
+                  <ChatAvatar role={message.role} name={message.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={message.role === "user" ? userAvatarUrl(currentUser) : null} loading={message.role === "user" && currentUserLoading} compact />
                   <div
                     ref={message.role === "user" && index === messages.length - 1 ? latestUserRef : message.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
-                    className={`min-w-0 max-w-[90%] rounded-2xl px-4 py-3 text-start text-sm leading-7 shadow-sm ${message.role === "user" ? "bg-civic text-white dark:bg-[#1b8f89]" : "border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+                    dir={dir}
+                    className={`min-w-0 max-w-[76%] rounded-2xl px-4 py-3 text-start text-sm leading-7 shadow-sm sm:max-w-[86%] ${message.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-bl-md border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
                   >
                     {message.role === "assistant" ? (
                       <MarkdownMessage content={message.content} />
@@ -318,7 +352,8 @@ export default function FloatingAssistant() {
                 </div>
               ))}
               {loading ? (
-                <div className="flex justify-start">
+                <div dir="ltr" className="flex items-end justify-start gap-2">
+                  <ChatAvatar role="assistant" compact />
                   <TypingIndicator label={t("chat.sending")} />
                 </div>
               ) : null}
