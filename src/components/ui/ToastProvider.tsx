@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Info, X, XCircle } from "lucide-react";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 
 type ToastType = "success" | "error" | "info";
 type Toast = { id: string; message: string; type: ToastType };
@@ -10,6 +11,7 @@ type ToastContextValue = { showToast: (message: string, type?: ToastType) => voi
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const dismiss = useCallback((id: string) => {
@@ -39,7 +41,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               <Icon className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="min-w-0 flex-1 leading-6">{toast.message}</p>
-              <button type="button" onClick={() => dismiss(toast.id)} className="rounded p-1 text-ink/45 transition hover:bg-ink/5 hover:text-ink" aria-label="إغلاق التنبيه">
+              <button type="button" onClick={() => dismiss(toast.id)} className="rounded p-1 text-ink/45 transition hover:bg-ink/5 hover:text-ink" aria-label={t("common.close")}>
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>

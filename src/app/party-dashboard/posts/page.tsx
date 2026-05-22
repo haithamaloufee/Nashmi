@@ -7,11 +7,11 @@ import PostCard from "@/components/posts/PostCard";
 
 export const dynamic = "force-dynamic";
 const links = [
-  { href: "/party-dashboard", label: "الرئيسية" },
-  { href: "/party-dashboard/profile", label: "ملف الحزب" },
-  { href: "/party-dashboard/posts", label: "المنشورات" },
-  { href: "/party-dashboard/polls", label: "التصويتات" }
-];
+  { href: "/party-dashboard", labelKey: "dashboard.sidebar.home" },
+  { href: "/party-dashboard/profile", labelKey: "dashboard.sidebar.partyProfile" },
+  { href: "/party-dashboard/posts", labelKey: "dashboard.sidebar.posts" },
+  { href: "/party-dashboard/polls", labelKey: "dashboard.sidebar.polls" }
+] as const;
 
 export default async function PartyPostsPage() {
   const user = await getCurrentUser();
@@ -19,7 +19,7 @@ export default async function PartyPostsPage() {
   const data = (await getPartyDashboardData(user.id)) as any;
   if (!data) redirect("/");
   return (
-    <DashboardNav title="لوحة الحزب" links={links}>
+    <DashboardNav titleKey="dashboard.party.title" links={links}>
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <PostCreateForm currentUser={user} />
         <div className="space-y-4">{data.posts.map((post: any) => <PostCard key={post._id} post={post} compact />)}</div>

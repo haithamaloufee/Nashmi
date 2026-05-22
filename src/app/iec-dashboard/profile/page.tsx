@@ -7,11 +7,11 @@ import { getIecProfileData } from "@/lib/serverData";
 export const dynamic = "force-dynamic";
 
 const links = [
-  { href: "/iec-dashboard", label: "الرئيسية" },
-  { href: "/iec-dashboard/profile", label: "ملف الهيئة" },
-  { href: "/iec-dashboard/posts", label: "منشورات الهيئة" },
-  { href: "/iec-dashboard/laws", label: "القوانين" }
-];
+  { href: "/iec-dashboard", labelKey: "dashboard.sidebar.home" },
+  { href: "/iec-dashboard/profile", labelKey: "dashboard.sidebar.authorityProfile" },
+  { href: "/iec-dashboard/posts", labelKey: "dashboard.sidebar.authorityPosts" },
+  { href: "/iec-dashboard/laws", labelKey: "dashboard.sidebar.laws" }
+] as const;
 
 export default async function IecProfilePage() {
   const user = await getCurrentUser();
@@ -20,7 +20,7 @@ export default async function IecProfilePage() {
   if (!authority) redirect("/iec-dashboard");
 
   return (
-    <DashboardNav title="لوحة الهيئة" links={links}>
+    <DashboardNav titleKey="dashboard.authority.title" links={links}>
       <IecProfileForm authority={authority} />
     </DashboardNav>
   );

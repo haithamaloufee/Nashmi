@@ -638,7 +638,7 @@ export async function getPartyDashboardData(userId: string) {
 }
 
 export async function getIecDashboardData() {
-  return safeData({ posts: [] as unknown[], polls: [] as unknown[], laws: [] as unknown[], surveys: [] as unknown[] }, async () => {
+  return safeData({ posts: [] as unknown[], polls: [] as unknown[], laws: [] as unknown[], surveys: [] as unknown[], authorityAuthor: { name: "الهيئة المستقلة للانتخاب", logoUrl: "/related/iec-logo.png" } }, async () => {
     const [posts, polls, laws, surveys, authorityAuthor] = await Promise.all([
       Post.find({ authorType: "iec", status: { $ne: "deleted" } })
         .select("authorType authorUserId partyId publisherSnapshot title content mediaIds tags likesCount dislikesCount commentsCount publishedAt createdAt status")
@@ -663,7 +663,8 @@ export async function getIecDashboardData() {
       posts: serialize(attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor)),
       polls: serialize(attachAuthorityAuthor(polls as LeanItem[], authorityAuthor)),
       laws: serialize(laws),
-      surveys: serialize(attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor))
+      surveys: serialize(attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor)),
+      authorityAuthor
     };
   });
 }

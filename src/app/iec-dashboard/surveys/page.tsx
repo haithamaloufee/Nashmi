@@ -7,19 +7,19 @@ import SurveyBuilderForm from "@/components/surveys/SurveyBuilderForm";
 export const dynamic = "force-dynamic";
 
 const links = [
-  { href: "/iec-dashboard", label: "الرئيسية" },
-  { href: "/iec-dashboard/profile", label: "ملف الهيئة" },
-  { href: "/iec-dashboard/posts", label: "منشورات الهيئة" },
-  { href: "/iec-dashboard/laws", label: "القوانين" },
-  { href: "/iec-dashboard/surveys", label: "الاستبيانات" }
-];
+  { href: "/iec-dashboard", labelKey: "dashboard.sidebar.home" },
+  { href: "/iec-dashboard/profile", labelKey: "dashboard.sidebar.authorityProfile" },
+  { href: "/iec-dashboard/posts", labelKey: "dashboard.sidebar.authorityPosts" },
+  { href: "/iec-dashboard/laws", labelKey: "dashboard.sidebar.laws" },
+  { href: "/iec-dashboard/surveys", labelKey: "dashboard.sidebar.surveys" }
+] as const;
 
 export default async function IecSurveysPage() {
   const user = await getCurrentUser();
   if (!user || user.role !== "iec") redirect("/login");
   const data = (await getIecDashboardData()) as any;
   return (
-    <DashboardNav title="لوحة الهيئة" links={links} wide>
+    <DashboardNav titleKey="dashboard.authority.title" links={links} wide>
       <SurveyBuilderForm surveys={data.surveys || []} mode="iec" />
     </DashboardNav>
   );
