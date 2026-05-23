@@ -1,4 +1,4 @@
-export type PublisherAccountType = "party" | "authority";
+export type PublisherAccountType = "party" | "authority" | "admin";
 
 export type PublisherComposerProfile = {
   name?: string | null;

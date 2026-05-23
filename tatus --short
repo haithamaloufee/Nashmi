@@ -1,0 +1,25 @@
+warning: in the working copy of 'src/app/globals.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/updates/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/dashboard/composers/ComposerModalShell.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/dashboard/composers/PollComposerModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/dashboard/composers/PostComposerModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/dashboard/composers/PublisherIdentity.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/dashboard/composers/SurveyComposerModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/dashboard/composers/types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/updates/UpdatesClient.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/i18n.ts', LF will be replaced by CRLF the next time Git touches it
+ src/app/globals.css                                |   2 [32m+[m[31m-[m
+ src/app/layout.tsx                                 |  10 [32m+[m[31m-[m
+ src/app/updates/page.tsx                           |  48 [32m+++++++++[m[31m-[m
+ .../dashboard/composers/ComposerModalShell.tsx     |  64 [32m++++++++++[m[31m---[m
+ .../dashboard/composers/PollComposerModal.tsx      |   9 [32m+[m[31m-[m
+ .../dashboard/composers/PostComposerModal.tsx      |   9 [32m+[m[31m-[m
+ .../dashboard/composers/PublisherIdentity.tsx      |   7 [32m+[m[31m-[m
+ .../dashboard/composers/SurveyComposerModal.tsx    |  11 [32m++[m[31m-[m
+ src/components/dashboard/composers/types.ts        |   2 [32m+[m[31m-[m
+ src/components/updates/UpdatesClient.tsx           | 102 [32m+++++++++++[m[31m----------[m
+ src/data/RoyalQuotesData.json                      |   6 [32m+[m[31m-[m
+ src/lib/i18n.ts                                    |  16 [32m++++[m
+ tailwind.config.ts                                 |   3 [32m+[m[31m-[m
+ 13 files changed, 205 insertions(+), 84 deletions(-)

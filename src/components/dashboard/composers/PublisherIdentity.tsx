@@ -8,7 +8,12 @@ import type { PublisherComposerProfile } from "@/components/dashboard/composers/
 export default function PublisherIdentity({ publisher }: { publisher: PublisherComposerProfile }) {
   const { t } = useTranslation();
   const displayName = publisher.name || t("composer.publisher.fallbackName");
-  const accountLabel = publisher.accountType === "authority" ? t("composer.publisher.authorityAccount") : t("composer.publisher.partyAccount");
+  const accountLabel =
+    publisher.accountType === "authority"
+      ? t("composer.publisher.authorityAccount")
+      : publisher.accountType === "admin"
+        ? t("composer.publisher.adminAccount")
+        : t("composer.publisher.partyAccount");
   const fallback = (
     <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-civic/10 text-base font-black text-civic ring-1 ring-line dark:bg-emerald-200/10 dark:text-emerald-100">
       {displayName ? displayName.slice(0, 1) : <UserRound className="h-5 w-5" />}

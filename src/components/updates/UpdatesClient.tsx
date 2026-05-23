@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Bot, Compass, Filter, Hash, Loader2, RotateCcw, Search } from "lucide-react";
+import { Bot, Compass, Loader2, Search, SlidersHorizontal } from "lucide-react";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
 import SurveyFeedCard from "@/components/surveys/SurveyFeedCard";
+import AdvancedSearchModal from "@/components/updates/AdvancedSearchModal";
+import UpdatesPublishButton from "@/components/updates/UpdatesPublishButton";
+import type { PublisherComposerProfile } from "@/components/dashboard/composers/types";
 import { PostCardSkeleton, SidebarSkeleton } from "@/components/ui/Skeletons";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
@@ -33,6 +36,7 @@ const sortLabelKeys = {
   mostLiked: "updates.mostLiked",
   pollsEndingSoon: "updates.pollsEndingSoon"
 } as const;
+const advancedFilterOptions = filters.map((value) => ({ value, labelKey: filterLabelKeys[value] }));
 
 function updateKey(update: UpdateItem) {
   return `${update.type}-${update.item?._id || update.publishedAt}`;
@@ -64,7 +68,17 @@ function prependUnique(current: UpdateItem[], incoming: UpdateItem[]) {
   ].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 }
 
-export default function UpdatesClient({ initialSearch = "", initialFilter = "all", initialUpdates = [] }: { initialSearch?: string; initialFilter?: string; initialUpdates?: UpdateItem[] }) {
+export default function UpdatesClient({
+  initialSearch = "",
+  initialFilter = "all",
+  initialUpdates = [],
+  publisher = null
+}: {
+  initialSearch?: string;
+  initialFilter?: string;
+  initialUpdates?: UpdateItem[];
+  publisher?: PublisherComposerProfile | null;
+}) {
   const { language, t } = useTranslation();
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
@@ -78,7 +92,7 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
   const [nextCursor, setNextCursor] = useState<string | null>(initialUpdates.length >= pageSize ? initialUpdates[initialUpdates.length - 1]?.publishedAt || null : null);
   const [loading, setLoading] = useState(initialUpdates.length === 0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const prefetchedPage = useRef<{ key: string; updates: UpdateItem[]; nextCursor: string | null } | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreInFlightRef = useRef(false);
@@ -256,50 +270,33 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
     setSort("newest");
   }
 
-  const advancedPanel = (
-    <div className="card p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-black">{t("updates.advancedSearch")}</h2>
-        <button type="button" onClick={resetFilters} className="focus-ring inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-bold text-civic hover:bg-civic/10">
-          <RotateCcw className="h-3.5 w-3.5" />
-          {t("common.reset")}
-        </button>
-      </div>
-      <div className="grid gap-3">
-        <label className="grid gap-1 text-sm font-semibold">
-          {t("updates.fromDate")}
-          <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white" />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          {t("updates.toDate")}
-          <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} className="rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white" />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          {t("updates.contentType")}
-          <select value={filter} onChange={(event) => setFilter(event.target.value)} className="rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white">
-            {filters.map((item) => <option key={item} value={item}>{t(filterLabelKeys[item])}</option>)}
-          </select>
-        </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          {t("updates.hashtagSearch")}
-          <div className="relative">
-            <Hash className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/45" />
-            <input value={hashtag} onChange={(event) => setHashtag(event.target.value)} className="w-full rounded border-line bg-white ps-9 text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white" placeholder="#Youth" />
-          </div>
-        </label>
-      </div>
-    </div>
-  );
+  const refreshAfterPublish = useCallback(() => {
+    prefetchedPage.current = null;
+    void load();
+  }, [load]);
+  const closeAdvancedFilters = useCallback(() => setAdvancedFiltersOpen(false), []);
 
   return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)_280px]">
-      <aside className="hidden lg:block">
-        <div className="sticky top-24 space-y-4">{advancedPanel}</div>
-      </aside>
-
+    <>
+      <AdvancedSearchModal
+        open={advancedFiltersOpen}
+        filterOptions={advancedFilterOptions}
+        fromDate={fromDate}
+        toDate={toDate}
+        filter={filter}
+        hashtag={hashtag}
+        onFromDateChange={setFromDate}
+        onToDateChange={setToDate}
+        onFilterChange={setFilter}
+        onHashtagChange={setHashtag}
+        onReset={resetFilters}
+        onApply={closeAdvancedFilters}
+        onClose={closeAdvancedFilters}
+      />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,820px)_280px] lg:justify-center xl:grid-cols-[minmax(0,840px)_300px]">
       <section className="min-w-0 space-y-4">
         <div className="card p-3">
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px]">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_auto] xl:grid-cols-[minmax(0,1fr)_220px_auto]">
             <label className="relative block">
               <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/45" />
               <input
@@ -315,6 +312,16 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
                 {sortOptions.map((item) => <option key={item} value={item}>{t(sortLabelKeys[item])}</option>)}
               </select>
             </label>
+            <button
+              type="button"
+              onClick={() => setAdvancedFiltersOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={advancedFiltersOpen}
+              className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-civic/30 bg-civic/10 px-4 py-2.5 text-sm font-black text-civic shadow-sm hover:border-civic hover:bg-civic hover:text-white dark:border-emerald-200/35 dark:bg-emerald-200/10 dark:text-emerald-100 dark:hover:bg-emerald-200 dark:hover:text-slate-950 xl:w-auto"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {t("updates.advancedSearch")}
+            </button>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
@@ -332,18 +339,14 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
               ))}
             </div>
             <div className="flex items-center gap-2">
+              {publisher ? <UpdatesPublishButton publisher={publisher} onPublished={refreshAfterPublish} /> : null}
               {showResultsCount ? (
                 <p className="rounded-full bg-civic/10 px-3 py-2 text-sm font-black text-civic dark:bg-emerald-200/12 dark:text-emerald-100">
                   {t("updates.resultsCount")} {formatNumber(totalCount, language)}
                 </p>
               ) : null}
-              <button type="button" onClick={() => setMobileFiltersOpen((value) => !value)} className="focus-ring inline-flex items-center gap-2 rounded border border-line px-3 py-2 text-sm font-bold text-civic lg:hidden">
-                <Filter className="h-4 w-4" />
-                {t("updates.advancedSearch")}
-              </button>
             </div>
           </div>
-          {mobileFiltersOpen ? <div className="mt-4 lg:hidden">{advancedPanel}</div> : null}
         </div>
 
         {loading ? (
@@ -421,6 +424,7 @@ export default function UpdatesClient({ initialSearch = "", initialFilter = "all
           </>
         )}
       </aside>
-    </div>
+      </div>
+    </>
   );
 }

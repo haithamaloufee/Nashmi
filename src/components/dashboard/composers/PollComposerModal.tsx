@@ -16,6 +16,8 @@ type PollComposerModalProps = {
   open: boolean;
   publisher: PublisherComposerProfile;
   onClose: () => void;
+  onBack?: () => void;
+  onPublished?: () => void;
 };
 
 type PollErrorKey = Extract<
@@ -30,7 +32,7 @@ function trimmedOptions(options: string[]) {
   return options.map((option) => option.trim()).filter(Boolean);
 }
 
-export default function PollComposerModal({ open, publisher, onClose }: PollComposerModalProps) {
+export default function PollComposerModal({ open, publisher, onClose, onBack, onPublished }: PollComposerModalProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -99,6 +101,7 @@ export default function PollComposerModal({ open, publisher, onClose }: PollComp
 
       reset();
       showToast(t("composer.vote.success"), "success");
+      onPublished?.();
       router.refresh();
       onClose();
     } catch {
@@ -113,6 +116,10 @@ export default function PollComposerModal({ open, publisher, onClose }: PollComp
       open={open}
       titleKey="composer.vote.title"
       dirty={dirty && !loading}
+      onBack={onBack ? () => {
+        reset();
+        onBack();
+      } : undefined}
       onClose={() => {
         reset();
         onClose();

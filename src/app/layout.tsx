@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Cairo } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import FloatingAssistant from "@/components/layout/FloatingAssistant";
@@ -8,13 +7,6 @@ import RouteTransitionProvider from "@/components/navigation/RouteTransitionProv
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import { cookies } from "next/headers";
 import { defaultLanguage, isLanguage } from "@/lib/i18n";
-
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-sans",
-  display: "swap"
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3004"),
@@ -46,7 +38,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           }}
         />
       </head>
-      <body className={cairo.variable} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <LanguageProvider initialLanguage={initialLanguage}>
           <ToastProvider>
             <Navbar />

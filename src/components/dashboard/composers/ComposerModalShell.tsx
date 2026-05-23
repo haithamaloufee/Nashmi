@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
-import { X } from "lucide-react";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -10,25 +10,39 @@ type ComposerModalShellProps = {
   titleKey: TranslationKey;
   dirty: boolean;
   onClose: () => void;
+  onBack?: () => void;
   children: ReactNode;
 };
 
-export default function ComposerModalShell({ open, titleKey, dirty, onClose, children }: ComposerModalShellProps) {
+export default function ComposerModalShell({ open, titleKey, dirty, onClose, onBack, children }: ComposerModalShellProps) {
   const { dir, t } = useTranslation();
   const titleId = useId();
   const [showDiscardPrompt, setShowDiscardPrompt] = useState(false);
+  const [discardAction, setDiscardAction] = useState<"close" | "back">("close");
 
   const requestClose = useCallback(() => {
     if (dirty) {
+      setDiscardAction("close");
       setShowDiscardPrompt(true);
       return;
     }
     onClose();
   }, [dirty, onClose]);
 
+  const requestBack = useCallback(() => {
+    if (!onBack) return;
+    if (dirty) {
+      setDiscardAction("back");
+      setShowDiscardPrompt(true);
+      return;
+    }
+    onBack();
+  }, [dirty, onBack]);
+
   useEffect(() => {
     if (!open) {
       setShowDiscardPrompt(false);
+      setDiscardAction("close");
       return undefined;
     }
 
@@ -51,6 +65,8 @@ export default function ComposerModalShell({ open, titleKey, dirty, onClose, chi
 
   if (!open) return null;
 
+  const BackIcon = dir === "rtl" ? ArrowRight : ArrowLeft;
+
   return (
     <div
       className="fixed inset-0 z-[70] grid place-items-center overflow-y-auto bg-slate-950/62 px-3 py-4 backdrop-blur-sm sm:px-6"
@@ -71,14 +87,26 @@ export default function ComposerModalShell({ open, titleKey, dirty, onClose, chi
               {t(titleKey)}
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={requestClose}
-            aria-label={t("common.close")}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-white text-ink/70 shadow-sm hover:border-civic hover:text-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {onBack ? (
+              <button
+                type="button"
+                onClick={requestBack}
+                className="inline-flex h-10 items-center gap-1 rounded-full border border-line bg-white px-3 text-sm font-bold text-ink/70 shadow-sm hover:border-civic hover:text-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                <BackIcon className="h-4 w-4" />
+                {t("common.back")}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={requestClose}
+              aria-label={t("common.close")}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-white text-ink/70 shadow-sm hover:border-civic hover:text-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
@@ -90,14 +118,26 @@ export default function ComposerModalShell({ open, titleKey, dirty, onClose, chi
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setShowDiscardPrompt(false)}
+                onClick={() => {
+                  setDiscardAction("close");
+                  setShowDiscardPrompt(false);
+                }}
                 className="rounded border border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               >
                 {t("common.keepEditing")}
               </button>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => {
+                  const action = discardAction;
+                  setDiscardAction("close");
+                  setShowDiscardPrompt(false);
+                  if (action === "back" && onBack) {
+                    onBack();
+                    return;
+                  }
+                  onClose();
+                }}
                 className="rounded bg-red-700 px-3 py-2 text-sm font-bold text-white hover:bg-red-800"
               >
                 {t("common.discardChanges")}

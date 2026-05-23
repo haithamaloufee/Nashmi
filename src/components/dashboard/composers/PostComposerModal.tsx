@@ -16,9 +16,11 @@ type PostComposerModalProps = {
   open: boolean;
   publisher: PublisherComposerProfile;
   onClose: () => void;
+  onBack?: () => void;
+  onPublished?: () => void;
 };
 
-export default function PostComposerModal({ open, publisher, onClose }: PostComposerModalProps) {
+export default function PostComposerModal({ open, publisher, onClose, onBack, onPublished }: PostComposerModalProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -73,6 +75,7 @@ export default function PostComposerModal({ open, publisher, onClose }: PostComp
 
       reset();
       showToast(t("composer.post.success"), "success");
+      onPublished?.();
       router.refresh();
       onClose();
     } catch {
@@ -89,6 +92,10 @@ export default function PostComposerModal({ open, publisher, onClose }: PostComp
       open={open}
       titleKey="composer.post.title"
       dirty={dirty && !loading}
+      onBack={onBack ? () => {
+        reset();
+        onBack();
+      } : undefined}
       onClose={() => {
         reset();
         onClose();

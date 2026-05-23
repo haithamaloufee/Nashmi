@@ -15,6 +15,8 @@ type SurveyComposerModalProps = {
   open: boolean;
   publisher: PublisherComposerProfile;
   onClose: () => void;
+  onBack?: () => void;
+  onPublished?: () => void;
 };
 
 type QuestionType = "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "YES_NO" | "RATING" | "TEXT";
@@ -60,7 +62,7 @@ function cleanOptionLabels(question: SurveyQuestionDraft) {
   return question.options.map((option) => option.trim()).filter(Boolean);
 }
 
-export default function SurveyComposerModal({ open, publisher, onClose }: SurveyComposerModalProps) {
+export default function SurveyComposerModal({ open, publisher, onClose, onBack, onPublished }: SurveyComposerModalProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -160,7 +162,7 @@ export default function SurveyComposerModal({ open, publisher, onClose }: Survey
       title: title.trim(),
       description: description.trim() || null,
       status: "published",
-      publisherType: publisher.accountType === "authority" ? "iec" : "party",
+      publisherType: publisher.accountType === "authority" ? "iec" : publisher.accountType,
       resultsVisibility,
       startsAt: null,
       endsAt: null,
@@ -191,6 +193,7 @@ export default function SurveyComposerModal({ open, publisher, onClose }: Survey
 
       reset();
       showToast(t("composer.survey.success"), "success");
+      onPublished?.();
       router.refresh();
       onClose();
     } catch {
@@ -205,6 +208,10 @@ export default function SurveyComposerModal({ open, publisher, onClose }: Survey
       open={open}
       titleKey="composer.survey.title"
       dirty={dirty && !loading}
+      onBack={onBack ? () => {
+        reset();
+        onBack();
+      } : undefined}
       onClose={() => {
         reset();
         onClose();

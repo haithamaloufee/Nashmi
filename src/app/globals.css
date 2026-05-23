@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Cairo", "IBM Plex Sans Arabic", "Tajawal", "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-sans: "Cairo", "Noto Kufi Arabic", "Tajawal", system-ui, sans-serif;
   color-scheme: light;
 }
 
