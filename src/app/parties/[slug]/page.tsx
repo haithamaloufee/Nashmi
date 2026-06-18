@@ -3,7 +3,7 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import FollowButton from "@/components/parties/FollowButton";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
-import SurveyCard from "@/components/surveys/SurveyCard";
+import SurveyFeedCard from "@/components/surveys/SurveyFeedCard";
 import { JumpToPostsButton, ProfileAccordionCard, ProfileTopScrollReset } from "@/components/profile/ProfileInteractions";
 import ReportButton from "@/components/reports/ReportButton";
 import PartyVerificationActions from "@/components/admin/PartyVerificationActions";
@@ -29,6 +29,17 @@ function getPartyCoverSrc(party: any) {
   return normalizeSafeImageUrl(mediaUrl, { localPrefixes: ["/images/", "/uploads/"] }) || normalizeSafeImageUrl(party.coverUrl, { localPrefixes: ["/images/", "/uploads/"] });
 }
 
+type PartyTimelineItem = {
+  type: "post" | "poll" | "survey";
+  publishedAt: string | null;
+  item: any;
+};
+
+function timestamp(value: unknown) {
+  const time = new Date(value instanceof Date || typeof value === "string" || typeof value === "number" ? value : 0).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
 function ContactButton({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded border border-line bg-white px-4 py-2 text-sm font-medium text-ink transition hover:border-civic hover:text-civic">
@@ -44,6 +55,11 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
   const data = (await getPartyBySlug(slug, user?.id)) as any;
   if (!data) notFound();
   const { party, posts, polls, surveys = [], isFollowing } = data;
+  const partyTimeline: PartyTimelineItem[] = [
+    ...posts.map((post: any) => ({ type: "post" as const, publishedAt: post.publishedAt || post.createdAt || null, item: post })),
+    ...polls.map((poll: any) => ({ type: "poll" as const, publishedAt: poll.publishedAt || poll.createdAt || null, item: poll })),
+    ...surveys.map((survey: any) => ({ type: "survey" as const, publishedAt: survey.publishedAt || survey.createdAt || null, item: survey }))
+  ].sort((a, b) => timestamp(b.publishedAt) - timestamp(a.publishedAt));
 
   const websiteUrl = safeUrl(party.socialLinks?.website || party.contact?.website || party.officialRegistry?.registryUrl);
   const facebookUrl = safeUrl(party.socialLinks?.facebook);
@@ -74,7 +90,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
               <h1 className="text-3xl font-black">{party.name}</h1>
               <p className="mt-3 max-w-3xl leading-8 text-ink/75">{party.shortDescription}</p>
               <div className="mt-4">
-                <JumpToPostsButton label="عرض منشورات الحزب / View party posts" />
+                <JumpToPostsButton label="عرض تحديثات الحزب / View party timeline" />
               </div>
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
@@ -206,20 +222,28 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
         </div>
       </section>
 
-      <section id="profile-posts" className="scroll-mt-24 mt-8 grid gap-6 xl:grid-cols-3">
-        <div>
-          <h2 className="mb-4 text-2xl font-bold">منشورات الحزب</h2>
-          <div className="grid gap-4">{posts.map((post: any) => <PostCard key={post._id} post={post} />)}</div>
-        </div>
-        <div>
-          <h2 className="mb-4 text-2xl font-bold">تصويتات الحزب</h2>
-          <div className="grid gap-4">{polls.map((poll: any) => <PollCard key={poll._id} poll={poll} />)}</div>
-        </div>
-        <div>
-          <h2 className="mb-4 text-2xl font-bold">الاستبيانات</h2>
-          <div className="grid gap-4">
-            {surveys.length > 0 ? surveys.map((survey: any) => <SurveyCard key={survey._id} survey={survey} compact />) : <p className="rounded border border-line bg-white p-5 text-ink/60">لا توجد استبيانات منشورة حاليًا.</p>}
+      <section id="profile-posts" className="scroll-mt-24 mt-8">
+        <div className="mx-auto max-w-[840px]">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold">تحديثات الحزب</h2>
+            <p className="mt-1 text-sm text-ink/60">منشورات وتصويتات واستبيانات مرتبة من الأحدث إلى الأقدم.</p>
           </div>
+
+          {partyTimeline.length > 0 ? (
+            <div className="space-y-4">
+              {partyTimeline.map((entry) =>
+                entry.type === "post" ? (
+                  <PostCard key={`post-${entry.item._id}`} post={entry.item} />
+                ) : entry.type === "poll" ? (
+                  <PollCard key={`poll-${entry.item._id}`} poll={entry.item} />
+                ) : (
+                  <SurveyFeedCard key={`survey-${entry.item._id}`} survey={entry.item} />
+                )
+              )}
+            </div>
+          ) : (
+            <p className="rounded border border-line bg-white p-5 text-ink/60 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-300">لا توجد تحديثات منشورة حاليًا.</p>
+          )}
         </div>
       </section>
     </main>
