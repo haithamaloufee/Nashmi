@@ -56,6 +56,7 @@ test.afterAll(() => {
 });
 
 test("public pages, post media, comments, profiles, and navbar prefetch", async ({ page, request }) => {
+  test.setTimeout(180_000);
   const consoleErrors: string[] = [];
   const failedRequests: string[] = [];
   const prefetchedUrls = new Set<string>();
@@ -109,6 +110,8 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
 
   await page.setViewportSize({ width: 390, height: 840 });
   await page.goto("/updates", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "منشورات", exact: true }).click();
+  await expect(page.getByRole("button", { name: /تعليق/ }).first()).toBeVisible();
   const assistantBox = await page.locator(".fixed.left-2, .fixed.sm\\:left-6").first().boundingBox();
   expect(assistantBox?.x || 0).toBeLessThan(24);
   await screenshot(page, "navbar-logo-mobile");

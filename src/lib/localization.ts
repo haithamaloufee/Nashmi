@@ -2,6 +2,8 @@ import type { Language } from "@/lib/i18n";
 
 type LocalizedRecord = Record<string, unknown>;
 
+export const applicationTimeZone = "Asia/Amman";
+
 export function getLocalizedValue(item: LocalizedRecord | null | undefined, baseKey: string, lang: Language, fallbackKey?: string) {
   const localizedKey = lang === "en" ? `${baseKey}En` : `${baseKey}Ar`;
   const oppositeKey = lang === "en" ? `${baseKey}Ar` : `${baseKey}En`;
@@ -22,7 +24,10 @@ export function formatDate(value: string | Date | number | null | undefined, lan
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(localeFor(language), options || { dateStyle: "medium" }).format(date);
+  const formatterOptions: Intl.DateTimeFormatOptions = options
+    ? { ...options, timeZone: options.timeZone || applicationTimeZone }
+    : { dateStyle: "medium", timeZone: applicationTimeZone };
+  return new Intl.DateTimeFormat(localeFor(language), formatterOptions).format(date);
 }
 
 export function formatRelativeTime(value: string | Date | number | null | undefined, language: Language) {

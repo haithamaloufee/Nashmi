@@ -8,6 +8,7 @@ import { normalizeMediaAssets } from "../src/lib/media";
 import { hasValidUploadMagic, validateUploadFile, validateUploadMetadata } from "../src/lib/uploadValidation";
 import { postCreateSchema } from "../src/lib/validators";
 import { buildSurveyResultSummary, canRespondToSurvey, canViewSurveyResults, getSurveyHref, getSurveyLifecycleStatus, objectIdString, validateSurveyAnswers } from "../src/lib/surveys";
+import { formatDate } from "../src/lib/localization";
 
 function makeFile(name: string, type: string, size: number) {
   return new File([new Uint8Array(size || 1)], name, { type });
@@ -128,6 +129,17 @@ function testLogoAssetReferences() {
   assert.doesNotMatch(navbar, /nashmi logo_transparent|nashmi logo_cropped/);
 }
 
+function testDateFormattingUsesApplicationTimeZone() {
+  const previousTimeZone = process.env.TZ;
+  process.env.TZ = "UTC";
+  try {
+    assert.equal(formatDate("2026-05-21T22:00:00.000Z", "en"), "May 22, 2026");
+  } finally {
+    if (previousTimeZone === undefined) delete process.env.TZ;
+    else process.env.TZ = previousTimeZone;
+  }
+}
+
 function testSurveyUtilities() {
   const realQuestionId = new Types.ObjectId();
   const realOptionId = new Types.ObjectId();
@@ -211,6 +223,7 @@ async function main() {
   await testMissingBlobToken();
   await testPublisherSnapshot();
   testLogoAssetReferences();
+  testDateFormattingUsesApplicationTimeZone();
   testSurveyUtilities();
   testPostMediaUrlRejection();
   testDefaultPostMediaFiltering();

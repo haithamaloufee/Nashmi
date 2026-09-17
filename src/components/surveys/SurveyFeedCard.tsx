@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, ClipboardList, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 import SafeImage from "@/components/ui/SafeImage";
 import SurveyStatusBadge from "@/components/surveys/SurveyStatusBadge";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
@@ -30,10 +31,15 @@ type SurveyFeedItem = {
 
 export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
   const { language, t } = useTranslation();
+  const [timeReady, setTimeReady] = useState(false);
   const publisher = survey.publisherSnapshot;
   const href = getSurveyHref(survey);
   const isOpen = survey.lifecycleStatus ? survey.lifecycleStatus === "open" : survey.status === "published";
   const publishedAt = survey.publishedAt || survey.createdAt;
+
+  useEffect(() => {
+    setTimeReady(true);
+  }, []);
 
   const avatar = (
     <SafeImage
@@ -73,7 +79,7 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
               <SurveyStatusBadge status={survey.lifecycleStatus || survey.status} />
             </div>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {publishedAt ? formatRelativeTime(publishedAt, language) : ""}
+              {timeReady && publishedAt ? formatRelativeTime(publishedAt, language) : ""}
             </p>
           </div>
         </div>
@@ -90,7 +96,7 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
         {survey.endsAt ? (
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-4 w-4 text-civic dark:text-emerald-200" />
-            {formatRelativeTime(survey.endsAt, language)}
+            {timeReady ? formatRelativeTime(survey.endsAt, language) : ""}
           </span>
         ) : null}
       </div>

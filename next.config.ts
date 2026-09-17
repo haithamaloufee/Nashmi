@@ -4,7 +4,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" }
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "parties.iec.jo", pathname: "/storage/**" }
     ],
     minimumCacheTTL: 60 * 60 * 24 * 30
   },

@@ -18,7 +18,7 @@ function canUseNextImage(src: string) {
   if (src.startsWith("/")) return true;
   try {
     const url = new URL(src);
-    return url.hostname.endsWith(".public.blob.vercel-storage.com");
+    return url.hostname.endsWith(".public.blob.vercel-storage.com") || (url.hostname === "parties.iec.jo" && url.pathname.startsWith("/storage/"));
   } catch {
     return false;
   }

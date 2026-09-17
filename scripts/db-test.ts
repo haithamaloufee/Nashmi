@@ -14,9 +14,9 @@ function diagnoseMongoFailure(error: unknown) {
   if (message.includes("bad auth") || message.includes("authentication failed")) return "wrong credentials";
   if (message.includes("ip") && (message.includes("whitelist") || message.includes("access"))) return "MongoDB Atlas IP access list";
   if (code === "8000") return "wrong credentials or MongoDB Atlas IP access list";
-  if (message.includes("querysrv") || message.includes("enotfound") || message.includes("eai_again")) return "network or DNS";
+  if (message.includes("querysrv") || message.includes("querytxt") || message.includes("enotfound") || message.includes("eai_again")) return "network or DNS";
   if (message.includes("server selection timed out") || message.includes("timed out")) return "network, Atlas IP access list, or cluster availability";
-  if (message.includes("invalid scheme") || message.includes("mongodb")) return "connection string format";
+  if (message.includes("invalid scheme") || message.includes("invalid connection string") || message.includes("invalid uri")) return "connection string format";
 
   return "unknown database connection issue";
 }

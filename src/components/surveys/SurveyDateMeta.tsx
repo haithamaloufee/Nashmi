@@ -1,10 +1,11 @@
 import { CalendarDays, Users } from "lucide-react";
+import { applicationTimeZone } from "@/lib/localization";
 
 function formatDate(value?: string | Date | null) {
   if (!value) return "غير محدد";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "غير محدد";
-  return date.toLocaleDateString("ar-JO", { year: "numeric", month: "short", day: "numeric" });
+  return date.toLocaleDateString("ar-JO", { year: "numeric", month: "short", day: "numeric", timeZone: applicationTimeZone });
 }
 
 export default function SurveyDateMeta({ startsAt, endsAt, totalResponses = 0 }: { startsAt?: string | Date | null; endsAt?: string | Date | null; totalResponses?: number | null }) {
