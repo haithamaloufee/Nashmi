@@ -22,3 +22,4 @@ tsconfig.tsbuildinfo
 playwright/.auth/
 test-results/
 playwright-report/
+.email-preview/

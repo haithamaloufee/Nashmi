@@ -1,7 +1,7 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
-import { hasBlobReadWriteToken } from "@/lib/env";
+import { hasBlobCredentials } from "@/lib/env";
 import { roles } from "@/lib/permissions";
 import { extensionForMimeType, maxUploadSizeForMimeType, validateUploadMetadata } from "@/lib/uploadValidation";
 
@@ -20,8 +20,8 @@ export async function GET() {
     return Response.json({
       ok: true,
       data: {
-        blobTokenConfigured: hasBlobReadWriteToken(),
-        durableStorageEnabled: hasBlobReadWriteToken(),
+        blobCredentialsConfigured: hasBlobCredentials(),
+        durableStorageEnabled: hasBlobCredentials(),
         runtime
       }
     }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
@@ -43,8 +43,8 @@ function parsePayload(value: string | null): ClientPayload {
 export async function POST(request: Request) {
   try {
     const user = await requireActiveUser([...roles]);
-    if (!hasBlobReadWriteToken()) {
-      return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. أضف BLOB_READ_WRITE_TOKEN في بيئة النشر.", 503);
+    if (!hasBlobCredentials()) {
+      return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. اربط Blob بالمشروع عبر OIDC أو رمز الخادم.", 503);
     }
 
     const body = await request.json() as HandleUploadBody;

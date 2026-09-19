@@ -17,6 +17,7 @@
 - JWT auth cookies عبر `jose`
 - Vercel Blob للرفع الدائم في الإنتاج عند ضبط `BLOB_READ_WRITE_TOKEN`
 - Gemini AI assistant server-side integration
+- Resend للبريد التشغيلي والتحقق واستعادة كلمة المرور
 
 ## Setup
 
@@ -43,7 +44,10 @@ JWT_SECRET=
 GEMINI_API_KEY=
 BLOB_READ_WRITE_TOKEN=
 MAX_UPLOAD_SIZE_MB=
-NEXT_PUBLIC_APP_URL=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+RESEND_API_KEY=
+EMAIL_FROM=Nashmi <no-reply@auth.nashmi.haitham.website>
+EMAIL_ALLOWED_RECIPIENTS=
 ```
 
 ## Commands
@@ -57,6 +61,7 @@ npm run seed
 npm run db:test
 npm run sync-indexes
 npm run recalculate-counters
+npm run email:preview
 ```
 
 ## Demo Accounts

@@ -18,6 +18,9 @@ import { readJsonWithLimit } from "../src/lib/routeUtils";
 import { sessionVersionMatches, signAuthToken } from "../src/lib/jwt";
 import { verifyEdgeAuthToken } from "../src/lib/jwtEdge";
 import { buildBoundedConversation, classifyAiProviderError } from "../src/lib/ai/resilience";
+import { createEmailVerificationToken, createPasswordResetToken, hashAuthToken } from "../src/lib/authTokensCore";
+import { buildSiteUrl } from "../src/lib/siteUrl";
+import { accountInvitationEmail, passwordResetEmail, verificationEmail } from "../src/lib/emailTemplates";
 
 function makeFile(name: string, type: string, size: number) {
   return new File([new Uint8Array(size || 1)], name, { type });
@@ -352,6 +355,41 @@ async function testSessionTokenVerification() {
   }
 }
 
+function testAuthEmailSecurity() {
+  const verification = createEmailVerificationToken();
+  const reset = createPasswordResetToken();
+  assert.notEqual(verification.token, verification.tokenHash);
+  assert.equal(hashAuthToken(verification.token), verification.tokenHash);
+  assert.notEqual(verification.tokenHash, reset.tokenHash);
+  assert.ok(verification.expiresAt.getTime() > reset.expiresAt.getTime());
+
+  const previous = process.env.NEXT_PUBLIC_SITE_URL;
+  process.env.NEXT_PUBLIC_SITE_URL = "https://nashmi.haitham.website";
+  try {
+    const url = buildSiteUrl("/verify-email", { token: "test-token" });
+    assert.equal(url, "https://nashmi.haitham.website/verify-email?token=test-token");
+    assert.doesNotMatch(url, /hythem|neshme|nashmii\.vercel/);
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = previous;
+  }
+
+  const ar = verificationEmail("ar", "https://nashmi.haitham.website/verify-email?token=test");
+  const en = passwordResetEmail("en", "https://nashmi.haitham.website/reset-password?token=test");
+  const invite = accountInvitationEmail("ar", "https://nashmi.haitham.website/set-password?token=test");
+  assert.match(ar.html, /lang="ar" dir="rtl"/);
+  assert.match(en.html, /lang="en" dir="ltr"/);
+  assert.match(invite.text, /nashmi\.haitham\.website/);
+
+  const verifySource = readFileSync("src/app/api/auth/verify-email/route.ts", "utf8");
+  const resetSource = readFileSync("src/app/api/auth/reset-password/route.ts", "utf8");
+  assert.match(verifySource, /emailVerificationExpiresAt: \{ \$gt: new Date\(\) \}/);
+  assert.match(verifySource, /emailVerificationTokenHash: null/);
+  assert.match(resetSource, /passwordResetTokenHash: null/);
+  assert.match(resetSource, /sessionVersion/);
+  assert.doesNotMatch(resetSource, /passwordSetupTokenHash/);
+}
+
 async function main() {
   await testPartyMatching();
   await testUploadValidation();
@@ -366,6 +404,7 @@ async function main() {
   testMongoSeedListValidation();
   await testAiEndpointBoundaries();
   await testSessionTokenVerification();
+  testAuthEmailSecurity();
   console.log("Critical tests passed.");
 }
 

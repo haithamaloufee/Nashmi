@@ -9,6 +9,8 @@ import { writeAuditLog } from "@/lib/audit";
 import Party from "@/models/Party";
 import User from "@/models/User";
 import { buildAccountSetupUrl, createAccountSetup } from "@/lib/accountSetup";
+import { accountInvitationEmail } from "@/lib/emailTemplates";
+import { sendTransactionalEmail } from "@/lib/email";
 
 export async function GET() {
   try {
@@ -59,9 +61,13 @@ export async function POST(request: Request) {
     });
 
     await writeAuditLog({ actorUserId: actor.id, actorRole: actor.role, action: "admin.party_create", targetType: "party", targetId: party._id, metadata: { accountCreated: Boolean(accountUserId) }, request });
+    let invitationSent = false;
+    if (accountSetup && input.accountEmail) {
+      try { invitationSent = (await sendTransactionalEmail(input.accountEmail, accountInvitationEmail("ar", buildAccountSetupUrl(accountSetup.token)))).sent; } catch { /* The pending account can be invited again safely. */ }
+    }
     return ok({
       party: serialize(party),
-      setupUrl: accountSetup ? buildAccountSetupUrl(accountSetup.token) : null,
+      invitationSent,
       setupExpiresAt: accountSetup?.expiresAt.toISOString() || null
     }, { status: 201 });
   } catch (error) {

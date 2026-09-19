@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     const user = await User.findOne({ emailNormalized: normalizeEmail(input.email) });
     if (!user || !user.passwordHash) {
-      await writeAuditLog({ action: "auth.login_failed", targetType: "user", metadata: { email: normalizeEmail(input.email), reason: "not_found" }, request });
+      await writeAuditLog({ action: "auth.login_failed", targetType: "user", metadata: { reason: "not_found" }, request });
       return fail("UNAUTHORIZED", "بيانات الدخول غير صحيحة", 401);
     }
 
@@ -39,6 +39,10 @@ export async function POST(request: Request) {
       await user.save();
       await writeAuditLog({ actorUserId: user._id, actorRole: user.role, action: "auth.login_failed", targetType: "user", targetId: user._id, metadata: { reason: "bad_password" }, request });
       return fail("UNAUTHORIZED", "بيانات الدخول غير صحيحة", 401);
+    }
+
+    if (!user.emailVerified || user.status === "pending") {
+      return fail("EMAIL_NOT_VERIFIED", "يجب تفعيل البريد الإلكتروني قبل تسجيل الدخول", 403);
     }
 
     user.failedLoginCount = 0;

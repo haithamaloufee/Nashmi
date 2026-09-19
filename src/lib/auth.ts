@@ -16,6 +16,7 @@ export type SafeUser = {
   avatarUrl: string | null;
   bio: string | null;
   language: "ar" | "en";
+  emailVerified: boolean;
 };
 
 export function safeUser(user: {
@@ -28,6 +29,7 @@ export function safeUser(user: {
   avatarUrl?: string | null;
   bio?: string | null;
   language?: "ar" | "en";
+  emailVerified?: boolean;
 }): SafeUser {
   return {
     id: user._id.toString(),
@@ -38,7 +40,8 @@ export function safeUser(user: {
     image: user.image || null,
     avatarUrl: user.avatarUrl || null,
     bio: user.bio || null,
-    language: user.language || "ar"
+    language: user.language || "ar",
+    emailVerified: Boolean(user.emailVerified)
   };
 }
 

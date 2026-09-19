@@ -62,11 +62,12 @@ export default async function Navbar() {
           {user ? (
             <UserMenu user={user} />
           ) : (
-            <Link href="/login" className="focus-ring inline-flex h-11 items-center rounded bg-civic px-3 text-sm font-semibold text-white hover:bg-civic/90 dark:bg-emerald-200 dark:text-[#101820] dark:hover:bg-emerald-100 sm:px-4">
-              <I18nText id="nav.login" />
-            </Link>
+            <>
+              <Link href="/signup" className="focus-ring hidden h-11 items-center rounded border border-civic/35 px-3 text-sm font-semibold text-civic hover:bg-civic/5 dark:border-emerald-200/40 dark:text-emerald-100 md:inline-flex"><I18nText id="auth.signup" /></Link>
+              <Link href="/login" className="focus-ring inline-flex h-11 items-center rounded bg-civic px-3 text-sm font-semibold text-white hover:bg-civic/90 dark:bg-emerald-200 dark:text-[#101820] dark:hover:bg-emerald-100 sm:px-4"><I18nText id="nav.login" /></Link>
+            </>
           )}
-          <MobileNav links={links} dashboardHref={dashboardHref} />
+          <MobileNav links={links} dashboardHref={dashboardHref} authenticated={Boolean(user)} />
         </div>
       </div>
     </header>

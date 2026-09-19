@@ -55,7 +55,8 @@ export const optionalSafeLogoUrlSchema = z
 export const signupSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: emailSchema,
-  password: passwordSchema
+  password: passwordSchema,
+  language: z.enum(["ar", "en"]).optional()
 });
 
 export const loginSchema = z.object({
@@ -88,6 +89,10 @@ export const accountSetupSchema = z.object({
   token: z.string().min(40).max(100).regex(/^[A-Za-z0-9_-]+$/),
   password: passwordSchema
 }).strict();
+
+export const emailRequestSchema = z.object({ email: emailSchema }).strict();
+export const tokenSchema = z.object({ token: z.string().min(40).max(100).regex(/^[A-Za-z0-9_-]+$/) }).strict();
+export const passwordResetSchema = accountSetupSchema;
 
 const dateTextSchema = z.string().trim().min(1).max(50).nullable().optional();
 

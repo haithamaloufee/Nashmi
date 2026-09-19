@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 
@@ -33,8 +34,9 @@ function validateEmail(value: string) {
 function validatePassword(value: string) {
   if (!value.trim()) return "كلمة المرور مطلوبة.";
   if (/\s/.test(value)) return "كلمة المرور لا تقبل المسافات.";
-  if (value.length < 8) return "كلمة المرور يجب أن تكون 8 أحرف على الأقل.";
-  if (value.length > 20) return "كلمة المرور طويلة جدا.";
+  if (value.length < 12) return "كلمة المرور يجب أن تكون 12 حرفًا على الأقل.";
+  if (value.length > 128) return "كلمة المرور طويلة جدا.";
+  if (!/[a-z]/.test(value) || !/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[^A-Za-z0-9]/.test(value)) return "استخدم حرفًا كبيرًا وصغيرًا ورقمًا ورمزًا.";
   return "";
 }
 
@@ -46,7 +48,7 @@ function validateConfirmPassword(password: string, confirmPassword: string) {
 
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [values, setValues] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
@@ -86,7 +88,10 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       email: values.email.trim(),
       password: values.password
     };
-    if (mode === "signup") payload.name = values.name.trim();
+    if (mode === "signup") {
+      payload.name = values.name.trim();
+      payload.language = language;
+    }
 
     try {
       const response = await fetch(`/api/auth/${mode}`, {
@@ -97,9 +102,12 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       const json = await response.json();
       if (!json.ok) {
         setError(json.error?.message || "تعذر تنفيذ العملية. راجع البيانات وحاول مرة أخرى.");
+        if (json.error?.code === "EMAIL_NOT_VERIFIED") {
+          router.push(`/verify-email?email=${encodeURIComponent(values.email.trim())}`);
+        }
         return;
       }
-      router.push("/");
+      router.push(mode === "signup" ? `/verify-email?email=${encodeURIComponent(values.email.trim())}&sent=${json.data?.emailSent ? "1" : "0"}` : "/");
       router.refresh();
     } catch {
       setError("تعذر الاتصال بالخادم. حاول مرة أخرى بعد قليل.");
@@ -133,6 +141,13 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           />
           <span id="name-error">{fieldMessage("name")}</span>
         </label>
+      ) : null}
+
+      {mode === "login" ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <Link className="font-semibold text-civic underline-offset-4 hover:underline" href="/forgot-password">نسيت كلمة المرور؟</Link>
+          <Link className="text-ink/65 underline-offset-4 hover:text-civic hover:underline dark:text-slate-300" href="/verify-email">إعادة إرسال رسالة التفعيل</Link>
+        </div>
       ) : null}
       <label className="block text-sm font-medium">
         {t("auth.email")}

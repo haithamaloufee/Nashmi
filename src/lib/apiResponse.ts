@@ -9,6 +9,7 @@ export type ApiErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "CONFLICT"
+  | "EMAIL_NOT_VERIFIED"
   | "RATE_LIMITED"
   | "VALIDATION_ERROR"
   | "MESSAGE_TOO_LONG"
@@ -21,6 +22,7 @@ const messages: Record<ApiErrorCode, string> = {
   FORBIDDEN: "غير مصرح",
   NOT_FOUND: "العنصر غير موجود",
   CONFLICT: "يوجد تعارض في البيانات",
+  EMAIL_NOT_VERIFIED: "يجب تفعيل البريد الإلكتروني قبل تسجيل الدخول",
   RATE_LIMITED: "تم تجاوز الحد المسموح، حاول لاحقا",
   VALIDATION_ERROR: "البيانات المدخلة غير صحيحة",
   MESSAGE_TOO_LONG: "رسالتك طويلة جدًا. اختصرها قليلًا وحاول مرة أخرى.",
@@ -67,7 +69,7 @@ export function handleApiError(error: unknown, request?: Request) {
   if (error instanceof Error && error.message === "RATE_LIMITED") return fail("RATE_LIMITED", undefined, 429);
   if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") return fail("PAYLOAD_TOO_LARGE", messages.PAYLOAD_TOO_LARGE, 413);
   if (error instanceof Error && error.message === "BLOB_STORAGE_NOT_CONFIGURED") {
-    return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. أضف BLOB_READ_WRITE_TOKEN في بيئة النشر.", 500);
+    return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. اربط Blob بالمشروع عبر OIDC أو رمز الخادم.", 500);
   }
   if (error instanceof MissingEnvError) return fail("SERVER_ERROR", `Server configuration is missing: ${error.variableName}`, 500);
   if (error instanceof InvalidEnvError) return fail("SERVER_ERROR", `Server configuration is invalid: ${error.variableName}`, 500);

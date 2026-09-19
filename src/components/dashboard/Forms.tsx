@@ -579,7 +579,7 @@ export function AdminPartyLogoForm({ party }: { party: any }) {
 
 export function PartyCreateForm() {
   const api = useApiMessage();
-  const [setupUrl, setSetupUrl] = useState("");
+  const [invitationSent, setInvitationSent] = useState(false);
   return (
     <form
       action={async (formData) => {
@@ -596,7 +596,7 @@ export function PartyCreateForm() {
           createAccount: formData.get("createAccount") === "on",
           accountEmail: formData.get("accountEmail") || undefined
         });
-        if (json.ok && json.data?.setupUrl) setSetupUrl(json.data.setupUrl);
+        setInvitationSent(Boolean(json.ok && json.data?.invitationSent));
       }}
       className="card space-y-3 p-5"
     >
@@ -611,7 +611,7 @@ export function PartyCreateForm() {
       <input name="accountEmail" className="w-full rounded border-line" placeholder="party@example.com" />
       <button className="rounded bg-civic px-4 py-2 text-white">إنشاء</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
-      {setupUrl ? <label className="block space-y-2 text-sm"><span className="font-semibold">رابط إعداد حساب الحزب — شاركه عبر قناة خاصة</span><input readOnly dir="ltr" value={setupUrl} className="w-full rounded border-line text-xs" onFocus={(event) => event.currentTarget.select()} /></label> : null}
+      {invitationSent ? <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">أُرسلت دعوة إعداد الحساب إلى البريد بأمان.</p> : null}
     </form>
   );
 }
@@ -682,6 +682,7 @@ export function ReportModerationForm({ reportId }: { reportId: string }) {
 
 export function UserControls({ user }: { user: any }) {
   const api = useApiMessage();
+  const [invitationSent, setInvitationSent] = useState(false);
   return (
     <div className="flex flex-wrap gap-2">
       <form action={(formData) => api.submit(`/api/admin/users/${user._id}/status`, { status: formData.get("status") }, "PATCH")} className="flex gap-1">
@@ -703,13 +704,27 @@ export function UserControls({ user }: { user: any }) {
         </select>
         <button className="rounded border border-line px-2 text-xs">حفظ</button>
       </form>
+      {user.setupInvitationEligible ? (
+        <form
+          action={async () => {
+            const json = await api.submit(`/api/admin/users/${user._id}/resend-setup`, {});
+            setInvitationSent(Boolean(json.ok && json.data?.invitationSent));
+          }}
+        >
+          <button disabled={api.loading} className="rounded border border-line px-2 py-1 text-xs disabled:opacity-60">
+            إعادة إرسال دعوة الإعداد
+          </button>
+        </form>
+      ) : null}
+      {invitationSent ? <span className="self-center text-xs font-semibold text-emerald-700">أُرسلت الدعوة.</span> : null}
+      {api.message ? <span className="self-center text-xs text-ink/60">{api.message}</span> : null}
     </div>
   );
 }
 
 export function UserCreateForm() {
   const api = useApiMessage();
-  const [setupUrl, setSetupUrl] = useState("");
+  const [invitationSent, setInvitationSent] = useState(false);
   return (
     <form
       action={async (formData) => {
@@ -719,14 +734,14 @@ export function UserCreateForm() {
           role: formData.get("role") || "citizen",
           status: formData.get("status") || "active"
         });
-        if (json.ok && json.data?.setupUrl) setSetupUrl(json.data.setupUrl);
+        setInvitationSent(Boolean(json.ok && json.data?.invitationSent));
       }}
       className="card space-y-3 p-5"
     >
       <h2 className="text-xl font-bold">إنشاء حساب</h2>
       <input name="name" className="w-full rounded border-line" placeholder="الاسم" required />
       <input name="email" type="email" className="w-full rounded border-line" placeholder="البريد الإلكتروني" required />
-      <p className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">سيُنشأ رابط إعداد آمن صالح لمدة 24 ساعة بدل كلمة مرور افتراضية.</p>
+      <p className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">ستُرسل دعوة إعداد آمنة صالحة لمدة 24 ساعة بدل عرض كلمة مرور أو رابط سري.</p>
       <div className="grid gap-3 md:grid-cols-2">
         <select name="role" className="rounded border-line">
           <option value="citizen">citizen</option>
@@ -744,7 +759,7 @@ export function UserCreateForm() {
       </div>
       <button className="rounded bg-civic px-4 py-2 text-white">إنشاء</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
-      {setupUrl ? <label className="block space-y-2 text-sm"><span className="font-semibold">رابط الإعداد — شاركه عبر قناة خاصة</span><input readOnly dir="ltr" value={setupUrl} className="w-full rounded border-line text-xs" onFocus={(event) => event.currentTarget.select()} /></label> : null}
+      {invitationSent ? <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">أُرسلت دعوة إعداد الحساب إلى البريد بأمان.</p> : null}
     </form>
   );
 }

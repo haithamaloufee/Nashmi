@@ -11,9 +11,10 @@ import type { TranslationKey } from "@/lib/i18n";
 type MobileNavProps = {
   links: Array<{ href: string; labelKey: TranslationKey }>;
   dashboardHref?: string | null;
+  authenticated?: boolean;
 };
 
-export default function MobileNav({ links, dashboardHref }: MobileNavProps) {
+export default function MobileNav({ links, dashboardHref, authenticated = false }: MobileNavProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -76,6 +77,12 @@ export default function MobileNav({ links, dashboardHref }: MobileNavProps) {
                 </Link>
               );
             })}
+            {!authenticated ? (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Link href="/login" className="focus-ring rounded bg-civic px-3 py-3 text-center font-bold text-white">{t("auth.login")}</Link>
+                <Link href="/signup" className="focus-ring rounded border border-civic px-3 py-3 text-center font-bold text-civic dark:text-emerald-100">{t("auth.signup")}</Link>
+              </div>
+            ) : null}
           </nav>
         </div>
       ) : null}

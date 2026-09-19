@@ -47,12 +47,24 @@ Use dedicated non-production accounts and secret-store variables: `E2E_CITIZEN_*
 
 Authenticated tests are read-only. If a future test must write, every record must contain the `e2e:nashmi:<timestamp>:<uuid>` marker from `tests/helpers/testData.ts`. Cleanup must target that exact marker/run ID; broad collection cleanup is forbidden. Production writes require a separate explicit review.
 
+## Authentication, email, and public domain
+
+- The canonical Production origin is `https://nashmi.haitham.website`. Set `NEXT_PUBLIC_SITE_URL` to that exact origin in Vercel Production; verification, reset, invitation, canonical, OpenGraph, sitemap, and robots URLs all derive from it.
+- Transactional email uses Resend server-side through `RESEND_API_KEY`. The production sender is configured with `EMAIL_FROM` on the verified `auth.nashmi.haitham.website` sending subdomain. Do not expose either variable to browser code.
+- Preview and Development only send real messages to recipients listed in `EMAIL_ALLOWED_RECIPIENTS`. Production does not use that allowlist. Set `EMAIL_REPLY_TO` only when a monitored inbox exists.
+- Public citizen signup always starts pending and requires email verification. Verification links expire after 24 hours; password-reset links after one hour; invitations after 24 hours. Raw tokens are sent once and only SHA-256 hashes are stored.
+- `npm run email:preview` generates token-free HTML examples under the gitignored `.email-preview/` directory. It never calls Resend.
+- Real delivery validation must cover verification, password reset, and password-changed messages in a controlled inbox. Confirm the CTA lands on the canonical origin and completes the one-time flow.
+- The legacy `nashmii.vercel.app` alias may redirect to the canonical host only after DNS and TLS for the custom domain are healthy. Keep host-based redirects loop-free.
+
+Relevant environment variable names: `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_ALLOWED_RECIPIENTS`, and optional `EMAIL_REPLY_TO`. Never add their secret values to this repository.
+
 ## Secret rotation and recovery safety
 
 - Rotate a credential only after identifying every consumer and establishing rollback material.
 - Update all dependent environments, verify Preview, then Production, then revoke the old credential.
 - Never print secret values or copy them into documentation.
-- `BLOB_READ_WRITE_TOKEN` is managed by the Vercel Blob connection. Use **Manage Blob Connection / Rotate Blob Credentials** only with a verified recovery path.
+- Production Blob should use the Vercel project connection with OIDC and `BLOB_STORE_ID`; local development may still use `BLOB_READ_WRITE_TOKEN`. Remove the long-lived Production token only after upload/read/display and a dedicated test-blob delete are proven on a fresh deployment.
 - A password reset increments `sessionVersion`; older cookies stop authenticating at the server/data layer.
 
 ## Incident checklist

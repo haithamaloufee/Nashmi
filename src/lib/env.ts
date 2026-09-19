@@ -128,6 +128,11 @@ export function hasBlobReadWriteToken() {
   return Boolean(getOptionalEnv("BLOB_READ_WRITE_TOKEN"));
 }
 
+export function hasBlobCredentials() {
+  if (hasBlobReadWriteToken()) return true;
+  return Boolean(getOptionalEnv("BLOB_STORE_ID") && (getOptionalEnv("VERCEL_OIDC_TOKEN") || process.env.VERCEL));
+}
+
 export function getGeminiApiKey() {
   return getRequiredEnv("GEMINI_API_KEY");
 }
@@ -173,7 +178,7 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
   check("MAX_IMAGE_UPLOAD_SIZE_MB", getMaxImageUploadSizeBytes);
   check("MAX_VIDEO_UPLOAD_SIZE_MB", getMaxVideoUploadSizeBytes);
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    check("BLOB_READ_WRITE_TOKEN", () => getRequiredEnv("BLOB_READ_WRITE_TOKEN"));
+    if (!hasBlobCredentials()) missing.push("BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID with Vercel OIDC");
   }
   check("GEMINI_ENABLE_GOOGLE_SEARCH", () => getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false));
   check("GEMINI_MAX_HISTORY_MESSAGES", () => getGeminiNumber("GEMINI_MAX_HISTORY_MESSAGES", 30, 2, 80));

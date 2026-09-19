@@ -7,6 +7,8 @@ import { readJson, isDuplicateKeyError, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import User from "@/models/User";
 import { buildAccountSetupUrl, createAccountSetup } from "@/lib/accountSetup";
+import { accountInvitationEmail } from "@/lib/emailTemplates";
+import { sendTransactionalEmail } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
@@ -17,8 +19,14 @@ export async function GET(request: Request) {
     const filter = search
       ? { $or: [{ name: new RegExp(search, "i") }, { emailNormalized: new RegExp(search.toLowerCase(), "i") }] }
       : {};
-    const users = await User.find(filter).select("-passwordHash").sort({ createdAt: -1 }).limit(100).lean();
-    return ok({ users: serialize(users) });
+    const users = await User.find(filter).select("+passwordHash").sort({ createdAt: -1 }).limit(100).lean();
+    const safeUsers = users.map((user) => {
+      const safe = user as Record<string, unknown>;
+      safe.setupInvitationEligible = !safe.passwordHash;
+      delete safe.passwordHash;
+      return safe;
+    });
+    return ok({ users: serialize(safeUsers) });
   } catch (error) {
     return handleApiError(error);
   }
@@ -54,7 +62,11 @@ export async function POST(request: Request) {
     delete safe.passwordSetupExpiresAt;
     delete safe.passwordSetupTargetStatus;
     delete safe.sessionVersion;
-    return ok({ user: serialize(safe), setupUrl: buildAccountSetupUrl(setup.token), setupExpiresAt: setup.expiresAt.toISOString() }, { status: 201 });
+    let invitationSent = false;
+    try {
+      invitationSent = (await sendTransactionalEmail(user.email, accountInvitationEmail(user.language, buildAccountSetupUrl(setup.token)))).sent;
+    } catch { /* The pending account can be invited again safely. */ }
+    return ok({ user: serialize(safe), invitationSent, setupExpiresAt: setup.expiresAt.toISOString() }, { status: 201 });
   } catch (error) {
     if (isDuplicateKeyError(error)) return fail("CONFLICT", "البريد الإلكتروني مستخدم بالفعل", 409);
     return handleApiError(error);

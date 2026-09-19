@@ -12,7 +12,8 @@ export function createAccountSetup() {
 }
 
 export function buildAccountSetupUrl(token: string) {
-  const base = new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3004");
+  const fallback = process.env.NODE_ENV === "production" ? "https://nashmi.haitham.website" : "http://localhost:3000";
+  const base = new URL(process.env.NEXT_PUBLIC_SITE_URL || fallback);
   base.pathname = "/set-password";
   base.search = "";
   base.hash = "";

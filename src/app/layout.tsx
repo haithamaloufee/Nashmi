@@ -7,11 +7,13 @@ import RouteTransitionProvider from "@/components/navigation/RouteTransitionProv
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import { cookies } from "next/headers";
 import { defaultLanguage, isLanguage } from "@/lib/i18n";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3004"),
+  metadataBase: new URL(getSiteUrl()),
   title: "Nashmi / نشمي",
   description: "منصة رقمية تجريبية ومحايدة لتعزيز المشاركة المدنية والوعي الانتخابي والتواصل المنظم بين المواطنين والأحزاب.",
+  alternates: { canonical: "/" },
   icons: {
     icon: "/images/nashmi%20logo_transparent.png",
     shortcut: "/images/nashmi%20logo_transparent.png",
@@ -20,6 +22,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Nashmi / نشمي",
     description: "منصة رقمية تجريبية ومحايدة لتعزيز المشاركة المدنية والوعي الانتخابي.",
+    url: "/",
+    siteName: "Nashmi / نشمي",
+    type: "website",
     images: [{ url: "/images/nashmi%20logo_transparent.png", width: 614, height: 614, alt: "شعار منصة نشمي" }]
   }
 };

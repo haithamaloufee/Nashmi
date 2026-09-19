@@ -6,6 +6,10 @@ const UserSchema = new Schema(
     email: { type: String, required: true, trim: true },
     emailNormalized: { type: String, required: true, trim: true, lowercase: true },
     emailVerified: { type: Boolean, default: false },
+    emailVerificationTokenHash: { type: String, default: null, select: false },
+    emailVerificationExpiresAt: { type: Date, default: null, select: false },
+    passwordResetTokenHash: { type: String, default: null, select: false },
+    passwordResetExpiresAt: { type: Date, default: null, select: false },
     passwordHash: { type: String, default: null },
     passwordSetupTokenHash: { type: String, default: null, select: false },
     passwordSetupExpiresAt: { type: Date, default: null, select: false },
@@ -34,6 +38,10 @@ UserSchema.index({ role: 1, status: 1 });
 UserSchema.index({ status: 1, createdAt: -1 });
 UserSchema.index({ passwordSetupExpiresAt: 1 }, { sparse: true });
 UserSchema.index({ passwordSetupTokenHash: 1 }, { unique: true, sparse: true });
+UserSchema.index({ emailVerificationTokenHash: 1 }, { unique: true, sparse: true });
+UserSchema.index({ passwordResetTokenHash: 1 }, { unique: true, sparse: true });
+UserSchema.index({ emailVerificationExpiresAt: 1 }, { sparse: true });
+UserSchema.index({ passwordResetExpiresAt: 1 }, { sparse: true });
 
 export type UserDocument = InferSchemaType<typeof UserSchema>;
 
