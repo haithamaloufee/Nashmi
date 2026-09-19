@@ -420,7 +420,11 @@ export async function getPublicLaws(search?: string, category?: string) {
     if (category) query.category = category;
     if (regex) query.searchNormalized = regex;
     const [laws, categories] = await Promise.all([
-      Law.find(query).sort({ createdAt: -1 }).limit(50).lean(),
+      Law.find(query)
+        .select("title slug category shortDescription thumbnailUrl youtubeVideoId lastVerifiedAt createdAt")
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
       Law.distinct("category", { status: "published" })
     ]);
     return { laws: serialize(laws), categories };

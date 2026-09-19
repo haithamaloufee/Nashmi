@@ -6,7 +6,7 @@ import { Edit3, Loader2, Plus, X } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 import MediaUploadField from "@/components/ui/MediaUploadField";
 
-type LawFormData = {
+export type LawFormData = {
   _id?: string;
   title?: string;
   slug?: string;

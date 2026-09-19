@@ -19,3 +19,6 @@ next-dev*.err.log
 next-start*.log
 next-start*.err.log
 tsconfig.tsbuildinfo
+playwright/.auth/
+test-results/
+playwright-report/

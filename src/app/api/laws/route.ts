@@ -16,7 +16,11 @@ export async function GET(request: Request) {
     const query: Record<string, unknown> = { status: "published", ...cursorFilter(url.searchParams.get("cursor")) };
     if (category) query.category = category;
     if (regex) query.searchNormalized = regex;
-    const laws = await Law.find(query).sort(newestSort).limit(limit).lean();
+    const laws = await Law.find(query)
+      .select("title slug category shortDescription thumbnailUrl youtubeVideoId lastVerifiedAt createdAt")
+      .sort(newestSort)
+      .limit(limit)
+      .lean();
     const categories = await Law.distinct("category", { status: "published" });
     return ok({ laws: serialize(laws), categories, disclaimer: lawDisclaimer() }, { nextCursor: getNextCursor(laws, limit) });
   } catch (error) {

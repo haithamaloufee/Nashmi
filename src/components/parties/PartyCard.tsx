@@ -37,7 +37,7 @@ export default function PartyCard({ party }: { party: Party }) {
         <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="h-12 w-12 shrink-0 rounded object-contain ring-1 ring-line" fallback={fallback} />
         <div>
           <h3 className="font-bold">{party.name}</h3>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-ink/60">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-ink/65">
             {party.isVerified ? (
               <DelayedTooltipBadge tooltip={t("party.verifiedTooltip")} className="rounded-full border border-olive/20 bg-olive/10 px-2.5 py-1 font-bold text-olive shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-civic/25 dark:border-emerald-200/35 dark:bg-emerald-200/12 dark:text-emerald-100 dark:shadow-none">
                 {t("party.verified")}
@@ -55,7 +55,7 @@ export default function PartyCard({ party }: { party: Party }) {
       </div>
       <p className="line-clamp-3 flex-1 text-sm leading-7 text-ink/70">{party.shortDescription}</p>
       <div className="mt-4 flex items-center justify-between gap-3">
-        <span className="text-sm text-ink/60">
+        <span className="text-sm text-ink/65">
           <Users className="me-1 inline h-4 w-4" />
           {formatNumber(party.followersCount, language)} {party.followersCount === 1 ? t("party.follower") : t("party.followers")}
         </span>

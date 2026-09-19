@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import LawCard from "@/components/laws/LawCard";
-import LawManagementControls from "@/components/laws/LawManagementControls";
+import LawManagementControls from "@/components/laws/LazyLawManagementControls";
 import LawsFilterForm from "@/components/laws/LawsFilterForm";
 import Alert from "@/components/ui/Alert";
 import { getCurrentUser } from "@/lib/auth";

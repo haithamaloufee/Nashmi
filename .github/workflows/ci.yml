@@ -36,3 +36,20 @@ jobs:
       - run: npm run test:security
       - run: npm run test:concurrency
       - run: npm run build
+      - run: npm run bundle:check
+      - name: Optional authenticated E2E (trusted master pushes only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_CITIZEN_EMAIL: ${{ secrets.E2E_CITIZEN_EMAIL }}
+          E2E_CITIZEN_PASSWORD: ${{ secrets.E2E_CITIZEN_PASSWORD }}
+          E2E_PARTY_EMAIL: ${{ secrets.E2E_PARTY_EMAIL }}
+          E2E_PARTY_PASSWORD: ${{ secrets.E2E_PARTY_PASSWORD }}
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+        run: |
+          if [ -z "$E2E_BASE_URL" ] || ! { [ -n "$E2E_CITIZEN_EMAIL" ] && [ -n "$E2E_CITIZEN_PASSWORD" ] || [ -n "$E2E_PARTY_EMAIL" ] && [ -n "$E2E_PARTY_PASSWORD" ] || [ -n "$E2E_ADMIN_EMAIL" ] && [ -n "$E2E_ADMIN_PASSWORD" ]; }; then
+            echo "Authenticated E2E skipped: no complete role credential pair is configured."
+            exit 0
+          fi
+          npm run test:e2e:auth

@@ -1,6 +1,30 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
 
 const externalBaseUrl = process.env.E2E_BASE_URL?.replace(/\/$/, "");
+const authDir = path.join(process.cwd(), "playwright", ".auth");
+const roles = ["citizen", "party", "admin"] as const;
+const configuredRoles = roles.filter((role) => {
+  const prefix = `E2E_${role.toUpperCase()}`;
+  return Boolean(process.env[`${prefix}_EMAIL`] && process.env[`${prefix}_PASSWORD`]);
+});
+
+const authProjects = configuredRoles.flatMap((role) => [
+  {
+    name: `setup-${role}`,
+    testMatch: /auth\.setup\.ts/,
+    use: { ...devices["Desktop Chrome"] }
+  },
+  {
+    name: role,
+    testMatch: /authenticated\.spec\.ts/,
+    dependencies: [`setup-${role}`],
+    use: {
+      ...devices["Desktop Chrome"],
+      storageState: path.join(authDir, `${role}.json`)
+    }
+  }
+]);
 
 export default defineConfig({
   testDir: "./tests",
@@ -21,6 +45,11 @@ export default defineConfig({
         timeout: 120_000
       },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } }
+    {
+      name: "public",
+      testMatch: /(production-smoke|api-contracts)\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] }
+    },
+    ...authProjects
   ]
 });

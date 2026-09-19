@@ -15,8 +15,8 @@ export default function LanguageToggle({ compact = false }: { compact?: boolean 
       title={t("language.toggle")}
       data-no-route-transition="true"
     >
-      <span className={`rounded-full px-2 py-1 transition ${isArabic ? "bg-civic text-white dark:bg-emerald-200 dark:text-[#101820]" : "text-ink/55 dark:text-slate-400"}`}>AR</span>
-      <span className={`rounded-full px-2 py-1 transition ${!isArabic ? "bg-civic text-white dark:bg-emerald-200 dark:text-[#101820]" : "text-ink/55 dark:text-slate-400"}`}>EN</span>
+      <span className={`rounded-full px-2 py-1 transition ${isArabic ? "bg-civic text-white dark:bg-emerald-200 dark:text-[#101820]" : "text-ink/70 dark:text-slate-300"}`}>AR</span>
+      <span className={`rounded-full px-2 py-1 transition ${!isArabic ? "bg-civic text-white dark:bg-emerald-200 dark:text-[#101820]" : "text-ink/70 dark:text-slate-300"}`}>EN</span>
       {compact ? <span className="sr-only">{t("language.current")}</span> : null}
     </button>
   );

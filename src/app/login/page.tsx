@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <main className="container-page py-8">
       <AuthForm mode="login" />
-      <p className="mt-4 text-center text-sm text-ink/60">
+      <p className="mt-4 text-center text-sm text-ink/65">
         <I18nText id="auth.noAccount" /> <Link className="font-semibold text-civic" href="/signup"><I18nText id="auth.signup" /></Link>
       </p>
     </main>

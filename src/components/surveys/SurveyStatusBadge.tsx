@@ -26,7 +26,7 @@ const styles: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
   upcoming: "bg-amber-100 text-amber-800 dark:bg-amber-300/15 dark:text-amber-100",
   open: "bg-civic/10 text-civic dark:bg-emerald-200/12 dark:text-emerald-100",
-  closed: "bg-clay/10 text-clay dark:bg-orange-300/15 dark:text-orange-100",
+  closed: "bg-clay/10 text-[#844326] dark:bg-orange-300/15 dark:text-orange-100",
   archived: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
   deleted: "bg-red-100 text-red-700 dark:bg-red-300/15 dark:text-red-100"
 };

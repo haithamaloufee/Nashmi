@@ -9,13 +9,13 @@ import ReactionButtons from "@/components/ui/ReactionButtons";
 import SafeImage from "@/components/ui/SafeImage";
 import ShareMenu from "@/components/ui/ShareMenu";
 import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
-import OwnerContentMenu from "@/components/content/OwnerContentMenu";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import HashtagText from "@/components/hashtags/HashtagText";
 import { formatNumber, formatRelativeTime, normalizeHashtag } from "@/lib/localization";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
+const OwnerContentMenu = dynamic(() => import("@/components/content/OwnerContentMenu"), { ssr: false });
 
 type AuthorUser = {
   name?: string;

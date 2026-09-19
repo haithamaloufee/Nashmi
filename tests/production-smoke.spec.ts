@@ -1,6 +1,7 @@
 import { test, expect, type Page, type APIRequestContext } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "fs";
 import path from "path";
+import AxeBuilder from "@axe-core/playwright";
 
 const screenshotDir = path.join(process.cwd(), "test-results", "production-smoke");
 const fixtureDir = path.join(process.cwd(), "test-results", "fixtures");
@@ -60,7 +61,7 @@ test.afterAll(() => {
 test("critical public routes remain usable at small mobile and tablet widths", async ({ page, request }) => {
   test.setTimeout(360_000);
   const routes = ["/", "/laws", "/parties", "/updates", "/surveys", "/login", "/signup", "/chat"];
-  for (const width of [320, 390, 768]) {
+  for (const width of [320, 360, 375, 390, 414, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: width < 700 ? 820 : 1024 });
     for (const route of routes) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
@@ -89,6 +90,20 @@ test("critical public routes remain usable at small mobile and tablet widths", a
   expect(protectedRoute.status()).toBe(307);
   expect(protectedRoute.headers().location).toBe("/login");
   expect(protectedRoute.headers()["cache-control"]).toContain("no-store");
+  const health = await request.get("/api/health");
+  expect(health.ok()).toBe(true);
+  expect(await health.json()).toMatchObject({ ok: true, data: { status: "ok", service: "nashmi" } });
+  expect(health.headers()["x-request-id"]).toBeTruthy();
+});
+
+test("critical public pages have no serious automated accessibility violations", async ({ page }) => {
+  test.setTimeout(240_000);
+  for (const route of ["/", "/laws", "/parties", "/updates", "/surveys", "/login"]) {
+    await page.goto(route, { waitUntil: "domcontentloaded" });
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact || ""));
+    expect(serious, `${route} contains serious accessibility violations`).toEqual([]);
+  }
 });
 
 test("public pages, post media, comments, profiles, and navbar prefetch", async ({ page, request }) => {

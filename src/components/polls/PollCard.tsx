@@ -11,13 +11,13 @@ import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import ShareMenu from "@/components/ui/ShareMenu";
 import SafeImage from "@/components/ui/SafeImage";
-import OwnerContentMenu from "@/components/content/OwnerContentMenu";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import HashtagText from "@/components/hashtags/HashtagText";
 import { formatNumber, formatRelativeTime } from "@/lib/localization";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
+const OwnerContentMenu = dynamic(() => import("@/components/content/OwnerContentMenu"), { ssr: false });
 
 type Poll = {
   _id: string;

@@ -63,7 +63,7 @@ export default function ElectionStatsSection() {
                     <h3 className="text-xl font-black"><I18nText id="home.election.byDistrict" /></h3>
                     <span className="rounded-full bg-civic/10 px-3 py-1 text-xs font-bold text-civic"><I18nText id="home.election.referenceValues" /></span>
                   </div>
-                  <div className="max-w-full overflow-x-auto overscroll-x-contain pb-2" dir="ltr">
+                  <div className="max-w-full overflow-x-auto overscroll-x-contain pb-2" dir="ltr" tabIndex={0} role="region" aria-label="إحصاءات الانتخابات القابلة للتمرير">
                     <div className="election-chart-grid" aria-label="رسم أعمدة لنسب الانتخاب حسب الدائرة">
                       {districtPercentages.map((item) => (
                         <div key={item.label} className="flex min-h-[300px] flex-col items-center justify-end gap-2">

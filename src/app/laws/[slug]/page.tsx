@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import LawManagementControls from "@/components/laws/LawManagementControls";
+import LawManagementControls from "@/components/laws/LazyLawManagementControls";
 import Alert from "@/components/ui/Alert";
 import SafeImage from "@/components/ui/SafeImage";
 import { getCurrentUser } from "@/lib/auth";

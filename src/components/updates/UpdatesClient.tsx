@@ -2,17 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Bot, Compass, Loader2, Search, SlidersHorizontal } from "lucide-react";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
 import SurveyFeedCard from "@/components/surveys/SurveyFeedCard";
-import AdvancedSearchModal from "@/components/updates/AdvancedSearchModal";
-import UpdatesPublishButton from "@/components/updates/UpdatesPublishButton";
 import type { PublisherComposerProfile } from "@/components/dashboard/composers/types";
 import { PostCardSkeleton, SidebarSkeleton } from "@/components/ui/Skeletons";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { extractHashtags, formatNumber, normalizeHashtag } from "@/lib/localization";
+
+const AdvancedSearchModal = dynamic(() => import("@/components/updates/AdvancedSearchModal"), { ssr: false });
+const UpdatesPublishButton = dynamic(() => import("@/components/updates/UpdatesPublishButton"), { ssr: false });
 
 type UpdateItem = { type: "post" | "poll" | "survey"; publishedAt: string; item: any };
 
@@ -360,7 +362,7 @@ export default function UpdatesClient({
         {!loading && updates.length === 0 ? (
           <div className="card p-8 text-center">
             <h2 className="text-xl font-bold">{t("updates.noResults")}</h2>
-            <p className="mt-2 text-ink/60">{t("updates.noResultsHint")}</p>
+            <p className="mt-2 text-ink/65">{t("updates.noResultsHint")}</p>
           </div>
         ) : null}
 
@@ -397,7 +399,7 @@ export default function UpdatesClient({
                   <Link key={party._id || party.slug} href={party.slug ? `/parties/${party.slug}` : "/parties"} className="block rounded px-2 py-2 text-sm hover:bg-civic/10 hover:text-civic">
                     {party.name}
                   </Link>
-                )) : <p className="text-sm text-ink/55">{t("updates.noEntities")}</p>}
+                )) : <p className="text-sm text-ink/65">{t("updates.noEntities")}</p>}
               </div>
             </div>
             <div className="card p-4">
@@ -407,7 +409,7 @@ export default function UpdatesClient({
                   <Link key={tag} href={`/hashtags/${encodeURIComponent(normalizeHashtag(tag))}`} className="rounded-full bg-paper px-2.5 py-1 text-xs font-semibold text-ink/70 hover:bg-civic/10 hover:text-civic dark:bg-slate-900 dark:text-slate-200">
                     #{tag.replace(/^#/, "")}
                   </Link>
-                )) : <p className="text-sm text-ink/55">{t("updates.noHashtags")}</p>}
+                )) : <p className="text-sm text-ink/65">{t("updates.noHashtags")}</p>}
               </div>
             </div>
             <div className="card border-civic/25 bg-civic/5 p-4 dark:bg-emerald-200/8">

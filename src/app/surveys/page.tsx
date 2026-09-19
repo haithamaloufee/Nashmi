@@ -36,10 +36,10 @@ export default async function SurveysPage({ searchParams }: { searchParams: Prom
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/45" />
           <input name="search" defaultValue={search} className="w-full rounded border-line ps-10" placeholder="ابحث في الاستبيانات..." />
         </label>
-        <select name="filter" defaultValue={filter} className="rounded border-line">
+        <select name="filter" defaultValue={filter} aria-label="تصفية الاستبيانات حسب الناشر" className="rounded border-line">
           {filters.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
-        <select name="sort" defaultValue={sort} className="rounded border-line">
+        <select name="sort" defaultValue={sort} aria-label="ترتيب الاستبيانات" className="rounded border-line">
           <option value="newest">الأحدث</option>
           <option value="most_participated">الأكثر مشاركة</option>
         </select>

@@ -34,7 +34,7 @@ export default function LawCard({ law }: { law: Law }) {
         <h3 className="text-lg font-bold">{law.title}</h3>
         <p className="mt-3 line-clamp-3 leading-7 text-ink/70">{law.shortDescription}</p>
         <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="text-xs text-ink/55">{law.lastVerifiedAt ? `${t("common.lastVerified")} ${formatDate(law.lastVerifiedAt, language)}` : t("common.pendingVerification")}</span>
+          <span className="text-xs text-ink/65">{law.lastVerifiedAt ? `${t("common.lastVerified")} ${formatDate(law.lastVerifiedAt, language)}` : t("common.pendingVerification")}</span>
           <Link href={`/laws/${law.slug}`} className="rounded bg-civic px-4 py-2 text-sm font-semibold text-white">
             {t("common.read")}
           </Link>

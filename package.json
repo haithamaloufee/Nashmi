@@ -6,6 +6,8 @@
     "dev": "next dev",
     "app": "tsx scripts/start-app.ts",
     "build": "next build",
+    "bundle:check": "tsx scripts/check-bundle-budget.ts",
+    "memory:runtime": "tsx scripts/runtime-memory-probe.ts",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",
     "env:check": "tsx scripts/validate-env.ts",
@@ -20,7 +22,9 @@
     "test": "tsx scripts/test-critical.ts",
     "test:security": "tsx scripts/test-critical.ts",
     "test:concurrency": "tsx scripts/test-reaction-concurrency.ts",
+    "audit:legacy-credentials": "tsx scripts/audit-legacy-credentials.ts",
     "test:e2e": "playwright test",
+    "test:e2e:auth": "playwright test tests/authenticated.spec.ts",
     "smoke:production": "tsx scripts/production-smoke.ts",
     "seed-memory": "tsx scripts/seed-memory.ts",
     "sync-indexes": "tsx scripts/sync-indexes.ts",
@@ -49,6 +53,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.20.3",

@@ -34,7 +34,7 @@ export default function SurveyCard({ survey, compact = false }: { survey: Survey
           />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-clay/10 px-2.5 py-1 text-xs font-black text-clay dark:bg-amber-200/10 dark:text-amber-100">
+              <span className="inline-flex items-center gap-1 rounded-full bg-clay/10 px-2.5 py-1 text-xs font-black text-[#844326] dark:bg-amber-200/10 dark:text-amber-100">
                 <ClipboardList className="h-3.5 w-3.5" />
                 استبيان
               </span>
