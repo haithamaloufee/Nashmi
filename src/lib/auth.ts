@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import type { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { AUTH_COOKIE } from "@/lib/cookies";
-import { verifyAuthToken } from "@/lib/jwt";
+import { sessionVersionMatches, verifyAuthToken } from "@/lib/jwt";
 import { canMutateStatus, type Role } from "@/lib/permissions";
 import User from "@/models/User";
 
@@ -53,6 +53,7 @@ export async function getCurrentUser() {
     await connectToDatabase();
     const user = await User.findById(payload.userId).select("-passwordHash").lean();
     if (!user) return null;
+    if (!sessionVersionMatches(payload.sessionVersion, user.sessionVersion)) return null;
     return safeUser(user as never);
   } catch {
     return null;

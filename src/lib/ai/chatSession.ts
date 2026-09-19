@@ -8,6 +8,7 @@ import type { SafeUser } from "@/lib/auth";
 import ChatMessage from "@/models/ChatMessage";
 import ChatSession from "@/models/ChatSession";
 import Law from "@/models/Law";
+import { logServerError } from "@/lib/observability";
 
 export const CHAT_ALLOWED_ROLES = ["citizen", "party", "iec", "admin", "super_admin"] as const;
 
@@ -17,8 +18,8 @@ export function makeChatTitle(message: string) {
 }
 
 export function logSafeChatError(error: unknown, metadata: Record<string, unknown> = {}) {
-  const message = error instanceof SharekAiError ? error.code : error instanceof Error ? error.message : "unknown";
-  console.error({ name: "ChatAssistantError", message, ...metadata });
+  const route = typeof metadata.route === "string" ? metadata.route : undefined;
+  logServerError(error instanceof SharekAiError ? new Error(error.code) : error, { route, category: "ai.provider_error" });
 }
 
 export async function getOwnedChatSession(sessionId: string, userId: string) {

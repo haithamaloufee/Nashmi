@@ -50,6 +50,10 @@ export async function POST(request: Request) {
     await writeAuditLog({ actorUserId: actor.id, actorRole: actor.role, action: "admin.user_create", targetType: "user", targetId: user._id, metadata: { role: input.role || "citizen" }, request });
     const safe = user.toObject() as Record<string, unknown>;
     delete safe.passwordHash;
+    delete safe.passwordSetupTokenHash;
+    delete safe.passwordSetupExpiresAt;
+    delete safe.passwordSetupTargetStatus;
+    delete safe.sessionVersion;
     return ok({ user: serialize(safe), setupUrl: buildAccountSetupUrl(setup.token), setupExpiresAt: setup.expiresAt.toISOString() }, { status: 201 });
   } catch (error) {
     if (isDuplicateKeyError(error)) return fail("CONFLICT", "البريد الإلكتروني مستخدم بالفعل", 409);

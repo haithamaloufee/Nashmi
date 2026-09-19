@@ -13,8 +13,11 @@ import { canManageUser, canModerateUser } from "../src/lib/permissions";
 import { counterUpdatePipeline, reactionCounterDelta } from "../src/lib/reactions";
 import { isBlockedNetworkAddress, validateVercelBlobUrl } from "../src/lib/remoteFetch";
 import { safeMarkdownHref } from "../src/lib/markdown";
-import { getGeminiApiKey } from "../src/lib/env";
+import { getGeminiApiKey, getMongoUri } from "../src/lib/env";
 import { readJsonWithLimit } from "../src/lib/routeUtils";
+import { sessionVersionMatches, signAuthToken } from "../src/lib/jwt";
+import { verifyEdgeAuthToken } from "../src/lib/jwtEdge";
+import { buildBoundedConversation, classifyAiProviderError } from "../src/lib/ai/resilience";
 
 function makeFile(name: string, type: string, size: number) {
   return new File([new Uint8Array(size || 1)], name, { type });
@@ -250,6 +253,9 @@ function testSecurityRegressionRules() {
   assert.deepEqual(reactionCounterDelta("like", "dislike"), { likesCount: -1, dislikesCount: 1 });
   assert.deepEqual(reactionCounterDelta("dislike", null), { likesCount: 0, dislikesCount: -1 });
   assert.match(JSON.stringify(counterUpdatePipeline({ likesCount: -1, dislikesCount: 0 })), /\$max/);
+  assert.equal(sessionVersionMatches(0, undefined), true);
+  assert.equal(sessionVersionMatches(4, 4), true);
+  assert.equal(sessionVersionMatches(3, 4), false);
 
   for (const address of ["127.0.0.1", "10.0.0.1", "169.254.169.254", "172.16.0.1", "192.168.1.1", "::1", "fc00::1", "fe80::1", "::ffff:127.0.0.1"]) {
     assert.equal(isBlockedNetworkAddress(address), true, `${address} must be blocked`);
@@ -295,6 +301,55 @@ async function testAiEndpointBoundaries() {
   assert.match(aiSource, /party_recommendation_refused/);
   assert.match(aiSource, /withTimeout/);
   assert.doesNotMatch(aiSource, /NEXT_PUBLIC_GEMINI/);
+  assert.ok(
+    aiSource.indexOf("const config = getSharekAssistantConfig()") > aiSource.indexOf("if (isOutOfScopeRequest(params.message))"),
+    "Local AI safety responses must not require provider configuration"
+  );
+  const bounded = buildBoundedConversation(
+    Array.from({ length: 20 }, (_, index) => ({ role: index % 2 ? "assistant" as const : "user" as const, content: "x".repeat(2_000) })),
+    "latest question",
+    6_000
+  );
+  assert.ok(bounded.reduce((total, item) => total + item.content.length, 0) <= 6_000);
+  assert.equal(bounded.at(-1)?.content, "latest question");
+  assert.deepEqual(classifyAiProviderError(Object.assign(new Error("quota exceeded"), { status: 429 })), { code: "rate_limit", retryable: true });
+  assert.deepEqual(classifyAiProviderError(new Error("request timed out")), { code: "timeout", retryable: true });
+  assert.deepEqual(classifyAiProviderError(new Error("malformed response")), { code: "unknown", retryable: false });
+
+  const resetSource = readFileSync("src/app/api/auth/reset-password/route.ts", "utf8");
+  assert.match(resetSource, /sessionVersion/);
+  assert.match(resetSource, /passwordChangedAt/);
+  const legacyAuditSource = readFileSync("scripts/audit-legacy-credentials.ts", "utf8");
+  assert.match(legacyAuditSource, /--delivery-ready/);
+  assert.doesNotMatch(legacyAuditSource, /Password123!/);
+}
+
+function testMongoSeedListValidation() {
+  const previous = process.env.MONGODB_URI;
+  const seedList = "mongodb://user:password@db-a.example.test:27017,db-b.example.test:27017/nashmi?replicaSet=atlas";
+  process.env.MONGODB_URI = seedList;
+  try {
+    assert.equal(getMongoUri(), seedList);
+  } finally {
+    if (previous === undefined) delete process.env.MONGODB_URI;
+    else process.env.MONGODB_URI = previous;
+  }
+}
+
+async function testSessionTokenVerification() {
+  const previous = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-session-secret-with-at-least-32-characters";
+  try {
+    const token = await signAuthToken({ _id: new Types.ObjectId(), role: "citizen", sessionVersion: 7 });
+    const payload = await verifyEdgeAuthToken(token);
+    assert.equal(payload?.role, "citizen");
+    assert.equal(payload?.sessionVersion, 7);
+    assert.equal(await verifyEdgeAuthToken(`${token.slice(0, -2)}xx`), null);
+    assert.equal(await verifyEdgeAuthToken("not-a-jwt"), null);
+  } finally {
+    if (previous === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previous;
+  }
 }
 
 async function main() {
@@ -308,7 +363,9 @@ async function main() {
   testPostMediaUrlRejection();
   testDefaultPostMediaFiltering();
   testSecurityRegressionRules();
+  testMongoSeedListValidation();
   await testAiEndpointBoundaries();
+  await testSessionTokenVerification();
   console.log("Critical tests passed.");
 }
 

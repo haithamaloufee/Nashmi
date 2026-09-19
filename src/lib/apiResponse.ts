@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { InvalidEnvError, MissingEnvError } from "./env";
+import { logServerError } from "./observability";
 
 export type ApiErrorCode =
   | "BAD_REQUEST"
@@ -38,19 +39,7 @@ export function fail(code: ApiErrorCode, message?: string, status = 400) {
   return NextResponse.json({ ok: false, error: { code, message: message || messages[code] } }, { status });
 }
 
-function safeErrorLog(error: unknown) {
-  if (!(error instanceof Error)) {
-    console.error({ name: "UnknownError" });
-    return;
-  }
-
-  console.error({
-    name: error.name,
-    message: error.message.replace(/mongodb(\+srv)?:\/\/[^@\s]+@/gi, "mongodb$1://<credentials>@")
-  });
-}
-
-export function handleApiError(error: unknown) {
+export function handleApiError(error: unknown, request?: Request) {
   if (error instanceof ZodError) {
     const first = error.issues[0];
     const path = first?.path?.map(String).join('.') || '';
@@ -83,6 +72,6 @@ export function handleApiError(error: unknown) {
   if (error instanceof MissingEnvError) return fail("SERVER_ERROR", `Server configuration is missing: ${error.variableName}`, 500);
   if (error instanceof InvalidEnvError) return fail("SERVER_ERROR", `Server configuration is invalid: ${error.variableName}`, 500);
 
-  safeErrorLog(error);
+  logServerError(error, { request, category: "api.unhandled_error" });
   return fail("SERVER_ERROR", undefined, 500);
 }

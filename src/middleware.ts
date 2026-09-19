@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE } from "@/lib/cookies";
-import { verifyAuthToken } from "@/lib/jwt";
+import { verifyEdgeAuthToken } from "@/lib/jwtEdge";
 
 function withSecurityHeaders(response: NextResponse) {
   const production = process.env.NODE_ENV === "production";
@@ -54,15 +54,25 @@ function isPublicRoute(pathname: string) {
   );
 }
 
-function redirectToLogin(request: NextRequest) {
+function resolveRequestId(request: NextRequest) {
+  const candidate = request.headers.get("x-request-id")?.trim();
+  return candidate && /^[A-Za-z0-9._-]{8,64}$/.test(candidate) ? candidate : crypto.randomUUID();
+}
+
+function redirectToLogin(request: NextRequest, requestId: string) {
   const response = withSecurityHeaders(NextResponse.redirect(new URL("/login", request.url)));
   response.headers.set("Cache-Control", "no-store");
+  response.headers.set("X-Request-Id", requestId);
   return response;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const response = withSecurityHeaders(NextResponse.next());
+  const requestId = resolveRequestId(request);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-request-id", requestId);
+  const response = withSecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
+  response.headers.set("X-Request-Id", requestId);
 
   if (isProtectedRoute(pathname)) {
     response.headers.set("Cache-Control", "no-store");
@@ -78,26 +88,27 @@ export async function middleware(request: NextRequest) {
 
   const token = request.cookies.get(AUTH_COOKIE)?.value;
   if (!token) {
-    return redirectToLogin(request);
+    return redirectToLogin(request, requestId);
   }
 
   try {
-    const payload = await verifyAuthToken(token);
+    const payload = await verifyEdgeAuthToken(token);
+    if (!payload) return redirectToLogin(request, requestId);
     const role = payload?.role;
 
     if (isRoute(pathname, "/admin") && !["admin", "super_admin"].includes(role || "")) {
-      return redirectToLogin(request);
+      return redirectToLogin(request, requestId);
     }
 
     if (isRoute(pathname, "/party-dashboard") && role !== "party") {
-      return redirectToLogin(request);
+      return redirectToLogin(request, requestId);
     }
 
     if (isRoute(pathname, "/iec-dashboard") && role !== "iec") {
-      return redirectToLogin(request);
+      return redirectToLogin(request, requestId);
     }
   } catch {
-    return redirectToLogin(request);
+    return redirectToLogin(request, requestId);
   }
 
   return response;

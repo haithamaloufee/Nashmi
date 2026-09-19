@@ -6,6 +6,7 @@ import { connectToDatabase } from "@/lib/db";
 import { normalizeArabic } from "@/lib/arabicSearch";
 import { getGeminiBoolean, getGeminiNumber, getOptionalEnv, getRequiredEnv } from "@/lib/env";
 import Law from "@/models/Law";
+import { buildBoundedConversation, classifyAiProviderError } from "@/lib/ai/resilience";
 
 export type ChatHistoryItem = {
   role: "user" | "assistant";
@@ -190,6 +191,8 @@ export function getSharekAssistantConfig() {
     enableGoogleSearch: getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false),
     maxHistoryMessages: getGeminiNumber("GEMINI_MAX_HISTORY_MESSAGES", 30, 2, 80),
     maxLawContextResults: getGeminiNumber("GEMINI_MAX_LAW_CONTEXT_RESULTS", 6, 0, 12),
+    maxContextChars: getGeminiNumber("GEMINI_MAX_CONTEXT_CHARS", 16_000, 4_000, 40_000),
+    maxOutputTokens: getGeminiNumber("GEMINI_MAX_OUTPUT_TOKENS", 1_200, 256, 2_048),
     temperature: getGeminiNumber("GEMINI_TEMPERATURE", 0.3, 0, 1)
   };
 }
@@ -408,19 +411,11 @@ function buildSystemInstruction(lawContext: LawContextItem[], includeGoogleSearc
   ].join("\n");
 }
 
-function buildContents(history: ChatHistoryItem[], latestMessage: string): Content[] {
-  const usableHistory = history.filter((item) => item.content.trim());
-  const contents = usableHistory.map((item) => ({
+function buildContents(history: ChatHistoryItem[], latestMessage: string, maxContextChars: number): Content[] {
+  return buildBoundedConversation(history, latestMessage, maxContextChars).map((item) => ({
     role: item.role === "assistant" ? "model" : "user",
-    parts: [{ text: item.content.slice(0, 4000) }]
+    parts: [{ text: item.content }]
   }));
-
-  const last = contents[contents.length - 1];
-  if (!last || last.role !== "user" || last.parts[0]?.text !== latestMessage) {
-    contents.push({ role: "user", parts: [{ text: latestMessage.slice(0, 4000) }] });
-  }
-
-  return contents;
 }
 
 function isOfficialUrl(url: string) {
@@ -460,28 +455,22 @@ function getTokenCount(response: GenerateContentResponse) {
 
 function toFriendlyError(error: unknown): SharekAiError {
   if (error instanceof SharekAiError) return error;
-  const message = error instanceof Error ? error.message : String(error);
-  const status = typeof error === "object" && error !== null && "status" in error ? Number((error as { status?: number }).status) : null;
-
-  if (message.includes("GEMINI_API_KEY")) return new SharekAiError("missing_key", "إعداد مفتاح Gemini غير مكتمل على الخادم.");
-  if (status === 401 || status === 403 || /api key|permission|unauthorized|forbidden/i.test(message)) {
-    return new SharekAiError("auth", "تعذر تشغيل المساعد بسبب مشكلة في إعدادات مزود الذكاء الاصطناعي.");
-  }
-  if (status === 429 || /quota|rate/i.test(message)) {
-    return new SharekAiError("rate_limit", "الضغط على خدمة الذكاء الاصطناعي مرتفع الآن، حاول مرة أخرى بعد قليل.");
-  }
-  if (status === 404 || /not found|model|unavailable/i.test(message)) {
-    return new SharekAiError("model_unavailable", "نموذج الذكاء الاصطناعي غير متاح الآن، حاول مرة أخرى بعد قليل.");
-  }
-  if (/timeout|timed out/i.test(message)) return new SharekAiError("timeout", "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل.");
-  if (/safety|blocked/i.test(message)) return new SharekAiError("safety", "تعذر تقديم رد مناسب لهذا السؤال ضمن قواعد السلامة.");
-
-  return new SharekAiError("unknown", "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل.");
+  const classification = classifyAiProviderError(error);
+  const userMessages = {
+    missing_key: "إعداد مفتاح Gemini غير مكتمل على الخادم.",
+    auth: "تعذر تشغيل المساعد بسبب مشكلة في إعدادات مزود الذكاء الاصطناعي.",
+    rate_limit: "الضغط على خدمة الذكاء الاصطناعي مرتفع الآن، حاول مرة أخرى بعد قليل.",
+    model_unavailable: "نموذج الذكاء الاصطناعي غير متاح الآن، حاول مرة أخرى بعد قليل.",
+    timeout: "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل.",
+    safety: "تعذر تقديم رد مناسب لهذا السؤال ضمن قواعد السلامة.",
+    unknown: "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل."
+  } as const;
+  return new SharekAiError(classification.code, userMessages[classification.code]);
 }
 
 function shouldFallback(error: unknown) {
   const friendly = toFriendlyError(error);
-  return ["rate_limit", "model_unavailable", "timeout"].includes(friendly.code);
+  return classifyAiProviderError(friendly).retryable || ["rate_limit", "model_unavailable", "timeout"].includes(friendly.code);
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -503,6 +492,7 @@ async function callGemini(params: {
   systemInstruction: string;
   temperature: number;
   useGoogleSearch: boolean;
+  maxOutputTokens: number;
 }) {
   const tools: Tool[] | undefined = params.useGoogleSearch ? [{ googleSearch: {} }] : undefined;
   return withTimeout(
@@ -512,6 +502,7 @@ async function callGemini(params: {
       config: {
         systemInstruction: params.systemInstruction,
         temperature: params.temperature,
+        maxOutputTokens: params.maxOutputTokens,
         tools
       }
     }),
@@ -524,8 +515,6 @@ export async function generateSharekAssistantResponse(params: {
   history: ChatHistoryItem[];
   lawContext: LawContextItem[];
 }): Promise<SharekAssistantResponse> {
-  const config = getSharekAssistantConfig();
-
   if (isPoliticalRecommendationRequest(params.message)) {
     return {
       content: [
@@ -559,12 +548,18 @@ export async function generateSharekAssistantResponse(params: {
     };
   }
 
+  // Local safety responses must remain available during provider outages and in
+  // environments where no Gemini credential is configured. Only resolve the
+  // provider configuration once a request actually needs the provider.
+  const config = getSharekAssistantConfig();
+
   const useGoogleSearch = shouldUseGoogleSearch(params.message, params.lawContext, config.enableGoogleSearch);
   const responseConfig = {
-    contents: buildContents(params.history, params.message),
+    contents: buildContents(params.history, params.message, config.maxContextChars),
     systemInstruction: buildSystemInstruction(params.lawContext, useGoogleSearch),
     temperature: config.temperature,
-    useGoogleSearch
+    useGoogleSearch,
+    maxOutputTokens: config.maxOutputTokens
   };
 
   let response: GenerateContentResponse;

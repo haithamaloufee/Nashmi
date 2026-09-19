@@ -28,7 +28,10 @@ export async function POST(request: Request) {
             passwordSetupExpiresAt: null,
             passwordSetupTargetStatus: null,
             failedLoginCount: 0,
-            lockedUntil: null
+            lockedUntil: null,
+            requiresPasswordReset: false,
+            passwordChangedAt: "$$NOW",
+            sessionVersion: { $add: [{ $ifNull: ["$sessionVersion", 0] }, 1] }
           }
         }
       ],

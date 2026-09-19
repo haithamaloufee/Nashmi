@@ -34,6 +34,7 @@ export async function PATCH(request: Request, context: Context) {
 
     const previousRole = target.role;
     target.role = input.role;
+    target.sessionVersion = Math.max(0, target.sessionVersion || 0) + 1;
     await target.save();
     const safe = target.toObject() as Record<string, unknown>;
     delete safe.passwordHash;

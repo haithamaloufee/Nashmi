@@ -38,8 +38,17 @@ export function getMongoUri() {
     throw new InvalidEnvError("MONGODB_URI", "must start with mongodb:// or mongodb+srv://");
   }
   try {
-    const parsed = new URL(uri);
-    const databaseName = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
+    // WHATWG URL rejects valid MongoDB seed-list URIs containing multiple
+    // hosts. Parse only the database path here and leave full connection-string
+    // semantics to the MongoDB driver.
+    const schemeEnd = uri.indexOf("://") + 3;
+    const pathStart = uri.indexOf("/", schemeEnd);
+    if (pathStart === -1 || !uri.slice(schemeEnd, pathStart)) {
+      throw new InvalidEnvError("MONGODB_URI", "must include a host and database name");
+    }
+    const queryStart = uri.indexOf("?", pathStart);
+    const rawDatabaseName = uri.slice(pathStart + 1, queryStart === -1 ? undefined : queryStart);
+    const databaseName = decodeURIComponent(rawDatabaseName);
     if (!databaseName) {
       throw new InvalidEnvError("MONGODB_URI", "must include a database name");
     }
@@ -169,6 +178,8 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
   check("GEMINI_ENABLE_GOOGLE_SEARCH", () => getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false));
   check("GEMINI_MAX_HISTORY_MESSAGES", () => getGeminiNumber("GEMINI_MAX_HISTORY_MESSAGES", 30, 2, 80));
   check("GEMINI_MAX_LAW_CONTEXT_RESULTS", () => getGeminiNumber("GEMINI_MAX_LAW_CONTEXT_RESULTS", 6, 0, 12));
+  check("GEMINI_MAX_CONTEXT_CHARS", () => getGeminiNumber("GEMINI_MAX_CONTEXT_CHARS", 16_000, 4_000, 40_000));
+  check("GEMINI_MAX_OUTPUT_TOKENS", () => getGeminiNumber("GEMINI_MAX_OUTPUT_TOKENS", 1_200, 256, 2_048));
   check("GEMINI_TEMPERATURE", () => getGeminiNumber("GEMINI_TEMPERATURE", 0.3, 0, 1));
 
   return { ok: missing.length === 0 && invalid.length === 0, missing, invalid };

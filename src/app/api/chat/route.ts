@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     const usage = await getAssistantUsage(request, user);
     return ok({ usage });
   } catch (error) {
-    return handleApiError(error);
+    return handleApiError(error, request);
   }
 }
 
@@ -54,6 +54,6 @@ export async function POST(request: Request) {
       return fail(error.code === "rate_limit" ? "RATE_LIMITED" : "SERVER_ERROR", error.userMessage, error.code === "rate_limit" ? 429 : 500);
     }
     if (error instanceof Error && error.message === "BAD_REQUEST") return fail("BAD_REQUEST", "الرسالة غير صالحة.", 400);
-    return handleApiError(error);
+    return handleApiError(error, request);
   }
 }
