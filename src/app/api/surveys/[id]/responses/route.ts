@@ -5,16 +5,17 @@ import { requireActiveUser } from "@/lib/auth";
 import { surveyResponseSchema } from "@/lib/validators";
 import { requireRateLimit } from "@/lib/rateLimit";
 import { isDuplicateKeyError, readJson, serialize } from "@/lib/routeUtils";
-import { buildSurveyResultSummary, canRespondToSurvey, surveyIdentifierLookup, validateSurveyAnswers } from "@/lib/surveys";
+import { buildSurveyResultSummary, canRespondToSurvey, canViewSurveyResults, surveyIdentifierLookup, validateSurveyAnswers } from "@/lib/surveys";
 import Survey from "@/models/Survey";
 import SurveyResponse from "@/models/SurveyResponse";
+import { startSession } from "mongoose";
 
 type Context = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, context: Context) {
   try {
     const user = await requireActiveUser();
-    requireRateLimit(`survey-response:${user.id}`, 20, 60 * 60 * 1000);
+    await requireRateLimit(`survey-response:${user.id}`, 20, 60 * 60 * 1000);
     const { id } = await context.params;
     const input = await readJson(request, surveyResponseSchema);
     await connectToDatabase();
@@ -32,19 +33,26 @@ export async function POST(request: Request, context: Context) {
       return fail("VALIDATION_ERROR", message, 422);
     }
 
+    const session = await startSession();
     try {
-      await SurveyResponse.create({ surveyId: survey._id, userId: user.id, answers });
+      await session.withTransaction(async () => {
+        const duplicate = await SurveyResponse.exists({ surveyId: survey._id, userId: user.id }).session(session);
+        if (duplicate) throw new Error("ALREADY_RESPONDED");
+        await SurveyResponse.create([{ surveyId: survey._id, userId: user.id, answers }], { session });
+        await Survey.updateOne({ _id: survey._id }, { $inc: { totalResponses: 1 } }, { session });
+      });
     } catch (error) {
-      if (isDuplicateKeyError(error)) return fail("CONFLICT", "لقد شاركت سابقًا في هذا الاستبيان.", 409);
+      if (isDuplicateKeyError(error) || (error instanceof Error && error.message === "ALREADY_RESPONDED")) return fail("CONFLICT", "لقد شاركت سابقًا في هذا الاستبيان.", 409);
       throw error;
+    } finally {
+      await session.endSession();
     }
-
-    await Survey.updateOne({ _id: survey._id }, { $inc: { totalResponses: 1 } });
     revalidatePath("/updates");
     revalidatePath("/surveys");
     if (survey.slug) revalidatePath(`/surveys/${survey.slug}`);
-    const responses = await SurveyResponse.find({ surveyId: survey._id }).lean();
-    return ok({ hasResponded: true, resultSummary: buildSurveyResultSummary(survey, serialize(responses) as any, false) });
+    const canViewResults = canViewSurveyResults({ survey, viewer: user, hasResponded: true, isManager: false });
+    const responses = canViewResults ? await SurveyResponse.find({ surveyId: survey._id }).lean() : [];
+    return ok({ hasResponded: true, canViewResults, resultSummary: canViewResults ? buildSurveyResultSummary(survey, serialize(responses) as any, false) : null });
   } catch (error) {
     return handleApiError(error);
   }

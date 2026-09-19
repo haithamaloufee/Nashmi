@@ -8,8 +8,9 @@ import { surveyCreateSchema } from "@/lib/validators";
 import { buildPublisherSnapshot, getAuthorityAuthor } from "@/lib/publisher";
 import { readJson, requirePartyForUser, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
-import { generateSurveySlug, getSurveyLifecycleStatus, normalizeSurveyQuestionsForSave, normalizeSurveySlug } from "@/lib/surveys";
+import { canManageSurvey, canViewSurveyResults, generateSurveySlug, getSurveyLifecycleStatus, normalizeSurveyQuestionsForSave, normalizeSurveySlug, redactSurveyResults } from "@/lib/surveys";
 import Survey from "@/models/Survey";
+import SurveyResponse from "@/models/SurveyResponse";
 import Party from "@/models/Party";
 
 function parseDate(value: string | null | undefined) {
@@ -71,18 +72,27 @@ export async function GET(request: Request) {
     if (regex) query.searchNormalized = regex;
 
     const surveys = await Survey.find(query)
+      .select("authorType authorUserId partyId publisherSnapshot title slug description totalResponses startsAt endsAt status resultsVisibility publishedAt createdAt")
       .populate({ path: "authorUserId", select: "name avatarUrl image role" })
       .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
       .sort(sort === "most_participated" ? { totalResponses: -1, publishedAt: -1 } : { publishedAt: -1, createdAt: -1 })
       .limit(80)
       .lean();
 
+    const respondedIds = user
+      ? new Set((await SurveyResponse.find({ userId: user.id, surveyId: { $in: surveys.map((survey) => survey._id) } }).select("surveyId").lean()).map((response) => String(response.surveyId)))
+      : new Set<string>();
+
     const authorityAuthor = await getAuthorityAuthor();
-    const data = surveys.map((survey) => ({
-      ...survey,
-      lifecycleStatus: getSurveyLifecycleStatus(survey),
-      authorityAuthor: survey.authorType === "iec" ? authorityAuthor : undefined
-    }));
+    const data = surveys.map((survey) => {
+      const isManager = canManageSurvey(user, survey);
+      const canViewResults = canViewSurveyResults({ survey, viewer: user, hasResponded: respondedIds.has(String(survey._id)), isManager });
+      return redactSurveyResults({
+        ...survey,
+        lifecycleStatus: getSurveyLifecycleStatus(survey),
+        authorityAuthor: survey.authorType === "iec" ? authorityAuthor : undefined
+      }, canViewResults);
+    });
     return ok({ surveys: serialize(data) });
   } catch (error) {
     return handleApiError(error);

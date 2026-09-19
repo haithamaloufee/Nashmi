@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
-import { ok, handleApiError } from "@/lib/apiResponse";
+import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
 import { moderationSchema } from "@/lib/validators";
 import { readJson, serialize } from "@/lib/routeUtils";
@@ -11,6 +11,7 @@ import Poll from "@/models/Poll";
 import Comment from "@/models/Comment";
 import Party from "@/models/Party";
 import User from "@/models/User";
+import { canModerateUser } from "@/lib/permissions";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -78,6 +79,18 @@ export async function PATCH(request: Request, context: Context) {
     await connectToDatabase();
     const report = await Report.findById(id);
     if (!report) throw new Error("NOT_FOUND");
+
+    if (report.targetType === "user" && input.action !== "dismiss_report") {
+      const target = await User.findById(report.targetId).select("role").lean();
+      if (!target) throw new Error("NOT_FOUND");
+      if (!canModerateUser(actor, { id: String(target._id), role: target.role }, input.action)) {
+        return fail("FORBIDDEN", "لا تملك صلاحية اتخاذ إجراء ضد هذا الحساب", 403);
+      }
+      if (target.role === "super_admin" && (input.action === "hide" || input.action === "delete")) {
+        const activeSuperAdmins = await User.countDocuments({ role: "super_admin", status: "active" });
+        if (activeSuperAdmins <= 1) return fail("FORBIDDEN", "لا يمكن تعطيل آخر حساب super_admin نشط", 403);
+      }
+    }
 
     if (input.action !== "dismiss_report") {
       await moderateTarget(report.targetType, report.targetId, input.action, input.reason, actor.id);

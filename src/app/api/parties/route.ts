@@ -25,7 +25,10 @@ export async function GET(request: Request) {
     const regex = search ? searchRegex(search) : null;
     const filter = regex ? { status: "active", searchNormalized: regex } : { status: "active" };
 
-    const parties = await Party.find(filter).lean();
+    const parties = await Party.find(filter)
+      .select("name slug shortDescription followersCount isVerified logoUrl logoMediaId foundedYear statistics.branchesCount socialLinks.website")
+      .populate({ path: "logoMediaId", select: "url status" })
+      .lean();
     const ordered = parties
       .sort((a, b) => {
         const score = seededScore(seed, a.slug) - seededScore(seed, b.slug);

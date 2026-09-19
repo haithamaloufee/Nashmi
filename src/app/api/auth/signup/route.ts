@@ -13,7 +13,7 @@ import User from "@/models/User";
 
 export async function POST(request: Request) {
   try {
-    requireRateLimit(`signup:${getClientIp(request)}`, 3, 60 * 60 * 1000);
+    await requireRateLimit(`signup:${getClientIp(request)}`, 3, 60 * 60 * 1000);
     const input = await readJson(request, signupSchema);
     await connectToDatabase();
 

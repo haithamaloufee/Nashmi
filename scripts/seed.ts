@@ -24,10 +24,16 @@ import { recalculateCounters } from "./recalculate-counters";
 import { demoLawCards } from "./demo-data";
 import jordanProfiles from "./sharek-jordan-parties-and-iec-profiles.json";
 
-const adminPassword = "AdminDemo!2026";
-const iecPassword = "IecDemo!2026";
-const citizenPassword = "CitizenDemo!2026";
-const partyPassword = "PartyDemo!2026";
+function requiredSeedPassword(name: string) {
+  const value = process.env[name];
+  if (!value || value.length < 12) throw new Error(`${name} must be set to a unique strong password before seeding`);
+  return value;
+}
+
+const adminPassword = requiredSeedPassword("SEED_ADMIN_PASSWORD");
+const iecPassword = requiredSeedPassword("SEED_IEC_PASSWORD");
+const citizenPassword = requiredSeedPassword("SEED_CITIZEN_PASSWORD");
+const partyPassword = requiredSeedPassword("SEED_PARTY_PASSWORD");
 
 const placeholderPartySlugs = [
   "civil-renaissance",

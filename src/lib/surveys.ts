@@ -172,6 +172,14 @@ export function canViewSurveyResults(input: {
   return false;
 }
 
+export function redactSurveyResults<T extends Record<string, unknown>>(survey: T, canViewResults: boolean): T {
+  if (canViewResults) return survey;
+  const redacted = { ...survey, totalResponses: null, resultSummary: null };
+  delete (redacted as Record<string, unknown>).responses;
+  delete (redacted as Record<string, unknown>).results;
+  return redacted;
+}
+
 export function normalizeSurveyQuestionsForSave(questions: SurveyQuestionLike[]) {
   return sortedSurveyQuestions(questions).map((question, index) => {
     const type = question.type;

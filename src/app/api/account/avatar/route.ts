@@ -9,6 +9,7 @@ import { storePublicFile } from "@/lib/storage";
 import User from "@/models/User";
 import Party from "@/models/Party";
 import AuthorityProfile from "@/models/AuthorityProfile";
+import { readTrustedBlobMagic } from "@/lib/remoteFetch";
 
 export const runtime = "nodejs";
 
@@ -49,25 +50,10 @@ async function syncPublisherProfileAvatar(user: { id: string; role: string }, av
   return { targetType: "user", targetId: user.id, slug: null };
 }
 
-async function readRemoteMagic(url: string) {
-  const response = await fetch(url, { headers: { Range: "bytes=0-63" }, cache: "no-store" });
-  if (!response.ok) return null;
-  return Buffer.from(await response.arrayBuffer());
-}
-
-function isVercelBlobUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com");
-  } catch {
-    return false;
-  }
-}
-
 export async function POST(request: Request) {
   try {
     const user = await requireActiveUser([...uploadRoles]);
-    requireRateLimit(`avatar:${user.id}`, 10, 60 * 60 * 1000);
+    await requireRateLimit(`avatar:${user.id}`, 10, 60 * 60 * 1000);
 
     const form = await request.formData();
     const file = form.get("avatar");
@@ -96,7 +82,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const user = await requireActiveUser([...uploadRoles]);
-    requireRateLimit(`avatar-complete:${user.id}`, 10, 60 * 60 * 1000);
+    await requireRateLimit(`avatar-complete:${user.id}`, 10, 60 * 60 * 1000);
     const input = await request.json().catch(() => null) as {
       url?: string;
       storageKey?: string;
@@ -113,14 +99,9 @@ export async function PATCH(request: Request) {
     if (validationError) return fail("BAD_REQUEST", validationError, 400);
 
     const storageKey = input.storageKey.replace(/^\/+/, "");
-    if (!storageKey.startsWith(`media/${user.id}/`) && !storageKey.startsWith(`avatars/${user.id}/`) && !storageKey.startsWith("media/direct/")) {
-      return fail("FORBIDDEN", "مسار الصورة لا يخص هذا الحساب", 403);
-    }
-    if (storageKey.startsWith("media/direct/") && !isVercelBlobUrl(input.url)) {
-      return fail("FORBIDDEN", "روابط الصور الخارجية غير مسموحة. استخدم رفع الملفات من الجهاز.", 403);
-    }
+    if (!storageKey.startsWith("media/direct/")) return fail("FORBIDDEN", "مسار الصورة غير صادر عن خدمة الرفع المباشر", 403);
 
-    const magic = await readRemoteMagic(input.url);
+    const magic = await readTrustedBlobMagic(input.url, storageKey, mimeType);
     if (!magic || !hasValidUploadMagic(magic, mimeType)) return fail("BAD_REQUEST", "نوع الصورة لا يطابق محتواها", 400);
 
     await connectToDatabase();

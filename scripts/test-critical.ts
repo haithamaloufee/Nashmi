@@ -6,9 +6,15 @@ import { buildPartyMatchIndexes, matchPartyByName, normalizeArabicPartyName, nor
 import { snapshotFromPost } from "../src/lib/publisher";
 import { normalizeMediaAssets } from "../src/lib/media";
 import { hasValidUploadMagic, validateUploadFile, validateUploadMetadata } from "../src/lib/uploadValidation";
-import { postCreateSchema } from "../src/lib/validators";
-import { buildSurveyResultSummary, canRespondToSurvey, canViewSurveyResults, getSurveyHref, getSurveyLifecycleStatus, objectIdString, validateSurveyAnswers } from "../src/lib/surveys";
+import { adminUserCreateSchema, chatSchema, passwordSchema, postCreateSchema, profileUpdateSchema } from "../src/lib/validators";
+import { buildSurveyResultSummary, canRespondToSurvey, canViewSurveyResults, getSurveyHref, getSurveyLifecycleStatus, objectIdString, redactSurveyResults, validateSurveyAnswers } from "../src/lib/surveys";
 import { formatDate } from "../src/lib/localization";
+import { canManageUser, canModerateUser } from "../src/lib/permissions";
+import { counterUpdatePipeline, reactionCounterDelta } from "../src/lib/reactions";
+import { isBlockedNetworkAddress, validateVercelBlobUrl } from "../src/lib/remoteFetch";
+import { safeMarkdownHref } from "../src/lib/markdown";
+import { getGeminiApiKey } from "../src/lib/env";
+import { readJsonWithLimit } from "../src/lib/routeUtils";
 
 function makeFile(name: string, type: string, size: number) {
   return new File([new Uint8Array(size || 1)], name, { type });
@@ -217,6 +223,80 @@ function testSurveyUtilities() {
   assert.equal(realObjectIdSummary.questions[0].options[0].count, 1);
 }
 
+function testSecurityRegressionRules() {
+  const actorAdmin = { id: "admin-1", role: "admin" as const };
+  const actorSuper = { id: "super-1", role: "super_admin" as const };
+  const targetSuper = { id: "super-2", role: "super_admin" as const };
+  const targetAdmin = { id: "admin-2", role: "admin" as const };
+  const targetCitizen = { id: "citizen-1", role: "citizen" as const };
+  assert.equal(canManageUser(actorAdmin, targetAdmin), false);
+  assert.equal(canManageUser(actorAdmin, targetSuper), false);
+  assert.equal(canModerateUser(actorAdmin, targetSuper, "hide"), false);
+  assert.equal(canModerateUser(actorAdmin, targetCitizen, "hide"), true);
+  assert.equal(canModerateUser(actorSuper, targetAdmin, "hide"), true);
+  assert.equal(canModerateUser(actorSuper, actorSuper, "hide"), false);
+
+  const profile = profileUpdateSchema.parse({ name: "مستخدم آمن", emailVerified: true, isVerified: true, role: "super_admin", status: "active" });
+  assert.deepEqual(profile, { name: "مستخدم آمن" });
+  assert.throws(() => adminUserCreateSchema.parse({ name: "حساب", email: "safe@example.com", password: "Password123!" }));
+  assert.throws(() => passwordSchema.parse("Password123!"));
+
+  const hidden = redactSurveyResults({ totalResponses: 19, resultSummary: { totalResponses: 19 }, title: "Hidden" }, false);
+  assert.equal(hidden.totalResponses, null);
+  assert.equal(hidden.resultSummary, null);
+  assert.equal(canViewSurveyResults({ survey: { resultsVisibility: "PUBLISHER_ONLY" }, viewer: targetCitizen, hasResponded: true, isManager: false }), false);
+
+  assert.deepEqual(reactionCounterDelta(null, "like"), { likesCount: 1, dislikesCount: 0 });
+  assert.deepEqual(reactionCounterDelta("like", "dislike"), { likesCount: -1, dislikesCount: 1 });
+  assert.deepEqual(reactionCounterDelta("dislike", null), { likesCount: 0, dislikesCount: -1 });
+  assert.match(JSON.stringify(counterUpdatePipeline({ likesCount: -1, dislikesCount: 0 })), /\$max/);
+
+  for (const address of ["127.0.0.1", "10.0.0.1", "169.254.169.254", "172.16.0.1", "192.168.1.1", "::1", "fc00::1", "fe80::1", "::ffff:127.0.0.1"]) {
+    assert.equal(isBlockedNetworkAddress(address), true, `${address} must be blocked`);
+  }
+  assert.equal(isBlockedNetworkAddress("8.8.8.8"), false);
+  assert.equal(validateVercelBlobUrl("https://store.public.blob.vercel-storage.com/media/direct/file.jpg", "media/direct/file.jpg").hostname, "store.public.blob.vercel-storage.com");
+  for (const value of [
+    "http://store.public.blob.vercel-storage.com/media/direct/file.jpg",
+    "https://localhost/media/direct/file.jpg",
+    "https://evil-public.blob.vercel-storage.com.attacker.test/media/direct/file.jpg",
+    "https://store.public.blob.vercel-storage.com/media/direct/other.jpg",
+    "https://store.public.blob.vercel-storage.com/media/direct/file.jpg?redirect=http://127.0.0.1"
+  ]) assert.throws(() => validateVercelBlobUrl(value, "media/direct/file.jpg"));
+
+  assert.equal(safeMarkdownHref("javascript:alert(1)"), undefined);
+  assert.equal(safeMarkdownHref("data:text/html,test"), undefined);
+  assert.equal(safeMarkdownHref("/laws/election"), "/laws/election");
+  assert.match(safeMarkdownHref("https://iec.jo") || "", /^https:\/\//);
+  const aiSource = readFileSync("src/lib/ai/gemini.ts", "utf8");
+  assert.match(aiSource, /بيانات غير موثوقة/);
+  assert.match(aiSource, /نتائج استبيانات مخفية/);
+}
+
+async function testAiEndpointBoundaries() {
+  assert.throws(() => chatSchema.parse({ message: "" }));
+  assert.throws(() => chatSchema.parse({ message: "x".repeat(1501) }));
+  assert.throws(() => chatSchema.parse({ message: "hello", history: Array.from({ length: 9 }, () => ({ role: "user", content: "x" })) }));
+  await assert.rejects(
+    readJsonWithLimit(new Request("http://localhost/api/chat", { method: "POST", body: JSON.stringify({ message: "x".repeat(17_000) }) }), chatSchema, 16 * 1024),
+    /PAYLOAD_TOO_LARGE/
+  );
+
+  const previous = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  try {
+    assert.throws(() => getGeminiApiKey(), /GEMINI_API_KEY/);
+  } finally {
+    if (previous === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = previous;
+  }
+
+  const aiSource = readFileSync("src/lib/ai/gemini.ts", "utf8");
+  assert.match(aiSource, /party_recommendation_refused/);
+  assert.match(aiSource, /withTimeout/);
+  assert.doesNotMatch(aiSource, /NEXT_PUBLIC_GEMINI/);
+}
+
 async function main() {
   await testPartyMatching();
   await testUploadValidation();
@@ -227,6 +307,8 @@ async function main() {
   testSurveyUtilities();
   testPostMediaUrlRejection();
   testDefaultPostMediaFiltering();
+  testSecurityRegressionRules();
+  await testAiEndpointBoundaries();
   console.log("Critical tests passed.");
 }
 

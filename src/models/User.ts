@@ -7,6 +7,9 @@ const UserSchema = new Schema(
     emailNormalized: { type: String, required: true, trim: true, lowercase: true },
     emailVerified: { type: Boolean, default: false },
     passwordHash: { type: String, default: null },
+    passwordSetupTokenHash: { type: String, default: null, select: false },
+    passwordSetupExpiresAt: { type: Date, default: null, select: false },
+    passwordSetupTargetStatus: { type: String, enum: ["active", "disabled", "pending", "locked"], default: null, select: false },
     image: { type: String, default: null },
     avatarUrl: { type: String, default: null },
     role: { type: String, enum: ["citizen", "party", "iec", "admin", "super_admin"], default: "citizen", required: true },
@@ -26,6 +29,8 @@ UserSchema.index({ emailNormalized: 1 }, { unique: true });
 UserSchema.index({ googleId: 1 }, { unique: true, partialFilterExpression: { googleId: { $type: "string" } } });
 UserSchema.index({ role: 1, status: 1 });
 UserSchema.index({ status: 1, createdAt: -1 });
+UserSchema.index({ passwordSetupExpiresAt: 1 }, { sparse: true });
+UserSchema.index({ passwordSetupTokenHash: 1 }, { unique: true, sparse: true });
 
 export type UserDocument = InferSchemaType<typeof UserSchema>;
 

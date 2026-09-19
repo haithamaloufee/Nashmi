@@ -40,7 +40,7 @@ export async function GET(request: Request, context: Context) {
 export async function POST(request: Request, context: Context) {
   try {
     const user = await requireActiveUser(["citizen"]);
-    requireRateLimit(`comment:${user.id}`, 10, 10 * 60 * 1000);
+    await requireRateLimit(`comment:${user.id}`, 10, 10 * 60 * 1000);
     const { id } = await context.params;
     const input = await readJson(request, commentSchema);
     await connectToDatabase();

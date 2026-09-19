@@ -12,7 +12,7 @@ type Context = { params: Promise<{ party: string }> };
 export async function POST(request: Request, context: Context) {
   try {
     const user = await requireActiveUser(["citizen"]);
-    requireRateLimit(`party-follow:${user.id}`, 30, 60 * 60 * 1000);
+    await requireRateLimit(`party-follow:${user.id}`, 30, 60 * 60 * 1000);
     const { party: partyId } = await context.params;
     await connectToDatabase();
     const party = await Party.findOne({ _id: partyId, status: "active" });
@@ -34,7 +34,7 @@ export async function POST(request: Request, context: Context) {
 export async function DELETE(request: Request, context: Context) {
   try {
     const user = await requireActiveUser(["citizen"]);
-    requireRateLimit(`party-follow:${user.id}`, 30, 60 * 60 * 1000);
+    await requireRateLimit(`party-follow:${user.id}`, 30, 60 * 60 * 1000);
     const { party: partyId } = await context.params;
     await connectToDatabase();
     const deleted = await PartyFollower.deleteOne({ partyId, userId: user.id });

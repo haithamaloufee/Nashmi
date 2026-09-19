@@ -7,9 +7,15 @@ import { connectToDatabase } from "../src/lib/db";
 import { normalizeEmail } from "../src/lib/security";
 import User from "../src/models/User";
 
-const adminPassword = "AdminDemo!2026";
-const iecPassword = "IecDemo!2026";
-const citizenPassword = "CitizenDemo!2026";
+function requiredPassword(name: string) {
+  const value = process.env[name];
+  if (!value || value.length < 12) throw new Error(`${name} must be set to a unique strong password`);
+  return value;
+}
+
+const adminPassword = requiredPassword("SEED_ADMIN_PASSWORD");
+const iecPassword = requiredPassword("SEED_IEC_PASSWORD");
+const citizenPassword = requiredPassword("SEED_CITIZEN_PASSWORD");
 
 async function fixDemoAccounts() {
   try {

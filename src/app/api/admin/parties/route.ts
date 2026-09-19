@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
@@ -9,6 +8,7 @@ import { readJson, isDuplicateKeyError, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import Party from "@/models/Party";
 import User from "@/models/User";
+import { buildAccountSetupUrl, createAccountSetup } from "@/lib/accountSetup";
 
 export async function GET() {
   try {
@@ -28,19 +28,22 @@ export async function POST(request: Request) {
     await connectToDatabase();
 
     let accountUserId = null;
-    let generatedPassword: string | null = null;
+    let accountSetup: ReturnType<typeof createAccountSetup> | null = null;
     if (input.createAccount) {
       if (!input.accountEmail) return fail("BAD_REQUEST", "بريد حساب الحزب مطلوب", 400);
-      generatedPassword = "Password123!";
+      accountSetup = createAccountSetup();
       const account = await User.create({
         name: input.name,
         email: input.accountEmail,
         emailNormalized: normalizeEmail(input.accountEmail),
-        emailVerified: true,
-        passwordHash: await bcrypt.hash(generatedPassword, 12),
+        emailVerified: false,
+        passwordHash: null,
+        passwordSetupTokenHash: accountSetup.tokenHash,
+        passwordSetupExpiresAt: accountSetup.expiresAt,
+        passwordSetupTargetStatus: "active",
         role: "party",
         provider: "credentials",
-        status: "active",
+        status: "pending",
         language: "ar"
       });
       accountUserId = account._id;
@@ -56,7 +59,11 @@ export async function POST(request: Request) {
     });
 
     await writeAuditLog({ actorUserId: actor.id, actorRole: actor.role, action: "admin.party_create", targetType: "party", targetId: party._id, metadata: { accountCreated: Boolean(accountUserId) }, request });
-    return ok({ party: serialize(party), generatedPassword }, { status: 201 });
+    return ok({
+      party: serialize(party),
+      setupUrl: accountSetup ? buildAccountSetupUrl(accountSetup.token) : null,
+      setupExpiresAt: accountSetup?.expiresAt.toISOString() || null
+    }, { status: 201 });
   } catch (error) {
     if (isDuplicateKeyError(error)) return fail("CONFLICT", "يوجد حزب أو حساب بنفس البيانات", 409);
     return handleApiError(error);

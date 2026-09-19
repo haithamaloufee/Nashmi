@@ -8,7 +8,15 @@ import { surveyQuestionTypes, surveyResultVisibilities, surveyStatuses } from "@
 
 export const objectIdSchema = z.string().refine((value) => isValidObjectId(value), "معرف غير صالح");
 export const emailSchema = z.string().email("البريد الإلكتروني غير صالح").max(254);
-export const passwordSchema = z.string().min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل").max(128);
+export const passwordSchema = z
+  .string()
+  .min(12, "كلمة المرور يجب أن تكون 12 حرفًا على الأقل")
+  .max(128)
+  .regex(/[a-z]/, "يجب أن تحتوي كلمة المرور على حرف صغير")
+  .regex(/[A-Z]/, "يجب أن تحتوي كلمة المرور على حرف كبير")
+  .regex(/[0-9]/, "يجب أن تحتوي كلمة المرور على رقم")
+  .regex(/[^A-Za-z0-9]/, "يجب أن تحتوي كلمة المرور على رمز")
+  .refine((value) => value.toLowerCase() !== "password123!", "كلمة المرور شائعة وغير آمنة");
 export const textSchema = z.string().trim().min(1).max(5000);
 export const shortTextSchema = z.string().trim().min(1).max(200);
 export const optionalUrlSchema = z.string().url("الرابط غير صالح").optional().nullable().or(z.literal(""));
@@ -72,10 +80,14 @@ export const adminUserRoleSchema = z.object({
 export const adminUserCreateSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: emailSchema,
-  password: passwordSchema.default("Password123!"),
   role: z.enum(roles).default("citizen"),
   status: z.enum(["active", "disabled", "pending", "locked"]).default("active")
-});
+}).strict();
+
+export const accountSetupSchema = z.object({
+  token: z.string().min(40).max(100).regex(/^[A-Za-z0-9_-]+$/),
+  password: passwordSchema
+}).strict();
 
 const dateTextSchema = z.string().trim().min(1).max(50).nullable().optional();
 

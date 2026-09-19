@@ -5,6 +5,7 @@ import { adminUserStatusSchema } from "@/lib/validators";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import User from "@/models/User";
+import { canManageUser } from "@/lib/permissions";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -16,8 +17,10 @@ export async function PATCH(request: Request, context: Context) {
     await connectToDatabase();
     const target = await User.findById(id);
     if (!target) throw new Error("NOT_FOUND");
-    if ((target.role === "admin" || target.role === "super_admin") && actor.role !== "super_admin") {
-      return fail("FORBIDDEN", "تغيير حالة حساب إداري حساس يتطلب super_admin", 403);
+    if (!canManageUser(actor, { id: String(target._id), role: target.role })) return fail("FORBIDDEN", "لا تملك صلاحية تغيير حالة هذا الحساب", 403);
+    if (target.role === "super_admin" && input.status !== "active") {
+      const activeSuperAdmins = await User.countDocuments({ role: "super_admin", status: "active" });
+      if (activeSuperAdmins <= 1) return fail("FORBIDDEN", "لا يمكن تعطيل آخر حساب super_admin نشط", 403);
     }
 
     const previousStatus = target.status;

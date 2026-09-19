@@ -1,11 +1,12 @@
 const fetch = globalThis.fetch || require('node-fetch');
 const creds = [
-  { email: 'admin@sharek.demo', password: 'AdminDemo!2026', name: 'admin' },
-  { email: 'iec@sharek.demo', password: 'IecDemo!2026', name: 'iec' },
-  { email: 'citizen@sharek.demo', password: 'CitizenDemo!2026', name: 'citizen' },
-  { email: 'party.national-constituency@sharek.demo', password: 'PartyDemo!2026', name: 'party' },
-  { email: 'admin@sharek.demo', password: 'WrongPass!2024', name: 'wrong' }
-];
+  { email: process.env.QA_ADMIN_EMAIL, password: process.env.QA_ADMIN_PASSWORD, name: 'admin' },
+  { email: process.env.QA_IEC_EMAIL, password: process.env.QA_IEC_PASSWORD, name: 'iec' },
+  { email: process.env.QA_CITIZEN_EMAIL, password: process.env.QA_CITIZEN_PASSWORD, name: 'citizen' },
+  { email: process.env.QA_PARTY_EMAIL, password: process.env.QA_PARTY_PASSWORD, name: 'party' }
+].filter((credential) => credential.email && credential.password);
+
+if (!creds.length) throw new Error('Set QA_*_EMAIL and QA_*_PASSWORD variables before running this check');
 
 (async () => {
   for (const cred of creds) {

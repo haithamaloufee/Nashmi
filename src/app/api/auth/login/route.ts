@@ -16,7 +16,7 @@ const LOCK_MS = 15 * 60 * 1000;
 
 export async function POST(request: Request) {
   try {
-    requireRateLimit(`login:${getClientIp(request)}`, 5, LOCK_MS);
+    await requireRateLimit(`login:${getClientIp(request)}`, 5, LOCK_MS);
     const input = await readJson(request, loginSchema);
     await connectToDatabase();
 

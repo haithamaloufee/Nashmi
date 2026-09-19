@@ -1,29 +1,7 @@
-type Bucket = {
-  count: number;
-  resetAt: number;
-};
-
-const buckets = new Map<string, Bucket>();
-
-// This in-memory store is intentionally lightweight for local development and
-// demos. It is not production-safe for multi-instance deployments because each
-// process has its own counters. Use Redis or Upstash behind this module before
-// running multiple app instances.
-export function consumeRateLimit(key: string, limit: number, windowMs: number) {
-  const now = Date.now();
-  const existing = buckets.get(key);
-  if (!existing || existing.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return { ok: true, remaining: limit - 1 };
-  }
-
-  if (existing.count >= limit) {
-    return { ok: false, remaining: 0, resetAt: existing.resetAt };
-  }
-
-  existing.count += 1;
-  return { ok: true, remaining: limit - existing.count };
-}
+import "server-only";
+import { createHash } from "node:crypto";
+import { connectToDatabase } from "@/lib/db";
+import RateLimitBucket from "@/models/RateLimitBucket";
 
 export const rateLimitWindows = {
   minute: 60 * 1000,
@@ -33,8 +11,38 @@ export const rateLimitWindows = {
   day: 24 * 60 * 60 * 1000
 } as const;
 
-export function requireRateLimit(key: string, limit: number, windowMs: number) {
-  const result = consumeRateLimit(key, limit, windowMs);
+function bucketId(key: string, windowStart: number) {
+  return createHash("sha256").update(`${key}:${windowStart}`).digest("hex");
+}
+
+export async function consumeRateLimit(key: string, limit: number, windowMs: number) {
+  await connectToDatabase();
+  const now = Date.now();
+  const windowStart = Math.floor(now / windowMs) * windowMs;
+  const resetAt = new Date(windowStart + windowMs);
+  const id = bucketId(key, windowStart);
+
+  try {
+    const bucket = await RateLimitBucket.findOneAndUpdate(
+      { _id: id, count: { $lt: limit } },
+      {
+        $inc: { count: 1 },
+        $setOnInsert: { _id: id, resetAt, expiresAt: new Date(resetAt.getTime() + windowMs) }
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).lean();
+    if (!bucket) return { ok: false as const, remaining: 0, resetAt: resetAt.getTime() };
+    return { ok: true as const, remaining: Math.max(0, limit - bucket.count), resetAt: resetAt.getTime() };
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && (error as { code?: number }).code === 11000) {
+      return { ok: false as const, remaining: 0, resetAt: resetAt.getTime() };
+    }
+    throw error;
+  }
+}
+
+export async function requireRateLimit(key: string, limit: number, windowMs: number) {
+  const result = await consumeRateLimit(key, limit, windowMs);
   if (!result.ok) throw new Error("RATE_LIMITED");
   return result;
 }

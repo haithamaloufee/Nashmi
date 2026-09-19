@@ -16,6 +16,7 @@ import {
   getSurveyLifecycleStatus,
   normalizeSurveySlug,
   normalizeSurveyQuestionsForSave,
+  redactSurveyResults,
   surveyIdentifierLookup,
   surveyQuestionStructureChanged
 } from "@/lib/surveys";
@@ -74,14 +75,14 @@ export async function GET(_request: Request, context: Context) {
     const resultSummary = canViewResults ? buildSurveyResultSummary(survey, serialize(responses) as any, isManager) : null;
 
     return ok({
-      survey: serialize({
+      survey: serialize(redactSurveyResults({
         ...survey,
         lifecycleStatus: getSurveyLifecycleStatus(survey),
         hasResponded,
         canRespond: canRespondToSurvey(survey, viewer, hasResponded),
         canViewResults,
         resultSummary
-      })
+      }, canViewResults))
     });
   } catch (error) {
     return handleApiError(error);

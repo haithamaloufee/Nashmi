@@ -24,7 +24,7 @@ async function reportTargetExists(targetType: string, targetId: string) {
 export async function POST(request: Request) {
   try {
     const user = await requireActiveUser(["citizen", "party", "iec", "admin", "super_admin"]);
-    requireRateLimit(`report:${user.id}`, 10, 60 * 60 * 1000);
+    await requireRateLimit(`report:${user.id}`, 10, 60 * 60 * 1000);
     const input = await readJson(request, reportSchema);
     await connectToDatabase();
     if (input.targetType === "user" && input.targetId === user.id) {

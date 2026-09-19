@@ -13,7 +13,7 @@ type Context = { params: Promise<{ id: string }> };
 export async function POST(request: Request, context: Context) {
   try {
     const user = await requireActiveUser(["citizen"]);
-    requireRateLimit(`vote:${user.id}`, 30, 60 * 60 * 1000);
+    await requireRateLimit(`vote:${user.id}`, 30, 60 * 60 * 1000);
     const { id } = await context.params;
     const input = await readJson(request, voteSchema);
     await connectToDatabase();

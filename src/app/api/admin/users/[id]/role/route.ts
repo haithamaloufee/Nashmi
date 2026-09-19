@@ -5,6 +5,7 @@ import { adminUserRoleSchema } from "@/lib/validators";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import User from "@/models/User";
+import { canManageUser } from "@/lib/permissions";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -17,6 +18,7 @@ export async function PATCH(request: Request, context: Context) {
     const target = await User.findById(id);
     if (!target) throw new Error("NOT_FOUND");
 
+    if (!canManageUser(actor, { id: String(target._id), role: target.role })) return fail("FORBIDDEN", "لا تملك صلاحية تغيير دور هذا الحساب", 403);
     const touchesSensitiveRole =
       input.role === "admin" ||
       input.role === "super_admin" ||
@@ -24,6 +26,10 @@ export async function PATCH(request: Request, context: Context) {
       target.role === "super_admin";
     if (touchesSensitiveRole && actor.role !== "super_admin") {
       return fail("FORBIDDEN", "لا يمكن تغيير الأدوار الحساسة إلا بواسطة super_admin", 403);
+    }
+    if (target.role === "super_admin" && input.role !== "super_admin") {
+      const activeSuperAdmins = await User.countDocuments({ role: "super_admin", status: "active" });
+      if (activeSuperAdmins <= 1) return fail("FORBIDDEN", "لا يمكن خفض صلاحية آخر حساب super_admin نشط", 403);
     }
 
     const previousRole = target.role;

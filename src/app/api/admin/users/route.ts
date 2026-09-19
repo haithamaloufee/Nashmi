@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
@@ -7,6 +6,7 @@ import { normalizeEmail } from "@/lib/security";
 import { readJson, isDuplicateKeyError, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import User from "@/models/User";
+import { buildAccountSetupUrl, createAccountSetup } from "@/lib/accountSetup";
 
 export async function GET(request: Request) {
   try {
@@ -32,22 +32,25 @@ export async function POST(request: Request) {
       return fail("FORBIDDEN", "تغيير أو إنشاء أدوار الإدارة العليا يتطلب super_admin", 403);
     }
     await connectToDatabase();
-    const generatedPassword = input.password || "Password123!";
+    const setup = createAccountSetup();
     const user = await User.create({
       name: input.name,
       email: input.email.trim(),
       emailNormalized: normalizeEmail(input.email),
-      emailVerified: true,
-      passwordHash: await bcrypt.hash(generatedPassword, 12),
+      emailVerified: false,
+      passwordHash: null,
+      passwordSetupTokenHash: setup.tokenHash,
+      passwordSetupExpiresAt: setup.expiresAt,
+      passwordSetupTargetStatus: input.status || "active",
       role: input.role || "citizen",
       provider: "credentials",
-      status: input.status || "active",
+      status: "pending",
       language: "ar"
     });
     await writeAuditLog({ actorUserId: actor.id, actorRole: actor.role, action: "admin.user_create", targetType: "user", targetId: user._id, metadata: { role: input.role || "citizen" }, request });
     const safe = user.toObject() as Record<string, unknown>;
     delete safe.passwordHash;
-    return ok({ user: serialize(safe), generatedPassword }, { status: 201 });
+    return ok({ user: serialize(safe), setupUrl: buildAccountSetupUrl(setup.token), setupExpiresAt: setup.expiresAt.toISOString() }, { status: 201 });
   } catch (error) {
     if (isDuplicateKeyError(error)) return fail("CONFLICT", "البريد الإلكتروني مستخدم بالفعل", 409);
     return handleApiError(error);

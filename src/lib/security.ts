@@ -29,12 +29,16 @@ export function stripHtml(input: string) {
 
 export function hashSensitive(value: string | null | undefined) {
   if (!value) return null;
-  const secret = process.env.JWT_SECRET || "dev-secret";
+  const secret = process.env.JWT_SECRET || process.env.RATE_LIMIT_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") throw new Error("SECURITY_SECRET_NOT_CONFIGURED");
   return createHash("sha256").update(`${secret}:${value}`).digest("hex");
 }
 
 export function getClientIp(request: Request) {
+  const trustProxy = Boolean(process.env.VERCEL || process.env.TRUST_PROXY_HEADERS === "true" || process.env.NODE_ENV !== "production");
+  if (!trustProxy) return "unknown";
   return (
+    request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     "unknown"

@@ -53,10 +53,23 @@ export function canModerateContent(user: { role: Role }) {
   return isAdmin(user.role);
 }
 
-export function canManageUser(user: { role: Role }, targetUser: { role: Role }) {
+export function canManageUser(user: { role: Role; id?: string }, targetUser: { role: Role; id?: string }) {
+  if (user.id && targetUser.id && user.id === targetUser.id) return false;
   if (user.role === "super_admin") return true;
-  if (user.role === "admin" && targetUser.role !== "super_admin") return true;
+  if (user.role === "admin" && targetUser.role !== "admin" && targetUser.role !== "super_admin") return true;
   return false;
+}
+
+export function canModerateUser(
+  actor: { role: Role; id: string },
+  target: { role: Role; id: string },
+  action: "hide" | "delete" | "restore"
+) {
+  if (actor.id === target.id) return false;
+  if (actor.role === "super_admin") return true;
+  if (actor.role !== "admin") return false;
+  if (target.role === "admin" || target.role === "super_admin") return false;
+  return action === "hide" || action === "delete" || action === "restore";
 }
 
 export function normalizeOwnershipId(value: unknown) {

@@ -1,4 +1,5 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { formatSafeError, loadEnv } from "./env";
 import { connectToDatabase, mongoose } from "../src/lib/db";
@@ -19,7 +20,7 @@ import { demoLawCards } from "./demo-data";
 
 loadEnv();
 
-const password = "Password123!";
+const password = process.env.TEST_SEED_PASSWORD || randomBytes(24).toString("base64url");
 
 async function upsertUser(email: string, role: string, name: string) {
   const emailNormalized = normalizeEmail(email);
