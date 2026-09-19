@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LanguageToggle from "@/components/i18n/LanguageToggle";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import type { TranslationKey } from "@/lib/i18n";
@@ -17,6 +17,7 @@ export default function MobileNav({ links, dashboardHref }: MobileNavProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     setOpen(false);
@@ -25,7 +26,10 @@ export default function MobileNav({ links, dashboardHref }: MobileNavProps) {
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        toggleRef.current?.focus();
+      }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -37,6 +41,7 @@ export default function MobileNav({ links, dashboardHref }: MobileNavProps) {
   return (
     <div className="lg:hidden">
       <button
+        ref={toggleRef}
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded border border-line bg-white/70 text-ink hover:border-civic hover:text-civic active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-emerald-300 dark:hover:text-emerald-100"

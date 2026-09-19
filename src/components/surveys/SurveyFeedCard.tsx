@@ -89,10 +89,10 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
       {survey.description ? <p className="mt-2 line-clamp-3 whitespace-pre-line break-words leading-7 text-slate-700 dark:text-slate-300">{survey.description}</p> : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-slate-200 py-3 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
-        <span className="inline-flex items-center gap-1.5">
+        {typeof survey.totalResponses === "number" ? <span className="inline-flex items-center gap-1.5">
           <Users className="h-4 w-4 text-civic dark:text-emerald-200" />
-          {formatNumber(survey.totalResponses || 0, language)} {t("survey.participants")}
-        </span>
+          {formatNumber(survey.totalResponses, language)} {t("survey.participants")}
+        </span> : null}
         {survey.endsAt ? (
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-4 w-4 text-civic dark:text-emerald-200" />

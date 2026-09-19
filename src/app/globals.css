@@ -40,6 +40,28 @@ a {
   text-decoration: none;
 }
 
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid rgba(18, 107, 111, 0.48);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 0.5rem;
+  z-index: 100;
+  transform: translateY(-150%);
+  border-radius: 0.625rem;
+  background: #126b6f;
+  padding: 0.75rem 1rem;
+  color: white;
+  font-weight: 800;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 button,
 input,
 textarea,
@@ -131,6 +153,10 @@ select:disabled {
 @media (max-width: 640px) {
   .container-page {
     width: min(100% - 24px, 1180px);
+  }
+
+  button:not([data-compact-control="true"]) {
+    min-height: 2.75rem;
   }
 }
 

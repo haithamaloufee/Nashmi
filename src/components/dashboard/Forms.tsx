@@ -579,10 +579,11 @@ export function AdminPartyLogoForm({ party }: { party: any }) {
 
 export function PartyCreateForm() {
   const api = useApiMessage();
+  const [setupUrl, setSetupUrl] = useState("");
   return (
     <form
-      action={(formData) =>
-        api.submit("/api/admin/parties", {
+      action={async (formData) => {
+        const json = await api.submit("/api/admin/parties", {
           name: formData.get("name"),
           slug: formData.get("slug"),
           shortDescription: formData.get("shortDescription"),
@@ -594,8 +595,9 @@ export function PartyCreateForm() {
           isVerified: true,
           createAccount: formData.get("createAccount") === "on",
           accountEmail: formData.get("accountEmail") || undefined
-        })
-      }
+        });
+        if (json.ok && json.data?.setupUrl) setSetupUrl(json.data.setupUrl);
+      }}
       className="card space-y-3 p-5"
     >
       <h2 className="text-xl font-bold">إضافة حزب</h2>
@@ -609,6 +611,7 @@ export function PartyCreateForm() {
       <input name="accountEmail" className="w-full rounded border-line" placeholder="party@example.com" />
       <button className="rounded bg-civic px-4 py-2 text-white">إنشاء</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
+      {setupUrl ? <label className="block space-y-2 text-sm"><span className="font-semibold">رابط إعداد حساب الحزب — شاركه عبر قناة خاصة</span><input readOnly dir="ltr" value={setupUrl} className="w-full rounded border-line text-xs" onFocus={(event) => event.currentTarget.select()} /></label> : null}
     </form>
   );
 }
@@ -706,23 +709,24 @@ export function UserControls({ user }: { user: any }) {
 
 export function UserCreateForm() {
   const api = useApiMessage();
+  const [setupUrl, setSetupUrl] = useState("");
   return (
     <form
-      action={(formData) =>
-        api.submit("/api/admin/users", {
+      action={async (formData) => {
+        const json = await api.submit("/api/admin/users", {
           name: formData.get("name"),
           email: formData.get("email"),
-          password: formData.get("password") || "Password123!",
           role: formData.get("role") || "citizen",
           status: formData.get("status") || "active"
-        })
-      }
+        });
+        if (json.ok && json.data?.setupUrl) setSetupUrl(json.data.setupUrl);
+      }}
       className="card space-y-3 p-5"
     >
       <h2 className="text-xl font-bold">إنشاء حساب</h2>
       <input name="name" className="w-full rounded border-line" placeholder="الاسم" required />
       <input name="email" type="email" className="w-full rounded border-line" placeholder="البريد الإلكتروني" required />
-      <input name="password" className="w-full rounded border-line" placeholder="كلمة المرور الافتراضية" defaultValue="Password123!" />
+      <p className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">سيُنشأ رابط إعداد آمن صالح لمدة 24 ساعة بدل كلمة مرور افتراضية.</p>
       <div className="grid gap-3 md:grid-cols-2">
         <select name="role" className="rounded border-line">
           <option value="citizen">citizen</option>
@@ -740,6 +744,7 @@ export function UserCreateForm() {
       </div>
       <button className="rounded bg-civic px-4 py-2 text-white">إنشاء</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
+      {setupUrl ? <label className="block space-y-2 text-sm"><span className="font-semibold">رابط الإعداد — شاركه عبر قناة خاصة</span><input readOnly dir="ltr" value={setupUrl} className="w-full rounded border-line text-xs" onFocus={(event) => event.currentTarget.select()} /></label> : null}
     </form>
   );
 }

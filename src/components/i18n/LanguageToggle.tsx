@@ -10,7 +10,7 @@ export default function LanguageToggle({ compact = false }: { compact?: boolean 
     <button
       type="button"
       onClick={() => setLanguage(isArabic ? "en" : "ar")}
-      className="focus-ring inline-flex h-9 items-center gap-1 rounded-full border border-line bg-white/75 p-1 text-xs font-black text-ink shadow-sm transition hover:border-civic hover:text-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-emerald-300 dark:hover:text-emerald-100"
+      className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-white/75 p-1 text-xs font-black text-ink shadow-sm transition hover:border-civic hover:text-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-emerald-300 dark:hover:text-emerald-100"
       aria-label={t("language.toggle")}
       title={t("language.toggle")}
       data-no-route-transition="true"

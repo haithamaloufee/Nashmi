@@ -4,6 +4,7 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { safeMarkdownHref } from "@/lib/markdown";
 
 const markdownComponents: Components = {
   h1: ({ children }) => <h3 className="mb-2 mt-3 text-base font-black leading-7 text-ink dark:text-white first:mt-0">{children}</h3>,
@@ -17,13 +18,14 @@ const markdownComponents: Components = {
   strong: ({ children }) => <strong className="font-black text-ink dark:text-white">{children}</strong>,
   em: ({ children }) => <em className="italic text-slate-800 dark:text-slate-100">{children}</em>,
   a: ({ href, children }) => {
-    const external = Boolean(href?.startsWith("http"));
+    const safeHref = safeMarkdownHref(href);
+    const external = Boolean(safeHref?.startsWith("http"));
     return (
       <a
-        href={href || "#"}
+        href={safeHref}
         target={external ? "_blank" : undefined}
         rel={external ? "noopener noreferrer" : undefined}
-        className="break-words font-semibold text-civic underline underline-offset-4 hover:text-civic/80 dark:text-emerald-200 dark:hover:text-emerald-100"
+        className={`break-words font-semibold underline underline-offset-4 ${safeHref ? "text-civic hover:text-civic/80 dark:text-emerald-200 dark:hover:text-emerald-100" : "cursor-not-allowed text-slate-500"}`}
       >
         {children}
       </a>

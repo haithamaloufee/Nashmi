@@ -39,10 +39,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         />
       </head>
       <body suppressHydrationWarning>
+        <a href="#main-content" className="skip-link">تخطي إلى المحتوى الرئيسي</a>
         <LanguageProvider initialLanguage={initialLanguage}>
           <ToastProvider>
             <Navbar />
-            <RouteTransitionProvider>{children}</RouteTransitionProvider>
+            <div id="main-content" tabIndex={-1}><RouteTransitionProvider>{children}</RouteTransitionProvider></div>
             <FloatingAssistant />
           </ToastProvider>
         </LanguageProvider>

@@ -22,7 +22,7 @@ import PollReaction from "@/models/PollReaction";
 import PollVote from "@/models/PollVote";
 import ChatSession from "@/models/ChatSession";
 import ChatMessage from "@/models/ChatMessage";
-import { buildSurveyResultSummary, canManageSurvey, canRespondToSurvey, canViewSurveyResults, getSurveyLifecycleStatus, surveyIdentifierLookup } from "@/lib/surveys";
+import { buildSurveyResultSummary, canManageSurvey, canRespondToSurvey, canViewSurveyResults, getSurveyLifecycleStatus, redactSurveyResults, surveyIdentifierLookup } from "@/lib/surveys";
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -154,7 +154,11 @@ export async function getPublicParties(search?: string) {
   return safeData([] as unknown[], async () => {
     const regex = search ? searchRegex(search) : null;
     const query = regex ? { status: "active", searchNormalized: regex } : { status: "active" };
-    const parties = await Party.find(query).populate({ path: "logoMediaId", select: "url status" }).sort({ slug: 1 }).lean();
+    const parties = await Party.find(query)
+      .select("name slug shortDescription followersCount isVerified logoUrl logoMediaId foundedYear statistics.branchesCount socialLinks.website")
+      .populate({ path: "logoMediaId", select: "url status" })
+      .sort({ slug: 1 })
+      .lean();
     return serialize(shuffleItems(parties));
   });
 }
@@ -196,7 +200,10 @@ export async function getPartyBySlug(slug: string, viewerUserId?: string) {
       party,
       posts: attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor),
       polls: attachAuthorityAuthor(normalizePopulatedMediaItems(polls as LeanItem[]), authorityAuthor),
-      surveys: attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor).map((survey) => ({ ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) })),
+      surveys: attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor).map((survey) => redactSurveyResults(
+        { ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) },
+        survey.resultsVisibility === "BEFORE_SUBMIT"
+      )),
       isFollowing: Boolean(follow)
     });
   });
@@ -245,7 +252,10 @@ export async function getAuthorityProfilePageData(slug: string) {
       authority,
       posts: attachAuthorityAuthor(normalizePopulatedMediaItems(posts as LeanItem[]), authorityAuthor),
       polls: attachAuthorityAuthor(normalizePopulatedMediaItems(polls as LeanItem[]), authorityAuthor),
-      surveys: attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor).map((survey) => ({ ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) }))
+      surveys: attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor).map((survey) => redactSurveyResults(
+        { ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) },
+        survey.resultsVisibility === "BEFORE_SUBMIT"
+      ))
     });
   });
 }
@@ -268,7 +278,10 @@ export async function getSurveys(search = "", filter = "all", sort = "newest") {
         .lean(),
       getAuthorityAuthor()
     ]);
-    return serialize(attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor).map((survey) => ({ ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) })));
+    return serialize(attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor).map((survey) => redactSurveyResults(
+      { ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) },
+      survey.resultsVisibility === "BEFORE_SUBMIT"
+    )));
   });
 }
 
@@ -288,14 +301,14 @@ export async function getSurveyBySlug(slug: string, viewer?: { id: string; role:
     const responses = canViewResults ? await SurveyResponse.find({ surveyId: survey._id }).lean() : [];
     const authorityAuthor = await getAuthorityAuthor();
     const [withPublisher] = attachAuthorityAuthor([survey as LeanItem], authorityAuthor);
-    return serialize({
+    return serialize(redactSurveyResults({
       ...withPublisher,
       lifecycleStatus: getSurveyLifecycleStatus(survey as never),
       hasResponded,
       canRespond: canRespondToSurvey(survey as never, viewer as never, hasResponded),
       canViewResults,
       resultSummary: canViewResults ? buildSurveyResultSummary(survey as never, serialize(responses) as any, isManager) : null
-    });
+    }, canViewResults));
   });
 }
 
@@ -358,7 +371,10 @@ export async function getUpdates(search?: string, filter = "all") {
         ...attachAuthorityAuthor(surveys as LeanItem[], authorityAuthor).map((survey) => ({
           type: "survey",
           publishedAt: survey.publishedAt || survey.createdAt,
-          item: { ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) }
+          item: redactSurveyResults(
+            { ...survey, lifecycleStatus: getSurveyLifecycleStatus(survey as never) },
+            survey.resultsVisibility === "BEFORE_SUBMIT"
+          )
         }))
       ]
         .sort((a, b) => dateTime(b.publishedAt) - dateTime(a.publishedAt))
