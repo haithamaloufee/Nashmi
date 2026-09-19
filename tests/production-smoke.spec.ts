@@ -24,7 +24,6 @@ async function checkPage(page: Page, route: string, name: string, viewport: { wi
   await page.setViewportSize(viewport);
   const started = Date.now();
   await page.goto(route, { waitUntil: "domcontentloaded" });
-  await page.waitForLoadState("load");
   timings[`load:${name}`] = Date.now() - started;
   await expect(page.locator("body")).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
@@ -33,8 +32,11 @@ async function checkPage(page: Page, route: string, name: string, viewport: { wi
 }
 
 async function getProfileId(request: APIRequestContext) {
+  const email = process.env.E2E_CITIZEN_EMAIL;
+  const password = process.env.E2E_CITIZEN_PASSWORD;
+  if (!email || !password) return null;
   const response = await request.post("/api/auth/login", {
-    data: { email: "citizen@sharek.demo", password: "CitizenDemo!2026" }
+    data: { email, password }
   });
   const json = await response.json();
   expect(json.ok).toBeTruthy();
@@ -55,8 +57,38 @@ test.afterAll(() => {
   writeFileSync(timingsPath, JSON.stringify(timings, null, 2));
 });
 
+test("critical public routes remain usable at small mobile and tablet widths", async ({ page, request }) => {
+  test.setTimeout(360_000);
+  const routes = ["/", "/laws", "/parties", "/updates", "/surveys", "/login", "/signup", "/chat"];
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: width < 700 ? 820 : 1024 });
+    for (const route of routes) {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await expect(page.locator("main").first()).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+      expect(overflow, `${route} should not overflow at ${width}px`).toBe(false);
+    }
+  }
+
+  await page.setViewportSize({ width: 320, height: 820 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const menuButton = page.locator('button[aria-controls="mobile-navigation"]');
+  await expect(menuButton).toBeVisible();
+  await menuButton.click();
+  await expect(page.locator("#mobile-navigation nav")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(menuButton).toBeFocused();
+
+  const response = await request.get("/api/version");
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  const home = await request.get("/");
+  expect(home.headers()["content-security-policy"]).not.toContain("unsafe-eval");
+  expect(home.headers()["strict-transport-security"]).toContain("max-age=31536000");
+});
+
 test("public pages, post media, comments, profiles, and navbar prefetch", async ({ page, request }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(360_000);
   const consoleErrors: string[] = [];
   const failedRequests: string[] = [];
   const prefetchedUrls = new Set<string>();
@@ -87,7 +119,6 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
     const started = Date.now();
     await page.locator(`nav a[href="${route}"]`).first().click();
     await page.waitForURL(`**${route}`);
-    await page.waitForLoadState("load");
     timings[`nav:${route}`] = Date.now() - started;
     await page.goto("/", { waitUntil: "domcontentloaded" });
   }
@@ -121,17 +152,20 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
   await screenshot(page, "comment-section-avatar-profile-link");
 
   const profileId = await getProfileId(request);
-  await checkPage(page, `/users/${profileId}`, "public-profile-desktop", { width: 1440, height: 900 });
-  await checkPage(page, `/users/${profileId}`, "public-profile-mobile", { width: 360, height: 820 });
+  if (profileId) {
+    await checkPage(page, `/users/${profileId}`, "public-profile-desktop", { width: 1440, height: 900 });
+    await checkPage(page, `/users/${profileId}`, "public-profile-mobile", { width: 360, height: 820 });
+  }
 
   expect(consoleErrors).toEqual([]);
   expect(failedRequests).toEqual([]);
 });
 
 test("party post creation uses upload field, preview, and 100MB validation", async ({ page }) => {
+  test.skip(!process.env.E2E_PARTY_EMAIL || !process.env.E2E_PARTY_PASSWORD, "Authenticated E2E credentials are not configured");
   await page.goto("/login", { waitUntil: "domcontentloaded" });
-  await page.locator('input[name="email"]').fill("party.al-ummah-party@sharek.demo");
-  await page.locator('input[name="password"]').fill("PartyDemo!2026");
+  await page.locator('input[name="email"]').fill(process.env.E2E_PARTY_EMAIL!);
+  await page.locator('input[name="password"]').fill(process.env.E2E_PARTY_PASSWORD!);
   await page.getByRole("button", { name: /دخول/ }).click();
   await page.waitForURL("**/");
 

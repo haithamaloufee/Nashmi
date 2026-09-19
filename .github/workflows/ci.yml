@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-only-jwt-secret-at-least-32-characters
+      RATE_LIMIT_SECRET: ci-only-rate-limit-secret-at-least-32-characters
+      MONGODB_URI: mongodb://127.0.0.1:27017/nashmi_ci
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3006
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:security
+      - run: npm run test:concurrency
+      - run: npm run build
