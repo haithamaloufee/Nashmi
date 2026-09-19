@@ -55,7 +55,9 @@ function isPublicRoute(pathname: string) {
 }
 
 function redirectToLogin(request: NextRequest) {
-  return withSecurityHeaders(NextResponse.redirect(new URL("/login", request.url)));
+  const response = withSecurityHeaders(NextResponse.redirect(new URL("/login", request.url)));
+  response.headers.set("Cache-Control", "no-store");
+  return response;
 }
 
 export async function middleware(request: NextRequest) {

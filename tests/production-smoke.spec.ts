@@ -85,6 +85,10 @@ test("critical public routes remain usable at small mobile and tablet widths", a
   const home = await request.get("/");
   expect(home.headers()["content-security-policy"]).not.toContain("unsafe-eval");
   expect(home.headers()["strict-transport-security"]).toContain("max-age=31536000");
+  const protectedRoute = await request.get("/admin", { maxRedirects: 0 });
+  expect(protectedRoute.status()).toBe(307);
+  expect(protectedRoute.headers().location).toBe("/login");
+  expect(protectedRoute.headers()["cache-control"]).toContain("no-store");
 });
 
 test("public pages, post media, comments, profiles, and navbar prefetch", async ({ page, request }) => {
