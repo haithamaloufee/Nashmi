@@ -1,15 +1,14 @@
-import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser, safeUser } from "@/lib/auth";
+import { confirmMediaUpload } from "@/lib/mediaStorage";
 import { requireRateLimit } from "@/lib/rateLimit";
-import { extensionForMimeType, hasValidUploadMagic, validateUploadFile, validateUploadMetadata } from "@/lib/uploadValidation";
-import { storePublicFile } from "@/lib/storage";
+import { getObjectStorage } from "@/lib/storage/index";
+import MediaAsset from "@/models/MediaAsset";
 import User from "@/models/User";
 import Party from "@/models/Party";
 import AuthorityProfile from "@/models/AuthorityProfile";
-import { readTrustedBlobMagic } from "@/lib/remoteFetch";
 
 export const runtime = "nodejs";
 
@@ -50,64 +49,45 @@ async function syncPublisherProfileAvatar(user: { id: string; role: string }, av
   return { targetType: "user", targetId: user.id, slug: null };
 }
 
-export async function POST(request: Request) {
-  try {
-    const user = await requireActiveUser([...uploadRoles]);
-    await requireRateLimit(`avatar:${user.id}`, 10, 60 * 60 * 1000);
-
-    const form = await request.formData();
-    const file = form.get("avatar");
-    if (!(file instanceof File)) return fail("BAD_REQUEST", "الصورة مطلوبة", 400);
-
-    const validationError = validateUploadFile(file, { imagesOnly: true });
-    if (validationError) return fail("BAD_REQUEST", validationError, 400);
-
-    const mimeType = file.type.toLowerCase();
-    const buffer = Buffer.from(await file.arrayBuffer());
-    if (!hasValidUploadMagic(buffer, mimeType)) return fail("BAD_REQUEST", "نوع الصورة لا يطابق محتواها", 400);
-
-    const storageKey = `avatars/${user.id}/${randomUUID()}.${extensionForMimeType(mimeType)}`;
-    const stored = await storePublicFile({ buffer, storageKey, contentType: mimeType });
-
-    await connectToDatabase();
-    const updated = await User.findByIdAndUpdate(user.id, { $set: { avatarUrl: stored.url } }, { new: true });
-    if (!updated) throw new Error("NOT_FOUND");
-    await syncPublisherProfileAvatar(user, stored.url);
-    return ok({ user: safeUser(updated) });
-  } catch (error) {
-    return handleApiError(error);
-  }
+export async function POST() {
+  return fail("BAD_REQUEST", "استخدم الرفع المباشر للصورة.", 405);
 }
 
 export async function PATCH(request: Request) {
   try {
     const user = await requireActiveUser([...uploadRoles]);
     await requireRateLimit(`avatar-complete:${user.id}`, 10, 60 * 60 * 1000);
-    const input = await request.json().catch(() => null) as {
-      url?: string;
-      storageKey?: string;
-      mimeType?: string;
-      sizeBytes?: number;
-      fileName?: string;
-    } | null;
-    if (!input?.url || !input.storageKey || !input.mimeType || !input.fileName || typeof input.sizeBytes !== "number") {
+    const input = await request.json().catch(() => null) as { assetId?: string } | null;
+    if (!input?.assetId) {
       return fail("BAD_REQUEST", "بيانات الصورة المرفوعة غير مكتملة", 400);
     }
-
-    const mimeType = input.mimeType.toLowerCase();
-    const validationError = validateUploadMetadata({ fileName: input.fileName, mimeType, size: input.sizeBytes, imagesOnly: true });
-    if (validationError) return fail("BAD_REQUEST", validationError, 400);
-
-    const storageKey = input.storageKey.replace(/^\/+/, "");
-    if (!storageKey.startsWith("media/direct/")) return fail("FORBIDDEN", "مسار الصورة غير صادر عن خدمة الرفع المباشر", 403);
-
-    const magic = await readTrustedBlobMagic(input.url, storageKey, mimeType);
-    if (!magic || !hasValidUploadMagic(magic, mimeType)) return fail("BAD_REQUEST", "نوع الصورة لا يطابق محتواها", 400);
-
     await connectToDatabase();
-    const updated = await User.findByIdAndUpdate(user.id, { $set: { avatarUrl: input.url } }, { new: true });
+    const pending = await MediaAsset.findOne({ _id: input.assetId, ownerUserId: user.id, purpose: "avatar" }).select("_id").lean();
+    if (!pending) return fail("FORBIDDEN", "الصورة ليست مخصصة لهذا الحساب.", 403);
+    const asset = await confirmMediaUpload({ user, assetId: input.assetId });
+    const previousUser = await User.findById(user.id).select("avatarMediaId").lean();
+    const updated = await User.findByIdAndUpdate(
+      user.id,
+      { $set: { avatarUrl: asset.url, avatarMediaId: asset._id } },
+      { new: true }
+    );
     if (!updated) throw new Error("NOT_FOUND");
-    await syncPublisherProfileAvatar(user, input.url);
+    await syncPublisherProfileAvatar(user, asset.url);
+    if (previousUser?.avatarMediaId && String(previousUser.avatarMediaId) !== String(asset._id)) {
+      const previousAsset = await MediaAsset.findOneAndUpdate(
+        { _id: previousUser.avatarMediaId, ownerUserId: user.id, provider: "cloudflare_r2", status: { $in: ["ready", "active"] } },
+        { $set: { status: "deleting" } },
+        { new: true }
+      ).lean();
+      if (previousAsset) {
+        try {
+          await getObjectStorage().deleteObject(previousAsset.storageKey);
+          await MediaAsset.updateOne({ _id: previousAsset._id, status: "deleting" }, { $set: { status: "deleted", deletedAt: new Date() } });
+        } catch {
+          await MediaAsset.updateOne({ _id: previousAsset._id, status: "deleting" }, { $set: { status: "failed", failureReason: "delete_failed" } });
+        }
+      }
+    }
     return ok({ user: safeUser(updated) });
   } catch (error) {
     return handleApiError(error);
@@ -118,7 +98,32 @@ export async function DELETE() {
   try {
     const user = await requireActiveUser([...uploadRoles]);
     await connectToDatabase();
-    const updated = await User.findByIdAndUpdate(user.id, { $set: { avatarUrl: null } }, { new: true });
+    const current = await User.findById(user.id).select("avatarMediaId").lean();
+    const asset = current?.avatarMediaId
+      ? await MediaAsset.findOneAndUpdate(
+          { _id: current.avatarMediaId, ownerUserId: user.id, status: { $nin: ["deleted", "deleting"] } },
+          { $set: { status: "deleting" } },
+          { new: true }
+        ).lean()
+      : null;
+    if (asset?.provider === "cloudflare_r2") {
+      try {
+        await getObjectStorage().deleteObject(asset.storageKey);
+        await MediaAsset.updateOne(
+          { _id: asset._id, status: "deleting" },
+          { $set: { status: "deleted", deletedAt: new Date(), failureReason: null } }
+        );
+      } catch (error) {
+        await MediaAsset.updateOne(
+          { _id: asset._id, status: "deleting" },
+          { $set: { status: "failed", failureReason: "delete_failed" } }
+        );
+        throw error;
+      }
+    } else if (asset) {
+      await MediaAsset.updateOne({ _id: asset._id }, { $set: { status: "deleted", deletedAt: new Date() } });
+    }
+    const updated = await User.findByIdAndUpdate(user.id, { $set: { avatarUrl: null, avatarMediaId: null } }, { new: true });
     if (!updated) throw new Error("NOT_FOUND");
     await syncPublisherProfileAvatar(user, null);
     return ok({ user: safeUser(updated) });

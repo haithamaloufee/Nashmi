@@ -10,7 +10,7 @@ function withSecurityHeaders(response: NextResponse) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://blob.vercel-storage.com https://*.blob.vercel-storage.com",
+    "connect-src 'self' https://*.r2.cloudflarestorage.com https://blob.vercel-storage.com https://*.blob.vercel-storage.com",
     "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
     "frame-ancestors 'self'",
     "base-uri 'self'",

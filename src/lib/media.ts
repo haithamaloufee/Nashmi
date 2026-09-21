@@ -56,7 +56,7 @@ function isVercelBlobUrl(value: string) {
 }
 
 function isLocalUploadUrl(value: string) {
-  return value.startsWith("/uploads/");
+  return value.startsWith("/uploads/") || value.startsWith("/api/media/");
 }
 
 function isGeneratedDefaultPostMedia(mediaAsset: UnknownMediaAsset, url: string) {
@@ -79,6 +79,7 @@ export function normalizeMediaAsset(asset: unknown): PublicMediaAsset | null {
 
   const rawUrl = mediaAsset.url;
   if (!isString(rawUrl) || !rawUrl.trim()) return null;
+  if (isString(mediaAsset.status) && !["active", "ready"].includes(mediaAsset.status)) return null;
   const normalizedUrl = rawUrl.trim();
   if (!isDisplayablePostMedia(mediaAsset, normalizedUrl)) return null;
 

@@ -48,7 +48,7 @@
 - **الهيئة IEC:** تدير ملف الهيئة وتنشر المستجدات والقوانين.
 - **الإدارة:** تراقب المستخدمين والأحزاب والبلاغات والسجلات.
 
-تقنيا، تتميز المنصة باستخدام Next.js App Router و MongoDB عبر Mongoose، وصلاحيات مبنية على الأدوار RBAC، وواجهات RTL عربية، وتخزين صور دائم مناسب لـ Vercel عبر Vercel Blob عند ضبط `BLOB_READ_WRITE_TOKEN`. كما تحتوي على طبقة تحقق للملفات وروابط آمنة للقوانين و YouTube.
+تقنيا، تتميز المنصة باستخدام Next.js App Router و MongoDB عبر Mongoose، وصلاحيات مبنية على الأدوار RBAC، وواجهات RTL عربية، وتخزين وسائط دائم في Cloudflare R2 عبر رفع مباشر موقّع قصير العمر. كما تحتوي على طبقة تحقق للملفات وروابط آمنة للقوانين و YouTube.
 
 حالة المشروع الحالية: مناسب للديمو والهاكاثون والتسليم التجريبي. قبل الإنتاج الحقيقي واسع النطاق، يحتاج إلى اختبارات E2E، مراقبة أخطاء مركزية، تخزين Blob مضبوط في الإنتاج، مراجعة أمنية أوسع، وربما rate limiting مشترك مثل Redis أو Upstash بدلا من التخزين الذاكري الحالي.
 
@@ -327,7 +327,7 @@
 | PATCH | `/api/users/me` | تحديث اسم/نبذة/لغة | مسجل | `name`, `bio`, `language` | SafeUser | Validation | لا يرجع passwordHash |
 | POST | `/api/account/avatar` | رفع صورة شخصية | مسجل | `multipart/form-data` باسم `avatar` | SafeUser مع `avatarUrl` | نوع غير مسموح، Blob غير مضبوط | يتحقق من MIME و magic bytes |
 | DELETE | `/api/account/avatar` | حذف صورة الحساب | مسجل | لا يوجد | SafeUser | 401 | يضبط `avatarUrl` إلى null |
-| POST | `/api/uploads` | رفع وسائط منشور/قانون/شعار | مسجل | `multipart/form-data` باسم `file` | MediaAsset | حجم كبير، امتداد غير مسموح | Vercel Blob في الإنتاج |
+| POST | `/api/uploads/authorize` ثم PATCH `/api/uploads` | تفويض رفع مباشر ثم تأكيد وسائط | مسجل | metadata JSON ثم `assetId` | MediaAsset | حجم/نوع/حصة/صلاحية | Cloudflare R2 مباشر |
 | DELETE | `/api/uploads?assetId=` | حذف منطقي للملف | مالك الملف | query `assetId` | MediaAsset status deleted | ملف غير موجود | لا يحذف من Blob حاليا، يغير status |
 
 ### Updates و Posts
@@ -641,23 +641,18 @@
 
 ### الملفات المسؤولة
 
-- `src/lib/storage.ts`: طبقة التخزين.
+- `src/lib/storage/`: طبقة التخزين المستقلة عن المزود وتنفيذ R2.
+- `src/lib/mediaStorage.ts`: تفويض الرفع والتأكيد والحصص ودورة حياة الوسائط.
 - `src/lib/uploadValidation.ts`: تحقق الملفات.
 - `src/app/api/uploads/route.ts`: رفع وسائط عامة.
 - `src/app/api/account/avatar/route.ts`: رفع صورة الحساب.
 - `src/components/ui/MediaUploadField.tsx`: واجهة الرفع.
 
-### شرح `storage.ts`
+### شرح طبقة التخزين
 
-الدالة `storePublicFile` تستقبل `buffer`, `storageKey`, و `contentType`.
+يطلب المتصفح تفويضًا من `/api/uploads/authorize` بعد التحقق من الجلسة والدور والغرض والحجم والنوع والحصة. ينشئ الخادم سجل `MediaAsset` بحالة `pending` ومفتاحًا عشوائيًا، ثم يعيد رابط PUT موقّعًا لمفتاح واحد ولمدة خمس دقائق. يرفع المتصفح مباشرة إلى R2 دون تمرير جسم الملف عبر Vercel، ثم يؤكد الرفع؛ يفحص الخادم HEAD والحجم وContent-Type وmagic bytes قبل نقل الحالة إلى `ready`.
 
-السلوك:
-
-1. إذا وجد `BLOB_READ_WRITE_TOKEN` تستخدم Vercel Blob عبر `put`.
-2. إذا لم يوجد token وكان التطبيق في production أو Vercel، ترمي الخطأ `BLOB_STORAGE_NOT_CONFIGURED`.
-3. إذا كان التشغيل محليا فقط، تحفظ داخل `public/uploads`.
-
-الـ fallback المحلي للتطوير فقط لأن ملفات runtime على Vercel لا تبقى بعد redeploy ولا تصلح كتخزين دائم.
+الحاوية خاصة. الرابط الثابت `/api/media/<id>` يعيد توجيه الوسائط العامة إلى GET موقّع، بينما يطلب للوسائط المحمية جلسة وملكية أو دور إدارة قبل إصدار الرابط. لا تخزن الروابط الموقعة في MongoDB.
 
 ### شرح `uploadValidation.ts`
 
@@ -665,7 +660,7 @@
 
 - الامتداد.
 - MIME type.
-- الحجم عبر `MAX_UPLOAD_SIZE_MB`.
+- الحجم حسب الفئة: الصور والفيديو وPDF.
 - magic bytes لمحتوى الملف.
 - منع امتدادات تنفيذية و SVG.
 
@@ -673,8 +668,9 @@
 
 | النوع | الصيغ |
 |---|---|
-| صور | jpg, jpeg, png, webp, gif, avif, heic, heif |
+| صور | jpg, jpeg, png, webp, gif |
 | فيديو | mp4, webm |
+| مستند | pdf |
 
 ### أين تخزن الروابط
 
@@ -695,16 +691,16 @@
 - التحميل فشل.
 - المسار المحلي غير مسموح.
 
-### إعداد Vercel Blob بأمان
+### إعداد Cloudflare R2 بأمان
 
-1. أنشئ Blob Store من Vercel Dashboard.
-2. انسخ token من إعدادات Vercel.
-3. أضفه في Environment Variables باسم `BLOB_READ_WRITE_TOKEN`.
-4. لا تضع token في Git أو README أو هذا الملف.
-5. أعد النشر.
-6. اختبر رفع صورة من `/account` أو `/party-dashboard/profile`.
+1. أنشئ حاوية Standard خاصة باسم `nashmi-media`.
+2. أنشئ بيانات Object Read & Write مقيدة بهذه الحاوية فقط، وليس Global API Key.
+3. خزّن متغيرات `R2_*` في Vercel دون بادئة `NEXT_PUBLIC_`.
+4. اضبط CORS على أصل Nashmi المحدد، وPUT فقط، والرؤوس المطلوبة، مع كشف ETag.
+5. استخدم بادئة أو حاوية منفصلة للـPreview ولا تمنح الأسرار لفروع غير موثوقة.
+6. اختبر التفويض والرفع المباشر والتأكيد والعرض والحذف.
 
-إذا لم يتم ضبط `BLOB_READ_WRITE_TOKEN` في الإنتاج، يفشل الرفع برسالة عربية توضح أن تخزين الصور الدائم غير مفعل.
+تبقى إعدادات Vercel Blob القديمة انتقالية فقط إلى أن تنتهي الهجرة والتحقق وفترة الرجوع.
 
 ## المكونات البرمجية المهمة
 
@@ -795,7 +791,7 @@ MediaUploadField يوفر:
 - Node.js حديث متوافق مع Next.js 15.
 - npm.
 - MongoDB محلي أو MongoDB Atlas.
-- Vercel Blob اختياري محليا ومطلوب للإنتاج إذا كان الرفع يجب أن يكون دائما.
+- Cloudflare R2 هو التخزين الدائم، مع حاوية/بادئة تطوير معزولة عن الإنتاج.
 
 ### نسخ المشروع وتثبيت الاعتماديات
 
@@ -822,10 +818,14 @@ cp .env.example .env.local
 | `GEMINI_MODEL` | موديل Gemini | اختياري |
 | `GEMINI_FALLBACK_MODEL` | موديل احتياطي | اختياري |
 | `GEMINI_ENABLE_GOOGLE_SEARCH` | grounding اختياري | اختياري |
-| `NEXT_PUBLIC_APP_URL` | عنوان الموقع | مستحسن |
+| `NEXT_PUBLIC_SITE_URL` | عنوان الموقع القانوني | نعم في الإنتاج |
 | `REQUIRE_EMAIL_VERIFICATION` | تفعيل تحقق البريد | اختياري |
 | `MAX_UPLOAD_SIZE_MB` | حد الرفع | نعم بقيمة مناسبة |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob | مطلوب للإنتاج |
+| `STORAGE_PROVIDER` | مزود التخزين (`cloudflare_r2`) | نعم |
+| `R2_ACCOUNT_ID` | حساب Cloudflare | نعم |
+| `R2_ACCESS_KEY_ID` | معرف بيانات R2 المقيدة | نعم، خادم فقط |
+| `R2_SECRET_ACCESS_KEY` | سر بيانات R2 المقيدة | نعم، خادم فقط |
+| `R2_BUCKET_NAME` | اسم الحاوية الخاصة | نعم |
 | `YOUTUBE_API_KEY` | تكامل YouTube إن استخدم | اختياري |
 
 ### تشغيل قاعدة البيانات والـ seed
@@ -863,13 +863,13 @@ npm run build
 npm run verify
 ```
 
-لا يوجد script باسم `test` في `package.json` حاليا.
+تتضمن البوابات اختبارات الأمن والتخزين والهجرة والتزامن إضافة إلى build وbundle budget.
 
 ### مشاكل شائعة محليا
 
 - فشل MongoDB: افحص `MONGODB_URI`.
 - فشل env check: أكمل المتغيرات المطلوبة.
-- فشل الرفع: محليا يجب أن يعمل fallback إذا لم تكن البيئة production.
+- فشل الرفع: افحص متغيرات R2 وCORS ومسار التفويض، واستخدم بيئة تطوير معزولة.
 - تعارض port: شغل Next على port آخر.
 
 ## دليل النشر على Vercel
@@ -888,13 +888,17 @@ npm run build
 MONGODB_URI=
 JWT_SECRET=
 GEMINI_API_KEY=
-BLOB_READ_WRITE_TOKEN=
+STORAGE_PROVIDER=cloudflare_r2
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=nashmi-media
 MAX_UPLOAD_SIZE_MB=
-NEXT_PUBLIC_APP_URL=
+NEXT_PUBLIC_SITE_URL=https://nashmi.haitham.website
 ```
 
 5. استخدم MongoDB Atlas للإنتاج.
-6. أنشئ Vercel Blob Store وأضف `BLOB_READ_WRITE_TOKEN`.
+6. أنشئ R2 الخاص واضبط بياناته المقيدة وCORS في Vercel.
 7. نفذ Deploy.
 8. بعد النشر افحص:
    - `/`
@@ -904,7 +908,7 @@ NEXT_PUBLIC_APP_URL=
    - `/parties`
    - `/login`
 9. سجل دخول بحساب مناسب واختبر رفع صورة.
-10. إذا فشل الرفع، افحص وجود `BLOB_READ_WRITE_TOKEN` وسجلات Vercel Function.
+10. إذا فشل الرفع، افحص طلب التفويض وطلب PUT المباشر وCORS وسجلات Vercel الآمنة.
 
 سبب عدم استخدام `public/uploads` في الإنتاج: Vercel لا يحفظ ملفات runtime بعد redeploy، وقد لا تكون الملفات متاحة عبر كل instance.
 
@@ -926,7 +930,7 @@ NEXT_PUBLIC_APP_URL=
 - تجربة عربية RTL.
 - صلاحيات واضحة لكل دور.
 - صور الناشرين تظهر في المنشورات والتصويتات.
-- رفع صور دائم في الإنتاج عبر Vercel Blob.
+- رفع مباشر ودائم في الإنتاج عبر Cloudflare R2 دون تمرير أجسام الملفات عبر Vercel Functions.
 - روابط YouTube آمنة للقوانين.
 - توثيق شامل للمطور والتسليم.
 
@@ -971,7 +975,7 @@ npm run verify
 - [ ] `.env.local` مضبوط محليا.
 - [ ] Environment Variables مضبوطة على Vercel.
 - [ ] MongoDB يعمل.
-- [ ] Vercel Blob مضبوط.
+- [ ] R2 الخاص وCORS وبيانات الحاوية المقيدة مضبوطة.
 - [ ] لا توجد secrets في Git.
 - [ ] رفع الصور يعمل.
 - [ ] روابط YouTube في القوانين تعمل.
@@ -989,8 +993,8 @@ npm run verify
 | المشكلة | السبب المحتمل | طريقة الفحص | الحل |
 |---|---|---|---|
 | الصورة لا تظهر | رابط غير آمن أو فشل تحميل | DevTools Network و `SafeImage` fallback | استخدم URL https أو مسار مسموح |
-| الرفع يفشل في الإنتاج | `BLOB_READ_WRITE_TOKEN` غير مضبوط | Vercel logs | أضف المتغير وأعد النشر |
-| رسالة Blob غير مفعل | production دون token | Response من API | إعداد Vercel Blob |
+| الرفع يفشل في الإنتاج | متغير R2 أو CORS غير صحيح | Network وVercel logs | صحح الإعداد واختبر Preview أولا |
+| رسالة التخزين غير مفعل | بيانات R2 ناقصة | Response من API | أضف متغيرات R2 المقيدة للحاوية |
 | رابط YouTube لا يظهر | الرابط غير مدعوم أو ID غير صالح | جرّب `normalizeYoutubeInput` | استخدم watch أو youtu.be أو ID صالح |
 | منشور الهيئة بلا صورة | AuthorityProfile بلا `logoUrl` أو فشل الجلب | افحص `/iec` و DB | ارفع شعار الهيئة أو اضبط `logoUrl` |
 | التصويت لا يسمح | المستخدم ليس citizen أو صوت سابقا | Response 401/403/409 | سجل دخول كمواطن أو استخدم تصويت جديد |
@@ -1030,7 +1034,8 @@ npm run verify
 
 | التاريخ | التعديل | الملفات المتأثرة | سبب التعديل | طريقة الاختبار | الأثر |
 |---|---|---|---|---|---|
-| 2026-05-08 | إضافة Vercel Blob storage | `src/lib/storage.ts`, `src/app/api/uploads/route.ts`, `src/app/api/account/avatar/route.ts` | تخزين دائم مناسب لـ Vercel | `npm run build`, رفع يدوي | صور لا تضيع بعد redeploy |
+| 2026-05-08 | إضافة Vercel Blob storage (تاريخي/انتقالي) | `src/lib/storage.ts` | مزود التخزين السابق | محفوظ للرجوع أثناء الهجرة فقط | يستبدل بـR2 بعد التحقق |
+| 2026-09-21 | إضافة Cloudflare R2 | `src/lib/storage/`, `src/lib/mediaStorage.ts`, مسارات الرفع والتنزيل | رفع مباشر وفصل public/protected | اختبارات storage/migration وPreview | المزود الإنتاجي الجديد |
 | 2026-05-08 | إضافة uploadValidation | `src/lib/uploadValidation.ts` | توحيد تحقق الملفات | lint/build | رسائل عربية ورفض الملفات الخطرة |
 | 2026-05-08 | إضافة MediaUploadField | `src/components/ui/MediaUploadField.tsx` | تحسين UX للرفع | فحص واجهة وbuild | preview وdrag/drop وحذف |
 | 2026-05-08 | إصلاح صورة الهيئة في الكروت | `src/lib/serverData.ts`, `src/app/api/updates/route.ts`, `PostCard`, `PollCard` | ظهور صورة الهيئة في المنشورات والتصويتات | build وفحص صفحات | كروت أوضح |
@@ -1061,7 +1066,7 @@ npm install
 npm run dev
 ```
 
-**كيف أنشر على Vercel؟** اربط الريبو، أضف env vars، اضبط MongoDB Atlas و Vercel Blob، ثم deploy.
+**كيف أنشر على Vercel؟** اربط الريبو، أضف env vars، اضبط MongoDB Atlas وبيانات R2 المقيدة وCORS، ثم انشر عبر المسار الآلي.
 
 ## قائمة ملفات مهمة
 
@@ -1090,6 +1095,6 @@ npm run dev
 
 ## ملخص ختامي
 
-منصة نشمي / شارك جاهزة كنسخة ديمو قوية للهاكاثون والتسليم التجريبي، وتغطي أهم الرحلات: تصفح عام، تفاعل المواطن، نشر الحزب، إدارة الهيئة للقوانين والمنشورات، ومراقبة الأدمن. أهم نقاط القوة هي RTL، RBAC، كروت محتوى واضحة، رفع صور دائم عند ضبط Vercel Blob، وتوثيق تشغيلي شامل.
+منصة نشمي / شارك تغطي أهم الرحلات: تصفح عام، تفاعل المواطن، نشر الحزب، إدارة الهيئة للقوانين والمنشورات، ومراقبة الأدمن. أهم نقاط القوة هي RTL، RBAC، كروت محتوى واضحة، رفع مباشر وآمن إلى R2، وتوثيق تشغيلي شامل.
 
 قبل الإنتاج الحقيقي، يجب استكمال تحسينات التشغيل والمراقبة والاختبارات، وتفعيل تخزين Blob ومراجعة الأمن والنسخ الاحتياطي بشكل رسمي.

@@ -1,4 +1,4 @@
-const baseUrl = (process.env.SMOKE_BASE_URL || "https://nashmii.vercel.app").replace(/\/$/, "");
+const baseUrl = (process.env.SMOKE_BASE_URL || "https://nashmi.haitham.website").replace(/\/$/, "");
 const expectedSha = process.env.EXPECTED_GIT_SHA?.trim();
 const routes = ["/", "/laws", "/parties", "/updates", "/login", "/api/platform/indicators", "/api/health", "/api/version"];
 const RETRIES = 5;

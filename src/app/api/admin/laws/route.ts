@@ -7,6 +7,7 @@ import { createSearchText } from "@/lib/arabicSearch";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import { normalizeYoutubeInput, youtubeThumbnailUrl } from "@/lib/youtube";
+import { resolveOwnedReadyMediaId } from "@/lib/mediaReferences";
 import Law from "@/models/Law";
 
 export async function GET() {
@@ -28,10 +29,14 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const youtube = normalizeYoutubeInput(input.youtubeUrl || input.youtubeVideoId || null);
     const thumbnailUrl = input.thumbnailUrl || (youtube?.id ? youtubeThumbnailUrl(youtube.id) : null);
+    const thumbnailMediaId = thumbnailUrl
+      ? (await resolveOwnedReadyMediaId({ url: thumbnailUrl, ownerUserId: user.id, purposes: ["law_thumbnail"] })) || null
+      : null;
     const law = await Law.create({
       ...input,
       officialReferenceUrl: input.officialReferenceUrl || null,
       thumbnailUrl,
+      thumbnailMediaId,
       articleNumber: input.articleNumber || null,
       originalText: input.originalText || null,
       practicalExample: input.practicalExample || null,

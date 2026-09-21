@@ -19,6 +19,7 @@ const UserSchema = new Schema(
     requiresPasswordReset: { type: Boolean, default: false },
     image: { type: String, default: null },
     avatarUrl: { type: String, default: null },
+    avatarMediaId: { type: Schema.Types.ObjectId, ref: "MediaAsset", default: null },
     role: { type: String, enum: ["citizen", "party", "iec", "admin", "super_admin"], default: "citizen", required: true },
     provider: { type: String, enum: ["credentials", "google"], default: "credentials", required: true },
     googleId: { type: String, default: null },

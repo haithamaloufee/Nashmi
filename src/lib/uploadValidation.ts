@@ -1,9 +1,9 @@
 import path from "path";
-import { getMaxImageUploadSizeBytes, getMaxVideoUploadSizeBytes } from "@/lib/env";
+import { getMaxDocumentUploadSizeBytes, getMaxImageUploadSizeBytes, getMaxVideoUploadSizeBytes } from "@/lib/env";
 
 type AllowedUpload = {
   extensions: string[];
-  kind: "image" | "video";
+  kind: "image" | "video" | "document";
 };
 
 export const allowedUploads: Record<string, AllowedUpload> = {
@@ -12,11 +12,13 @@ export const allowedUploads: Record<string, AllowedUpload> = {
   "image/webp": { extensions: ["webp"], kind: "image" },
   "image/gif": { extensions: ["gif"], kind: "image" },
   "video/mp4": { extensions: ["mp4"], kind: "video" },
-  "video/webm": { extensions: ["webm"], kind: "video" }
+  "video/webm": { extensions: ["webm"], kind: "video" },
+  "application/pdf": { extensions: ["pdf"], kind: "document" }
 };
 
 export const allowedImageMimeTypes = Object.entries(allowedUploads).filter(([, value]) => value.kind === "image").map(([mimeType]) => mimeType);
 export const allowedVideoMimeTypes = Object.entries(allowedUploads).filter(([, value]) => value.kind === "video").map(([mimeType]) => mimeType);
+export const allowedDocumentMimeTypes = Object.entries(allowedUploads).filter(([, value]) => value.kind === "document").map(([mimeType]) => mimeType);
 export const allowedUploadMimeTypes = Object.keys(allowedUploads);
 
 const blockedExtensions = new Set([
@@ -54,6 +56,7 @@ export function hasValidUploadMagic(buffer: Buffer, mimeType: string) {
   if (mimeType === "image/gif") return ["GIF87a", "GIF89a"].includes(buffer.subarray(0, 6).toString("ascii"));
   if (mimeType === "video/mp4") return hasFtypBrand(buffer, ["isom", "iso2", "mp41", "mp42", "avc1", "M4V"]);
   if (mimeType === "video/webm") return buffer.subarray(0, 4).toString("hex") === "1a45dfa3";
+  if (mimeType === "application/pdf") return buffer.subarray(0, 5).toString("ascii") === "%PDF-";
   return false;
 }
 
@@ -66,7 +69,10 @@ export function assetTypeForMimeType(mimeType: string) {
 }
 
 export function maxUploadSizeForMimeType(mimeType: string) {
-  return assetTypeForMimeType(mimeType) === "video" ? getMaxVideoUploadSizeBytes() : getMaxImageUploadSizeBytes();
+  const type = assetTypeForMimeType(mimeType);
+  if (type === "video") return getMaxVideoUploadSizeBytes();
+  if (type === "document") return getMaxDocumentUploadSizeBytes();
+  return getMaxImageUploadSizeBytes();
 }
 
 export function validateUploadMetadata(input: { fileName: string; mimeType: string; size: number; imagesOnly?: boolean }) {
@@ -75,7 +81,7 @@ export function validateUploadMetadata(input: { fileName: string; mimeType: stri
   if (!allowed || (input.imagesOnly && allowed.kind !== "image")) {
     return input.imagesOnly
       ? "الصيغ المسموحة للصور: JPG أو JPEG أو PNG أو WEBP أو GIF. ملفات SVG والملفات التنفيذية غير مسموحة."
-      : "الصيغ المسموحة: صور JPG أو PNG أو WEBP أو GIF، أو فيديو MP4/WEBM. ملفات SVG والملفات التنفيذية غير مسموحة.";
+      : "الصيغ المسموحة: صور JPG أو PNG أو WEBP أو GIF، فيديو MP4/WEBM، أو مستند PDF. ملفات SVG والملفات التنفيذية غير مسموحة.";
   }
 
   const extension = originalExtension(input.fileName);

@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const content = cleanContent(input.content);
     const mediaIds = input.mediaIds || [];
     if (mediaIds.length) {
-      const activeMediaCount = await MediaAsset.countDocuments({ _id: { $in: mediaIds }, ownerUserId: user.id, status: "active" });
+      const activeMediaCount = await MediaAsset.countDocuments({ _id: { $in: mediaIds }, ownerUserId: user.id, status: { $in: ["ready", "active"] } });
       if (activeMediaCount !== mediaIds.length) return fail("BAD_REQUEST", "بعض المرفقات غير مكتملة أو لا تخص هذا الحساب", 400);
     }
     const authorType = authorTypeForRole(user.role);

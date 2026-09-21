@@ -64,7 +64,8 @@ Relevant environment variable names: `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `
 - Rotate a credential only after identifying every consumer and establishing rollback material.
 - Update all dependent environments, verify Preview, then Production, then revoke the old credential.
 - Never print secret values or copy them into documentation.
-- Production Blob should use the Vercel project connection with OIDC and `BLOB_STORE_ID`; local development may still use `BLOB_READ_WRITE_TOKEN`. Remove the long-lived Production token only after upload/read/display and a dedicated test-blob delete are proven on a fresh deployment.
+- Cloudflare R2 credentials must be bucket-scoped Object Read & Write credentials, stored only in trusted Vercel environments. Never expose them with `NEXT_PUBLIC_`.
+- Vercel Blob remains a temporary read/rollback source only during migration. Remove its package, environment connection, and source objects only after reconciliation is clean and the rollback window has elapsed.
 - A password reset increments `sessionVersion`; older cookies stop authenticating at the server/data layer.
 
 ## Incident checklist
@@ -74,3 +75,30 @@ Relevant environment variable names: `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `
 3. Inspect safe structured logs for the request ID.
 4. If data access is involved, prefer read-only diagnosis and projections. Never dump user documents.
 5. Reproduce in Preview/local, add a regression test, deploy through `master`, then run the production smoke test.
+
+## Cloudflare R2 storage operations
+
+The production bucket is `nashmi-media`, Standard storage class, private by default. New objects use immutable environment-prefixed keys and never trust the original filename. The browser calls `/api/uploads/authorize`, uploads directly to the one-object presigned R2 PUT URL, then confirms through `/api/uploads` (or the avatar completion endpoint). Confirmation verifies HEAD metadata and magic bytes before the `MediaAsset` becomes `ready`.
+
+Public objects use stable `/api/media/<assetId>` application URLs that redirect to short-lived signed R2 GET URLs. Protected objects use the same stable shape but require an authenticated owner or administrator before a signed URL is issued. Do not configure `R2_PUBLIC_BASE_URL` against a bucket that contains protected objects. A future dedicated public bucket/custom domain needs a separate security review.
+
+Required variable names: `STORAGE_PROVIDER`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, optional `R2_ENDPOINT`, optional `R2_PUBLIC_BASE_URL`, `R2_UPLOAD_EXPIRY_SECONDS`, `R2_DOWNLOAD_EXPIRY_SECONDS`, `R2_ENV_PREFIX`, `R2_USER_MEDIA_QUOTA_MB`, `R2_PUBLISHER_MEDIA_QUOTA_MB`, and `R2_DAILY_UPLOAD_QUOTA_MB`.
+
+R2 CORS must allow only trusted application origins, method `PUT`, request header `Content-Type`, and expose `ETag`. Production allows exactly `https://nashmi.haitham.website`; Preview must use a separate bucket or isolated credentials/prefix and explicit trusted origins.
+
+Operational commands are safe by default:
+
+```text
+npm run storage:inventory
+npm run storage:migrate-r2
+npm run storage:migrate-r2 -- --pilot --execute
+npm run storage:migrate-r2 -- --execute
+npm run storage:reconcile-r2
+npm run storage:cleanup-pending
+```
+
+Migration and pending cleanup are dry-run unless `--execute` is present. Migration streams each trusted source, verifies source/destination sizes and independent SHA-256 hashes, conditionally updates only storage/reference fields, and preserves the original provider URL/key for rollback. Reconciliation is always read-only. Never delete ambiguous Vercel orphans or any source Blob based only on a prefix.
+
+If R2 fails before confirmation, the pending row is not public. If a delete fails, the asset is marked failed and the object is retained for reconciliation. Provider durability does not replace a product backup or recovery policy; accidental deletion is distinct from provider loss.
+
+At the currently documented Standard tier, monitor against 10 GB-month storage, 1 million Class A operations, and 10 million Class B operations per month. These allocations can change and exceeding them may incur charges; check Cloudflare's current pricing before capacity decisions.

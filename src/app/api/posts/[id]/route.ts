@@ -76,7 +76,7 @@ export async function PATCH(request: Request, context: Context) {
     if (input.tags !== undefined && ownerAuthorized) update.tags = input.tags;
     if (input.mediaIds !== undefined) {
       if (!ownerAuthorized) return fail("FORBIDDEN", "تعديل وسائط المنشور متاح للمالك فقط.", 403);
-      const mediaQuery: Record<string, unknown> = { _id: { $in: input.mediaIds }, status: "active", ownerUserId: user.id };
+      const mediaQuery: Record<string, unknown> = { _id: { $in: input.mediaIds }, status: { $in: ["ready", "active"] }, ownerUserId: user.id };
       const activeMediaCount = await MediaAsset.countDocuments(mediaQuery);
       if (activeMediaCount !== input.mediaIds.length) return fail("BAD_REQUEST", "بعض المرفقات غير مكتملة أو لا تخص هذا الحساب.", 400);
       update.mediaIds = input.mediaIds;

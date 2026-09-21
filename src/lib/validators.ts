@@ -44,7 +44,7 @@ export const optionalSafeLogoUrlSchema = z
   .optional()
   .transform((value, context) => {
     if (value === undefined) return undefined;
-    const normalized = normalizeSafeImageUrl(value, { localPrefixes: ["/images/", "/uploads/", "/related/"] });
+    const normalized = normalizeSafeImageUrl(value, { localPrefixes: ["/images/", "/uploads/", "/related/", "/api/media/"] });
     if (value && !normalized) {
       context.addIssue({ code: z.ZodIssueCode.custom, message: "رابط الصورة غير آمن أو غير مدعوم" });
       return z.NEVER;

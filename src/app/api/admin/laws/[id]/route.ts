@@ -6,6 +6,7 @@ import { createSearchText } from "@/lib/arabicSearch";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import { normalizeYoutubeInput, youtubeThumbnailUrl } from "@/lib/youtube";
+import { resolveOwnedReadyMediaId } from "@/lib/mediaReferences";
 import Law from "@/models/Law";
 import LawVersion from "@/models/LawVersion";
 
@@ -42,9 +43,17 @@ export async function PATCH(request: Request, context: Context) {
     if (input.youtubeVideoId !== undefined || input.youtubeUrl !== undefined) {
       update.youtubeVideoId = youtube?.id || input.youtubeVideoId || null;
       update.youtubeUrl = youtube?.url || input.youtubeUrl || null;
-      if (input.thumbnailUrl === undefined && youtube?.id) update.thumbnailUrl = youtubeThumbnailUrl(youtube.id);
+      if (input.thumbnailUrl === undefined && youtube?.id) {
+        update.thumbnailUrl = youtubeThumbnailUrl(youtube.id);
+        update.thumbnailMediaId = null;
+      }
     }
-    if (input.thumbnailUrl !== undefined) update.thumbnailUrl = input.thumbnailUrl || null;
+    if (input.thumbnailUrl !== undefined) {
+      update.thumbnailUrl = input.thumbnailUrl || null;
+      update.thumbnailMediaId = input.thumbnailUrl
+        ? (await resolveOwnedReadyMediaId({ url: input.thumbnailUrl, ownerUserId: user.id, purposes: ["law_thumbnail"] })) || null
+        : null;
+    }
     update.updatedByUserId = user.id;
     update.reviewedByUserId = user.id;
     update.lastVerifiedAt = new Date();
