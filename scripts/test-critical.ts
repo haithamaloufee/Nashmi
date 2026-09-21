@@ -383,10 +383,13 @@ function testAuthEmailSecurity() {
 
   const verifySource = readFileSync("src/app/api/auth/verify-email/route.ts", "utf8");
   const resetSource = readFileSync("src/app/api/auth/reset-password/route.ts", "utf8");
+  const setupSource = readFileSync("src/app/api/auth/set-password/route.ts", "utf8");
   assert.match(verifySource, /emailVerificationExpiresAt: \{ \$gt: new Date\(\) \}/);
   assert.match(verifySource, /emailVerificationTokenHash: null/);
   assert.match(resetSource, /passwordResetTokenHash: null/);
   assert.match(resetSource, /sessionVersion/);
+  assert.match(resetSource, /passwordHash: \{ \$literal: passwordHash \}/);
+  assert.match(setupSource, /passwordHash: \{ \$literal: passwordHash \}/);
   assert.doesNotMatch(resetSource, /passwordSetupTokenHash/);
 }
 

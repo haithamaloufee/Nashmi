@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       [
         {
           $set: {
-            passwordHash,
+            passwordHash: { $literal: passwordHash },
             passwordResetTokenHash: null,
             passwordResetExpiresAt: null,
             failedLoginCount: 0,

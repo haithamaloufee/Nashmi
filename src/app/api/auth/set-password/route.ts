@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(input.password, 12);
     const user = await User.findOneAndUpdate(
       { passwordSetupTokenHash: hashAccountSetupToken(input.token), passwordSetupExpiresAt: { $gt: new Date() } },
-      [{ $set: { passwordHash, status: { $ifNull: ["$passwordSetupTargetStatus", "active"] }, emailVerified: true, passwordSetupTokenHash: null, passwordSetupExpiresAt: null, passwordSetupTargetStatus: null, failedLoginCount: 0, lockedUntil: null, requiresPasswordReset: false, passwordChangedAt: "$$NOW", sessionVersion: { $add: [{ $ifNull: ["$sessionVersion", 0] }, 1] } } }],
+      [{ $set: { passwordHash: { $literal: passwordHash }, status: { $ifNull: ["$passwordSetupTargetStatus", "active"] }, emailVerified: true, passwordSetupTokenHash: null, passwordSetupExpiresAt: null, passwordSetupTargetStatus: null, failedLoginCount: 0, lockedUntil: null, requiresPasswordReset: false, passwordChangedAt: "$$NOW", sessionVersion: { $add: [{ $ifNull: ["$sessionVersion", 0] }, 1] } } }],
       { new: true }
     );
     if (!user) return fail("BAD_REQUEST", "رابط إعداد الحساب غير صالح أو منتهي أو مستخدم سابقًا", 400);
