@@ -52,8 +52,6 @@ export class SharekAiError extends Error {
   }
 }
 
-const ASSISTANT_INTRO = "أنا مساعد منصة نشمي الذكي. بقدر أساعدك تفهم القوانين والانتخابات والأحزاب بطريقة مبسطة ومحايدة.";
-
 const ASSISTANT_SYSTEM_INSTRUCTION = `
 أنت مساعد منصة نشمي الذكي.
 
@@ -61,6 +59,7 @@ const ASSISTANT_SYSTEM_INSTRUCTION = `
 - ساعد المستخدم في فهم القوانين الأردنية، الانتخابات، الأحزاب، الهيئة المستقلة للانتخاب، واستخدام منصة نشمي.
 - أجب بالعربية افتراضيًا بلهجة اردنية، بأسلوب عملي وواضح ومناسب للشباب.
 - لا تكن عامًا أو مختصرًا أكثر من اللازم. أعطِ جوابًا مفيدًا ومباشرًا مع أمثلة عند الحاجة.
+- ابدأ بالجواب مباشرة. لا تعرّف بنفسك ولا تكرر اسم المنصة في بداية كل رد.
 
 الحياد السياسي:
 - لا تؤيد ولا ترتب ولا ترشح أي حزب أو مرشح أو قائمة.
@@ -457,8 +456,8 @@ function toFriendlyError(error: unknown): SharekAiError {
   if (error instanceof SharekAiError) return error;
   const classification = classifyAiProviderError(error);
   const userMessages = {
-    missing_key: "إعداد مفتاح Gemini غير مكتمل على الخادم.",
-    auth: "تعذر تشغيل المساعد بسبب مشكلة في إعدادات مزود الذكاء الاصطناعي.",
+    missing_key: "المساعد غير متاح الآن. حاول مرة أخرى بعد قليل.",
+    auth: "المساعد غير متاح الآن. حاول مرة أخرى بعد قليل.",
     rate_limit: "الضغط على خدمة الذكاء الاصطناعي مرتفع الآن، حاول مرة أخرى بعد قليل.",
     model_unavailable: "نموذج الذكاء الاصطناعي غير متاح الآن، حاول مرة أخرى بعد قليل.",
     timeout: "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل.",
@@ -588,7 +587,7 @@ export async function generateSharekAssistantResponse(params: {
   const webSources = extractGroundingSources(response);
 
   return {
-    content: content.startsWith("أنا مساعد منصة نشمي الذكي") ? content : `${ASSISTANT_INTRO}\n\n${content}`,
+    content,
     model: usedModel,
     sourceLawIds: params.lawContext.map((law) => law.id),
     groundingSources: [...lawSources, ...webSources],

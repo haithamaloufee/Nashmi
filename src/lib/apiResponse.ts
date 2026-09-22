@@ -79,10 +79,13 @@ export function handleApiError(error: unknown, request?: Request) {
   }
   if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") return fail("PAYLOAD_TOO_LARGE", messages.PAYLOAD_TOO_LARGE, 413);
   if (error instanceof Error && error.message === "BLOB_STORAGE_NOT_CONFIGURED") {
-    return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. اربط Blob بالمشروع عبر OIDC أو رمز الخادم.", 500);
+    logServerError(error, { request, category: "api.storage_configuration" });
+    return fail("SERVER_ERROR", "تعذر الوصول إلى خدمة الملفات الآن. حاول مرة أخرى لاحقًا.", 503);
   }
-  if (error instanceof MissingEnvError) return fail("SERVER_ERROR", `Server configuration is missing: ${error.variableName}`, 500);
-  if (error instanceof InvalidEnvError) return fail("SERVER_ERROR", `Server configuration is invalid: ${error.variableName}`, 500);
+  if (error instanceof MissingEnvError || error instanceof InvalidEnvError) {
+    logServerError(error, { request, category: "api.environment_configuration" });
+    return fail("SERVER_ERROR", "الخدمة غير متاحة مؤقتًا. حاول مرة أخرى لاحقًا.", 503);
+  }
 
   logServerError(error, { request, category: "api.unhandled_error" });
   return fail("SERVER_ERROR", undefined, 500);

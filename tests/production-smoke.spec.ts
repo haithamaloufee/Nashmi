@@ -59,9 +59,12 @@ test.afterAll(() => {
 });
 
 test("critical public routes remain usable at small mobile and tablet widths", async ({ page, request }) => {
-  test.setTimeout(360_000);
-  const routes = ["/", "/laws", "/parties", "/updates", "/surveys", "/login", "/signup", "/chat"];
-  for (const width of [320, 360, 375, 390, 414, 768, 1024, 1440]) {
+  test.setTimeout(600_000);
+  const routes = [
+    "/", "/updates", "/laws", "/parties", "/surveys", "/about-nashmi", "/iec",
+    "/login", "/signup", "/forgot-password", "/reset-password", "/verify-email", "/chat"
+  ];
+  for (const width of [320, 360, 375, 390, 414, 768, 1024, 1280, 1440, 1920]) {
     await page.setViewportSize({ width, height: width < 700 ? 820 : 1024 });
     for (const route of routes) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
@@ -96,6 +99,84 @@ test("critical public routes remain usable at small mobile and tablet widths", a
   expect(health.headers()["x-request-id"]).toBeTruthy();
 });
 
+test("redesigned navigation stays readable over hero and plain page backgrounds", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const primaryNav = page.locator('nav[aria-label="التنقل الرئيسي"]');
+  await expect(primaryNav).toBeVisible();
+  await expect(primaryNav.locator("a")).toHaveCount(4);
+  await expect(primaryNav.locator('a[href="/updates"]')).toBeVisible();
+  await expect(primaryNav.locator('a[href="/laws"]')).toBeVisible();
+  await expect(primaryNav.locator('a[href="/parties"]')).toBeVisible();
+  await expect(primaryNav.locator('a[href="/about-nashmi"], a[href="/iec"], a[href="/chat"]')).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "دخول" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "إنشاء حساب مواطن" })).toBeVisible();
+
+  const homeHeaderColor = await page.locator("header").evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(homeHeaderColor).not.toBe("rgba(0, 0, 0, 0)");
+
+  await page.getByRole("button", { name: "إعدادات العرض واللغة" }).click();
+  const utilityMenu = page.locator("#navbar-utility-menu");
+  await expect(utilityMenu.getByRole("link", { name: "عن نشمي", exact: true })).toBeVisible();
+  await expect(utilityMenu.getByRole("link", { name: "مصادر ومعلومات رسمية", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "تغيير اللغة" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+
+  await page.goto("/updates", { waitUntil: "domcontentloaded" });
+  const internalHeaderColor = await page.locator("header").evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(internalHeaderColor).toBe("rgb(16, 37, 43)");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const menuButton = page.locator('button[aria-controls="mobile-navigation"]');
+  await menuButton.click();
+  const mobileMenu = page.locator("#mobile-navigation");
+  await expect(mobileMenu).toBeVisible();
+  const mobileMenuColor = await mobileMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(mobileMenuColor).not.toBe("rgba(0, 0, 0, 0)");
+  await expect(mobileMenu.getByRole("link", { name: "Home" })).toBeVisible();
+  await page.mouse.click(380, 830);
+  await expect(mobileMenu).toBeHidden();
+  await menuButton.click();
+  await mobileMenu.locator('a[href="/laws"]').click();
+  await page.waitForURL("**/laws");
+  await expect(page.locator("#mobile-navigation")).toHaveCount(0);
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await menuButton.click();
+  await page.keyboard.press("Escape");
+  await expect(menuButton).toBeFocused();
+});
+
+test("party and authority profiles use a single social timeline without mixed-language actions", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/parties", { waitUntil: "domcontentloaded" });
+  const firstPartyHref = await page.locator('a[href^="/parties/"]').first().getAttribute("href");
+  expect(firstPartyHref).toBeTruthy();
+  await page.goto(firstPartyHref!, { waitUntil: "domcontentloaded" });
+  await expect(page.getByText(/View party timeline|عرض تحديثات الحزب \/ View/i)).toHaveCount(0);
+  await expect(page.locator("#profile-posts")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
+
+  await page.goto("/iec", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#profile-posts")).toBeVisible();
+  await expect(page.locator("#profile-posts article").first()).toBeVisible();
+  await expect(page.locator("#profile-posts h2")).toHaveCount(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
+});
+
+test("login recovery actions follow the password field", async ({ page }) => {
+  await page.goto("/login", { waitUntil: "domcontentloaded" });
+  const passwordBox = await page.locator('input[name="password"]').boundingBox();
+  const forgotBox = await page.getByRole("link", { name: "نسيت كلمة المرور؟" }).boundingBox();
+  expect(passwordBox).toBeTruthy();
+  expect(forgotBox).toBeTruthy();
+  expect(forgotBox!.y).toBeGreaterThan(passwordBox!.y + passwordBox!.height);
+  await expect(page.getByText(/HttpOnly|localStorage|Cookie/)).toHaveCount(0);
+});
+
 test("critical public pages have no serious automated accessibility violations", async ({ page }) => {
   test.setTimeout(240_000);
   for (const route of ["/", "/laws", "/parties", "/updates", "/surveys", "/login"]) {
@@ -124,8 +205,10 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
     if (response.status() >= 400 && !url.includes("/api/auth/me")) failedRequests.push(`${response.status()} ${url}`);
   });
 
-  await checkPage(page, "/", "homepage-desktop", { width: 1440, height: 1000 });
-  await checkPage(page, "/", "homepage-mobile-360", { width: 360, height: 780 });
+  await checkPage(page, "/", "homepage-mobile-390x844", { width: 390, height: 844 });
+  await checkPage(page, "/", "homepage-tablet-768x1024", { width: 768, height: 1024 });
+  await checkPage(page, "/", "homepage-desktop-1440x900", { width: 1440, height: 900 });
+  await checkPage(page, "/", "homepage-wide-1920x1080", { width: 1920, height: 1080 });
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -133,7 +216,7 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
   const privatePrefetch = [...prefetchedUrls].filter((url) => url.includes("/admin") || url.includes("dashboard"));
   expect(privatePrefetch, "navbar prefetch must not touch private/admin routes").toEqual([]);
 
-  const navRoutes = ["/updates", "/parties", "/iec", "/laws"];
+  const navRoutes = ["/updates", "/parties", "/laws"];
   for (const route of navRoutes) {
     const started = Date.now();
     await page.locator(`nav a[href="${route}"]`).first().click();
@@ -142,7 +225,7 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
     await page.goto("/", { waitUntil: "domcontentloaded" });
   }
 
-  expect([...prefetchedUrls].some((url) => url.includes("/updates") || url.includes("/parties") || url.includes("/iec") || url.includes("/laws"))).toBe(true);
+  expect([...prefetchedUrls].some((url) => url.includes("/updates") || url.includes("/parties") || url.includes("/laws"))).toBe(true);
 
   await checkPage(page, "/updates", "updates-desktop-no-forced-post-media", { width: 1440, height: 1000 });
   await expect(page.locator("article").first()).toBeVisible();
@@ -160,6 +243,10 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
 
   await page.setViewportSize({ width: 390, height: 840 });
   await page.goto("/updates", { waitUntil: "domcontentloaded" });
+  const allFilter = page.getByRole("button", { name: "الكل", exact: true });
+  await expect(allFilter).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "استبيانات", exact: true }).click();
+  await expect(page.locator("article").first()).toBeVisible();
   await page.getByRole("button", { name: "منشورات", exact: true }).click();
   await expect(page.getByRole("button", { name: /تعليق/ }).first()).toBeVisible();
   const assistantBox = await page.locator(".fixed.left-2, .fixed.sm\\:left-6").first().boundingBox();
@@ -176,8 +263,8 @@ test("public pages, post media, comments, profiles, and navbar prefetch", async 
     await checkPage(page, `/users/${profileId}`, "public-profile-mobile", { width: 360, height: 820 });
   }
 
-  expect(consoleErrors).toEqual([]);
   expect(failedRequests).toEqual([]);
+  expect(consoleErrors).toEqual([]);
 });
 
 test("party post creation uses upload field, preview, and 100MB validation", async ({ page }) => {

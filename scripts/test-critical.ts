@@ -42,7 +42,7 @@ async function testUploadValidation() {
   assert.equal(validateUploadFile(makeFile("a.jpg", "image/jpeg", 1024), { imagesOnly: true }), null);
   assert.equal(validateUploadFile(makeFile("a.gif", "image/gif", 1024), { imagesOnly: true }), null);
   assert.equal(validateUploadFile(makeFile("a.mp4", "video/mp4", 1024)), null);
-  assert.match(validateUploadFile(makeFile("a.svg", "image/svg+xml", 1024), { imagesOnly: true }) || "", /الصيغ المسموحة/);
+  assert.match(validateUploadFile(makeFile("a.svg", "image/svg+xml", 1024), { imagesOnly: true }) || "", /نوع الصورة غير مدعوم/);
   assert.match(validateUploadFile(makeFile("a.jpg", "image/png", 1024), { imagesOnly: true }) || "", /امتداد الملف/);
   assert.equal(validateUploadMetadata({ fileName: "a.mp4", mimeType: "video/mp4", size: 100 * 1024 * 1024 }), null);
   assert.match(validateUploadMetadata({ fileName: "a.mp4", mimeType: "video/mp4", size: 101 * 1024 * 1024 }) || "", /100MB/);
@@ -137,8 +137,8 @@ async function testPublisherSnapshot() {
 
 function testLogoAssetReferences() {
   const navbar = readFileSync("src/components/layout/Navbar.tsx", "utf8");
-  assert.match(navbar, /\/images\/nashmi logo\.png/);
-  assert.doesNotMatch(navbar, /nashmi logo_transparent|nashmi logo_cropped/);
+  assert.match(navbar, /\/images\/nashmi logo_transparent\.png/);
+  assert.doesNotMatch(navbar, /nashmi logo_cropped/);
 }
 
 function testDateFormattingUsesApplicationTimeZone() {

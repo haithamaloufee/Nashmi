@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
 
 const dashboardByRole: Record<string, string> = {
   citizen: "/account",
@@ -22,6 +24,16 @@ test("authenticated identity and primary dashboard are accessible", async ({ pag
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     expect(overflow, `${role} dashboard should not overflow at ${width}px`).toBe(false);
   }
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const accountTrigger = page.locator('button[aria-controls="account-menu"]');
+  await expect(accountTrigger).toBeVisible();
+  await accountTrigger.click();
+  await expect(page.locator("#account-menu")).toBeVisible();
+  await expect(page.locator('#account-menu a[href="/account"]').first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(accountTrigger).toBeFocused();
 });
 
 test("authorization is enforced by direct API requests", async ({ request }, testInfo) => {
@@ -41,4 +53,12 @@ test("party composer exposes safe file upload without publishing", async ({ page
   await expect(page.locator('input[type="file"]').first()).toHaveAttribute("accept", /video\/mp4/);
   await expect(page.locator("form").first()).toContainText("100MB");
   await expect(page.locator('input[type="url"][name*="media"]')).toHaveCount(0);
+
+  const fixtureDir = path.join(process.cwd(), "test-results", "fixtures");
+  mkdirSync(fixtureDir, { recursive: true });
+  const oversizedImage = path.join(fixtureDir, "oversized-image.png");
+  writeFileSync(oversizedImage, Buffer.alloc(6 * 1024 * 1024, 1));
+  await page.locator('input[type="file"]').first().setInputFiles(oversizedImage);
+  await expect(page.getByText(/الملف كبير شوي.*5 ميجابايت/)).toBeVisible();
+  await expect(page.getByText(/5242880|MIME|unsupported media type/i)).toHaveCount(0);
 });

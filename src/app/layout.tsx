@@ -11,8 +11,8 @@ import { getSiteUrl } from "@/lib/siteUrl";
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: "Nashmi / نشمي",
-  description: "منصة رقمية تجريبية ومحايدة لتعزيز المشاركة المدنية والوعي الانتخابي والتواصل المنظم بين المواطنين والأحزاب.",
+  title: "نشمي",
+  description: "منصة مدنية رقمية محايدة لمتابعة المستجدات، فهم القوانين، والتعرّف إلى الأحزاب والمشاركة بمسؤولية.",
   alternates: { canonical: "/" },
   icons: {
     icon: "/images/nashmi%20logo_transparent.png",
@@ -20,10 +20,10 @@ export const metadata: Metadata = {
     apple: "/images/nashmi%20logo_transparent.png"
   },
   openGraph: {
-    title: "Nashmi / نشمي",
-    description: "منصة رقمية تجريبية ومحايدة لتعزيز المشاركة المدنية والوعي الانتخابي.",
+    title: "نشمي",
+    description: "منصة مدنية رقمية محايدة لمتابعة المستجدات وفهم القوانين والمشاركة بمسؤولية.",
     url: "/",
-    siteName: "Nashmi / نشمي",
+    siteName: "نشمي",
     type: "website",
     images: [{ url: "/images/nashmi%20logo_transparent.png", width: 614, height: 614, alt: "شعار منصة نشمي" }]
   }

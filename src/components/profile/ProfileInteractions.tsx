@@ -19,7 +19,7 @@ export function ProfileTopScrollReset() {
   return null;
 }
 
-export function JumpToPostsButton({ label = "عرض المنشورات / View posts" }: { label?: ReactNode }) {
+export function JumpToPostsButton({ label = "عرض المنشورات" }: { label?: ReactNode }) {
   function handleClick() {
     document.getElementById("profile-posts")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -40,10 +40,10 @@ export function ProfileAccordionCard({ title, children, defaultOpen = false }: {
   const panelId = useId();
 
   return (
-    <section className="overflow-hidden rounded border border-line bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
       <button
         type="button"
-        className="focus-ring flex w-full items-center justify-between gap-4 px-5 py-4 text-start font-bold text-ink hover:bg-civic/5"
+        className="focus-ring flex w-full items-center justify-between gap-4 px-5 py-4 text-start font-bold text-ink hover:bg-civic/5 dark:text-white dark:hover:bg-emerald-200/10"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
@@ -53,7 +53,7 @@ export function ProfileAccordionCard({ title, children, defaultOpen = false }: {
       </button>
       <div id={panelId} className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="min-h-0 overflow-hidden">
-          <div className="border-t border-line px-5 py-5">{children}</div>
+          <div className="border-t border-line px-5 py-5 dark:border-slate-800">{children}</div>
         </div>
       </div>
     </section>

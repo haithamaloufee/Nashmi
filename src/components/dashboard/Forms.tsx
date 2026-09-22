@@ -154,7 +154,7 @@ export function PostCreateForm({ currentUser = null }: { currentUser?: ComposerU
           <MediaUploadField
             label="مرفقات المنشور"
             imagesOnly={false}
-            helper="يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF، أو فيديو MP4/WEBM حتى 100MB."
+            helper="أضف صورة أو فيديو. سنخبرك إذا كان الملف يحتاج إلى تغيير."
             fallbackText="+"
             purpose="post"
             onUploaded={(asset) => setMedia((current) => current.length >= 6 ? current : [...current, { id: asset._id, url: asset.url, type: asset.type, mimeType: asset.mimeType }])}
@@ -239,7 +239,7 @@ function LegacyPostCreateForm() {
       <MediaUploadField
         label="مرفقات المنشور"
         imagesOnly={false}
-        helper="يمكنك رفع صورة بصيغة JPG أو PNG أو WEBP أو GIF، أو فيديو MP4/WEBM حتى 100MB"
+        helper="أضف صورة أو فيديو. سنخبرك إذا كان الملف يحتاج إلى تغيير."
         fallbackText="+"
         purpose="post"
         onUploaded={(asset) => setMedia((current) => current.length >= 6 ? current : [...current, { id: asset._id, url: asset.url, type: asset.type, mimeType: asset.mimeType }])}
@@ -602,7 +602,7 @@ export function PartyCreateForm() {
     >
       <h2 className="text-xl font-bold">إضافة حزب</h2>
       <input name="name" className="w-full rounded border-line" placeholder="اسم الحزب" required />
-      <input name="slug" className="w-full rounded border-line" placeholder="slug-latin" required />
+      <input name="slug" className="w-full rounded border-line" placeholder="الرابط المختصر للحزب" required />
       <input name="shortDescription" className="w-full rounded border-line" placeholder="وصف قصير" required />
       <textarea name="description" className="w-full rounded border-line" rows={4} placeholder="الوصف" required />
       <textarea name="vision" className="w-full rounded border-line" rows={2} placeholder="الرؤية" required />
@@ -644,7 +644,7 @@ export function LawCreateForm() {
       <h2 className="text-xl font-bold">إضافة قانون</h2>
       <div className="grid gap-3 md:grid-cols-2">
         <input name="title" className="rounded border-line" placeholder="العنوان" required />
-        <input name="slug" className="rounded border-line" placeholder="slug-latin" required />
+        <input name="slug" className="rounded border-line" placeholder="الرابط المختصر للقانون" required />
         <input name="category" className="rounded border-line" placeholder="التصنيف" required />
         <input name="sourceName" className="rounded border-line" placeholder="المصدر" required />
         <input name="sourceType" className="rounded border-line" placeholder="نوع المصدر" required />

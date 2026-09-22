@@ -9,6 +9,7 @@ import ChatAvatar from "@/components/chat/ChatAvatar";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { formatNumber } from "@/lib/localization";
+import { cleanAssistantContent } from "@/lib/chatDisplay";
 
 type Message = {
   role: "user" | "assistant";
@@ -31,8 +32,8 @@ type AssistantUser = {
   profileImage?: string | null;
 } | null;
 
-const DEFAULT_PANEL_HEIGHT = 620;
-const MIN_PANEL_HEIGHT = 360;
+const DEFAULT_PANEL_HEIGHT = 560;
+const MIN_PANEL_HEIGHT = 340;
 const DEFAULT_BOTTOM_OFFSET = 16;
 const MarkdownMessage = dynamic(() => import("@/components/chat/MarkdownMessage"), { ssr: false });
 
@@ -288,7 +289,7 @@ export default function FloatingAssistant() {
     <div className="fixed left-2 right-auto z-40 flex max-w-[calc(100vw-1rem)] justify-start print:hidden sm:left-6" style={{ bottom: bottomOffset }}>
       {open ? (
         <section
-          className="flex min-h-[360px] w-[calc(100vw-1rem)] max-w-[430px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 sm:w-[430px]"
+          className="flex min-h-[340px] w-[calc(100vw-1rem)] max-w-[400px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-slate-900 shadow-[0_24px_70px_rgba(5,18,22,.28)] ring-1 ring-white/60 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 dark:ring-slate-700 sm:w-[400px]"
           style={{ height: `min(${panelHeight}px, calc(100vh - ${getSafeTop() + DEFAULT_BOTTOM_OFFSET}px))` }}
           aria-label={t("nav.chat")}
           dir={dir}
@@ -302,26 +303,25 @@ export default function FloatingAssistant() {
           >
             <span className="h-1 w-12 rounded-full bg-current" />
           </button>
-          <header className="flex items-start justify-between gap-3 border-b border-line bg-civic px-4 py-3.5 text-white dark:border-slate-700 dark:bg-[#126b6f]">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-900/80 ring-1 ring-slate-700">
+          <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-[linear-gradient(135deg,#0f555a,#10252b)] px-4 py-3 text-white">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/[0.12] ring-1 ring-white/[0.16]">
                 <Bot className="h-5 w-5" />
               </span>
               <div className="min-w-0">
                 <h2 className="text-base font-black leading-6">{t("nav.chat")}</h2>
-                <p className="mt-0.5 text-xs font-semibold leading-5 text-white/78">{t("chat.ready")}</p>
                 {usage ? (
-                  <p className="mt-1 text-xs font-bold text-white/90">
+                  <p className="mt-0.5 text-xs font-semibold text-white/[0.72]">
                     {t("chat.remaining")} {formatNumber(usage.remaining, language)} {t("chat.remainingMessages")}
                   </p>
                 ) : null}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">
-              <button type="button" onPointerDown={startVerticalDrag} className="focus-ring grid h-9 w-9 touch-none place-items-center rounded-full text-white/90 hover:bg-white/15 hover:text-white active:scale-95" aria-label={t("chat.move")} title={t("chat.move")}>
+              <button type="button" onPointerDown={startVerticalDrag} className="focus-ring grid h-9 w-9 touch-none place-items-center rounded-full text-white/90 hover:bg-white/[0.15] hover:text-white active:scale-95" aria-label={t("chat.move")} title={t("chat.move")}>
                 <MoveVertical className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/90 hover:bg-white/15 hover:text-white active:scale-95" aria-label={t("chat.close")}>
+              <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/90 hover:bg-white/[0.15] hover:text-white active:scale-95" aria-label={t("chat.close")}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -334,17 +334,17 @@ export default function FloatingAssistant() {
           ) : null}
 
           <div className="relative min-h-0 flex-1">
-            <div ref={messagesRef} className="assistant-scrollbar h-full space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#101820]" aria-live="polite">
+            <div ref={messagesRef} className="assistant-scrollbar h-full space-y-3 overflow-auto bg-[#f5f7f6] p-3.5 dark:bg-[#101820]" aria-live="polite">
               {messages.map((message, index) => (
                 <div key={`${message.role}-${index}`} dir="ltr" className={`flex items-end gap-2 ${message.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
                   <ChatAvatar role={message.role} name={message.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={message.role === "user" ? userAvatarUrl(currentUser) : null} loading={message.role === "user" && currentUserLoading} compact />
                   <div
                     ref={message.role === "user" && index === messages.length - 1 ? latestUserRef : message.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
                     dir={dir}
-                    className={`min-w-0 max-w-[76%] rounded-2xl px-4 py-3 text-start text-sm leading-7 shadow-sm sm:max-w-[86%] ${message.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-bl-md border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+                    className={`min-w-0 max-w-[82%] rounded-2xl px-4 py-2.5 text-start text-sm leading-7 shadow-sm sm:max-w-[86%] ${message.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-bl-md border border-slate-200/80 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
                   >
                     {message.role === "assistant" ? (
-                      <MarkdownMessage content={message.content} />
+                      <MarkdownMessage content={cleanAssistantContent(message.content)} />
                     ) : (
                       <div className="whitespace-pre-wrap break-words text-white">{message.content}</div>
                     )}
@@ -394,20 +394,20 @@ export default function FloatingAssistant() {
           </form>
         </section>
       ) : (
-        <div className="inline-flex items-center overflow-hidden rounded-full bg-civic font-semibold text-white shadow-soft ring-1 ring-white/25 dark:bg-[#1b8f89]">
+        <div className="inline-flex items-center overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#126b6f,#0f555a)] font-semibold text-white shadow-[0_12px_34px_rgba(5,18,22,.24)] ring-1 ring-white/25">
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="focus-ring inline-flex items-center gap-2 px-4 py-3 transition hover:bg-civic/90 active:scale-95 dark:hover:bg-[#20a59e]"
+            className="focus-ring inline-flex items-center gap-2 px-3 py-2.5 transition hover:bg-white/10 active:scale-95"
             aria-label={t("nav.chat")}
           >
-            <span className="relative grid h-9 w-9 place-items-center rounded-full bg-white/15 dark:bg-slate-900/80">
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-white/[0.14]">
               <Bot className="h-5 w-5" />
               <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-white" />
             </span>
             <span className="hidden text-sm sm:inline">{t("nav.chat")}</span>
           </button>
-          <button type="button" onPointerDown={startVerticalDrag} className="focus-ring grid h-14 w-11 touch-none place-items-center border-r border-white/15 text-white/90 hover:bg-white/10" aria-label={t("chat.move")} title={t("chat.move")}>
+          <button type="button" onPointerDown={startVerticalDrag} className="focus-ring grid h-[52px] w-10 touch-none place-items-center border-r border-white/15 text-white/90 hover:bg-white/10" aria-label={t("chat.move")} title={t("chat.move")}>
             <MoveVertical className="h-4 w-4" />
           </button>
         </div>

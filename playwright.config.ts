@@ -41,6 +41,10 @@ export default defineConfig({
     : {
         command: "npx next start -p 3006",
         url: "http://127.0.0.1:3006",
+        env: {
+          ...process.env,
+          RATE_LIMIT_SECRET: process.env.RATE_LIMIT_SECRET || "nashmi-local-e2e-rate-limit-secret"
+        },
         reuseExistingServer: true,
         timeout: 120_000
       },

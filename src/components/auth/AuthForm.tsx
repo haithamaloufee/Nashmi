@@ -124,7 +124,6 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     <form onSubmit={submit} noValidate className="card mx-auto mt-10 max-w-md space-y-5 p-5 sm:p-6">
       <div>
         <h1 className="text-3xl font-black leading-tight">{mode === "login" ? t("auth.login") : t("auth.signup")}</h1>
-        <p className="mt-2 text-sm text-ink/70 dark:text-slate-300">{t("auth.cookieNote")}</p>
       </div>
       {mode === "signup" ? (
         <label className="block text-sm font-medium">
@@ -143,12 +142,6 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </label>
       ) : null}
 
-      {mode === "login" ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-          <Link className="font-semibold text-civic underline-offset-4 hover:underline" href="/forgot-password">نسيت كلمة المرور؟</Link>
-          <Link className="text-ink/65 underline-offset-4 hover:text-civic hover:underline dark:text-slate-300" href="/verify-email">إعادة إرسال رسالة التفعيل</Link>
-        </div>
-      ) : null}
       <label className="block text-sm font-medium">
         {t("auth.email")}
         <input
@@ -190,6 +183,12 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </span>
         <span id="password-error">{fieldMessage("password")}</span>
       </label>
+      {mode === "login" ? (
+        <div className="-mt-2 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <Link className="font-semibold text-civic underline-offset-4 hover:underline" href="/forgot-password">نسيت كلمة المرور؟</Link>
+          <Link className="text-ink/65 underline-offset-4 hover:text-civic hover:underline dark:text-slate-300" href="/verify-email">إعادة إرسال رسالة التفعيل</Link>
+        </div>
+      ) : null}
       {mode === "signup" ? (
         <label className="block text-sm font-medium">
           {t("auth.confirmPassword")}

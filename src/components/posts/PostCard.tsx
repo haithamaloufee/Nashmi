@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Newspaper } from "lucide-react";
 import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import SafeImage from "@/components/ui/SafeImage";
@@ -169,6 +169,10 @@ export default function PostCard({ post, compact = false, showModerationActions 
               ) : (
                 <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{author.badge}</span>
               )}
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <Newspaper className="h-3.5 w-3.5" />
+                {t("content.post")}
+              </span>
             </div>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{timeReady ? formatRelativeTime(currentPost.publishedAt || currentPost.createdAt, language) : ""}</p>
           </div>

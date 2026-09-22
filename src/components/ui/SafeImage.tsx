@@ -39,6 +39,7 @@ export default function SafeImage({ src, alt, className, fallback, localPrefixes
         height={600}
         sizes={sizes}
         priority={priority}
+        unoptimized={safeSrc.startsWith("/api/media/")}
         className={className}
         onError={() => setFailedSrc(safeSrc)}
       />

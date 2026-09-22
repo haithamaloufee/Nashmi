@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   try {
     const user = await requireActiveUser([...roles]);
     if (!hasBlobCredentials()) {
-      return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. اربط Blob بالمشروع عبر OIDC أو رمز الخادم.", 503);
+      return fail("SERVER_ERROR", "تعذر رفع الملف الآن. حاول مرة أخرى بعد قليل.", 503);
     }
 
     const body = await request.json() as HandleUploadBody;

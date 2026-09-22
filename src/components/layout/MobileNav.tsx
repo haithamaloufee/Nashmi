@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Info, Landmark, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import LanguageToggle from "@/components/i18n/LanguageToggle";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -16,14 +17,12 @@ type MobileNavProps = {
 
 export default function MobileNav({ links, dashboardHref, authenticated = false }: MobileNavProps) {
   const pathname = usePathname();
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
+  useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -32,20 +31,27 @@ export default function MobileNav({ links, dashboardHref, authenticated = false 
         toggleRef.current?.focus();
       }
     }
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", onPointerDown);
+    };
   }, [open]);
 
   const mobileLinks = dashboardHref ? [...links, { href: dashboardHref, labelKey: "nav.dashboard" as const }] : links;
   const Icon = open ? X : Menu;
 
   return (
-    <div className="lg:hidden">
+    <div ref={rootRef} className="lg:hidden">
       <button
         ref={toggleRef}
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded border border-line bg-white/70 text-ink hover:border-civic hover:text-civic active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-emerald-300 dark:hover:text-emerald-100"
+        className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.16] bg-white/[0.08] text-white hover:border-emerald-200/[0.45] hover:bg-white/[0.14]"
         aria-label={open ? t("nav.menuClose") : t("nav.menuOpen")}
         aria-expanded={open}
         aria-controls="mobile-navigation"
@@ -54,33 +60,43 @@ export default function MobileNav({ links, dashboardHref, authenticated = false 
       </button>
 
       {open ? (
-        <div id="mobile-navigation" className="absolute inset-x-0 top-full z-50 border-b border-line bg-paper/98 px-4 pb-4 pt-2 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 sm:backdrop-blur">
-          <nav className="grid gap-2 text-sm font-semibold" aria-label="Mobile navigation">
-            <div className="flex justify-center py-1">
-              <LanguageToggle />
-            </div>
+        <div id="mobile-navigation" className="absolute inset-x-0 top-full z-50 border-b border-white/10 bg-[#10252b]/[0.99] px-4 pb-5 pt-3 text-white shadow-2xl backdrop-blur-xl">
+          <nav className="mx-auto grid max-w-lg gap-2 text-sm font-bold" aria-label="Mobile navigation">
             {mobileLinks.map((link) => {
               const active = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={() => setOpen(false)}
                   prefetch={!link.href.includes("dashboard") && !link.href.startsWith("/admin")}
                   data-navbar-prefetch={!link.href.includes("dashboard") && !link.href.startsWith("/admin") ? link.href : undefined}
-                  className={`focus-ring rounded border px-3 py-3 text-center ${
-                    active
-                      ? "border-civic bg-civic text-white dark:border-emerald-200 dark:bg-emerald-200 dark:text-[#101820]"
-                      : "border-line bg-white/70 text-ink/78 hover:border-civic hover:text-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-emerald-300 dark:hover:bg-slate-800 dark:hover:text-emerald-100"
-                  }`}
+                  className={`focus-ring flex min-h-11 items-center rounded-xl px-4 ${active ? "bg-emerald-200 text-[#10252b]" : "text-white/[0.82] hover:bg-white/10 hover:text-white"}`}
                 >
                   {t(link.labelKey)}
                 </Link>
               );
             })}
+
+            <div className="my-1 h-px bg-white/10" />
+            <Link href="/about-nashmi" onClick={() => setOpen(false)} className="focus-ring flex min-h-11 items-center gap-3 rounded-xl px-4 text-white/[0.76] hover:bg-white/10 hover:text-white">
+              <Info className="h-4 w-4 text-emerald-200" />
+              {t("nav.aboutNashmi")}
+            </Link>
+            <Link href="/iec" onClick={() => setOpen(false)} className="focus-ring flex min-h-11 items-center gap-3 rounded-xl px-4 text-white/[0.76] hover:bg-white/10 hover:text-white">
+              <Landmark className="h-4 w-4 text-emerald-200" />
+              {language === "ar" ? "مصادر ومعلومات رسمية" : "Official resources"}
+            </Link>
+
+            <div className="mt-1 flex min-h-14 items-center justify-between gap-3 rounded-xl bg-white/[0.06] p-2.5">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
+
             {!authenticated ? (
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <Link href="/login" className="focus-ring rounded bg-civic px-3 py-3 text-center font-bold text-white">{t("auth.login")}</Link>
-                <Link href="/signup" className="focus-ring rounded border border-civic px-3 py-3 text-center font-bold text-civic dark:text-emerald-100">{t("auth.signup")}</Link>
+              <div className="grid grid-cols-2 gap-2 pt-1 sm:hidden">
+                <Link href="/login" onClick={() => setOpen(false)} className="focus-ring flex min-h-11 items-center justify-center rounded-xl border border-white/[0.18] font-bold text-white">{t("auth.login")}</Link>
+                <Link href="/signup" onClick={() => setOpen(false)} className="focus-ring flex min-h-11 items-center justify-center rounded-xl bg-emerald-200 font-black text-[#10252b]">{t("auth.signup")}</Link>
               </div>
             ) : null}
           </nav>

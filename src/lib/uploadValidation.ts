@@ -80,8 +80,8 @@ export function validateUploadMetadata(input: { fileName: string; mimeType: stri
   const allowed = allowedUploads[mimeType];
   if (!allowed || (input.imagesOnly && allowed.kind !== "image")) {
     return input.imagesOnly
-      ? "الصيغ المسموحة للصور: JPG أو JPEG أو PNG أو WEBP أو GIF. ملفات SVG والملفات التنفيذية غير مسموحة."
-      : "الصيغ المسموحة: صور JPG أو PNG أو WEBP أو GIF، فيديو MP4/WEBM، أو مستند PDF. ملفات SVG والملفات التنفيذية غير مسموحة.";
+      ? "نوع الصورة غير مدعوم. جرّب صورة JPG أو PNG أو WebP."
+      : "نوع الملف غير مدعوم. جرّب صورة أو فيديو شائعًا أو ملف PDF.";
   }
 
   const extension = originalExtension(input.fileName);
