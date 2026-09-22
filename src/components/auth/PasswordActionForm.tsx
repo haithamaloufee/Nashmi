@@ -40,7 +40,7 @@ export default function PasswordActionForm({ token, kind }: { token: string; kin
           <label className="block space-y-2"><span className="font-semibold">{en ? "Confirm password" : "تأكيد كلمة المرور"}</span><input name="confirmation" type={visible ? "text" : "password"} autoComplete="new-password" required className="w-full rounded-xl border-line" /></label>
           {message ? <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800" role="alert">{message}</p> : null}
           <button disabled={loading || !token} className="min-h-11 w-full rounded-xl bg-civic px-5 font-bold text-white disabled:opacity-50">{loading ? (en ? "Saving…" : "جارٍ الحفظ…") : (en ? "Save password" : "حفظ كلمة المرور")}</button>
-          {!token ? <p className="text-sm text-red-700">{en ? "The link is missing its secure token." : "الرابط لا يحتوي على الرمز الآمن."}</p> : null}
+          {!token ? <p className="text-sm text-red-700">{en ? "This link is incomplete or has expired. Request a new one." : "هذا الرابط غير مكتمل أو انتهت صلاحيته. اطلب رابطًا جديدًا."}</p> : null}
         </form>
       )}
     </section>

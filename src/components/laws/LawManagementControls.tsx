@@ -123,7 +123,7 @@ export default function LawManagementControls({ mode, law }: { mode: "create" | 
                 <h3 className="mb-3 font-black">المعلومات الأساسية</h3>
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="grid gap-1 text-sm font-semibold">العنوان<input name="title" defaultValue={fieldValue(law?.title)} className={inputClass} required /></label>
-                  <label className="grid gap-1 text-sm font-semibold">الرابط المختصر slug<input name="slug" defaultValue={fieldValue(law?.slug)} className={inputClass} required dir="ltr" /></label>
+                  <label className="grid gap-1 text-sm font-semibold">الرابط المختصر<input name="slug" defaultValue={fieldValue(law?.slug)} className={inputClass} required dir="ltr" /></label>
                   <label className="grid gap-1 text-sm font-semibold">التصنيف<input name="category" defaultValue={fieldValue(law?.category)} className={inputClass} required /></label>
                   <label className="grid gap-1 text-sm font-semibold">حالة النشر<select name="status" defaultValue={law?.status || "published"} className={inputClass}><option value="published">منشور</option><option value="draft">مسودة</option><option value="hidden">مخفي</option></select></label>
                 </div>

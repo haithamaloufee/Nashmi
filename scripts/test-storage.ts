@@ -4,7 +4,7 @@ import { hasValidUploadMagic, validateUploadMetadata } from "../src/lib/uploadVa
 
 function main() {
   assert.equal(validateUploadMetadata({ fileName: "safe.pdf", mimeType: "application/pdf", size: 1024 }), null);
-  assert.match(validateUploadMetadata({ fileName: "unsafe.svg", mimeType: "image/svg+xml", size: 1024 }) || "", /الصيغ المسموحة/);
+  assert.match(validateUploadMetadata({ fileName: "unsafe.svg", mimeType: "image/svg+xml", size: 1024 }) || "", /نوع الملف غير مدعوم/);
   assert.match(validateUploadMetadata({ fileName: "fake.jpg", mimeType: "image/png", size: 1024 }) || "", /امتداد/);
   assert.equal(hasValidUploadMagic(Buffer.from("%PDF-1.7\n"), "application/pdf"), true);
   assert.equal(hasValidUploadMagic(Buffer.from("<script>"), "application/pdf"), false);

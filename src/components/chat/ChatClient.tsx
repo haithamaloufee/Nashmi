@@ -9,6 +9,7 @@ import TypingIndicator from "@/components/chat/TypingIndicator";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { formatNumber } from "@/lib/localization";
+import { cleanAssistantContent } from "@/lib/chatDisplay";
 
 type GroundingSource = {
   title: string;
@@ -409,12 +410,11 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
       </aside>
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
-        <div className="flex flex-col justify-between gap-3 border-b border-slate-200 bg-civic/5 p-4 dark:border-slate-700 dark:bg-slate-900/70 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-3 border-b border-white/10 bg-[linear-gradient(135deg,#0f555a,#10252b)] p-4 text-white sm:flex-row sm:items-center">
           <div>
-            <h2 className="font-bold text-slate-950 dark:text-white">{activeSession?.title || t("chat.newConversation")}</h2>
-            <p className="mt-1 text-xs font-semibold text-civic dark:text-emerald-200">{t("chat.ready")}</p>
+            <h2 className="font-black text-white">{activeSession?.title || t("chat.newConversation")}</h2>
             {usage ? (
-              <p className="mt-1 text-xs font-bold text-slate-600 dark:text-slate-300">
+              <p className="mt-1 text-xs font-semibold text-white/[0.72]">
                 {t("chat.remaining")} {formatNumber(usage.remaining, language)} {t("chat.remainingMessages")}
               </p>
             ) : null}
@@ -423,7 +423,7 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
             <button
               type="button"
               onClick={deleteConversation}
-              className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 dark:border-slate-700 dark:text-red-300 dark:hover:bg-red-950/40"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/80 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               title={language === "en" ? "Delete conversation" : "حذف المحادثة"}
               aria-label={language === "en" ? "Delete conversation" : "حذف المحادثة"}
             >
@@ -459,7 +459,7 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
                   dir={dir}
                   className={`min-w-0 max-w-[78%] rounded-2xl p-4 text-start leading-8 shadow-sm sm:max-w-[84%] ${item.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-bl-md border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
                 >
-                  {item.role === "assistant" ? <MarkdownMessage content={item.content} /> : <div className="whitespace-pre-wrap break-words text-white">{item.content}</div>}
+                  {item.role === "assistant" ? <MarkdownMessage content={cleanAssistantContent(item.content)} /> : <div className="whitespace-pre-wrap break-words text-white">{item.content}</div>}
                   {item.role === "assistant" && item.groundingSources?.length ? (
                     <div className="mt-3 border-t border-slate-200 pt-2 text-xs dark:border-slate-700">
                       <p className="mb-1 font-bold text-slate-600 dark:text-slate-300">{language === "en" ? "Sources" : "المصادر"}</p>

@@ -146,13 +146,13 @@ select:disabled {
 }
 
 .container-page {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1240px, calc(100% - 32px));
   margin-inline: auto;
 }
 
 @media (max-width: 640px) {
   .container-page {
-    width: min(100% - 24px, 1180px);
+    width: min(100% - 24px, 1240px);
   }
 
   button:not([data-compact-control="true"]) {
@@ -162,9 +162,9 @@ select:disabled {
 
 .card {
   border: 1px solid #d8d4c8;
-  background: rgba(255, 255, 255, 0.82);
-  border-radius: 8px;
-  box-shadow: 0 10px 28px rgba(23, 33, 43, 0.06);
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 16px;
+  box-shadow: 0 8px 26px rgba(23, 33, 43, 0.055);
   transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
@@ -255,8 +255,20 @@ select:disabled {
 
 .card-hover:hover {
   border-color: rgba(18, 107, 111, 0.35);
-  box-shadow: 0 16px 40px rgba(23, 33, 43, 0.09);
+  box-shadow: 0 14px 34px rgba(23, 33, 43, 0.085);
   transform: translateY(-1px);
+}
+
+.home-hero-overlay {
+  background:
+    linear-gradient(270deg, rgba(8, 24, 29, 0.88) 0%, rgba(8, 24, 29, 0.68) 40%, rgba(8, 24, 29, 0.34) 68%, rgba(8, 24, 29, 0.2) 100%),
+    linear-gradient(0deg, rgba(7, 22, 27, 0.38), transparent 48%);
+}
+
+html[dir="ltr"] .home-hero-overlay {
+  background:
+    linear-gradient(90deg, rgba(8, 24, 29, 0.88) 0%, rgba(8, 24, 29, 0.68) 40%, rgba(8, 24, 29, 0.34) 68%, rgba(8, 24, 29, 0.2) 100%),
+    linear-gradient(0deg, rgba(7, 22, 27, 0.38), transparent 48%);
 }
 
 .focus-ring {

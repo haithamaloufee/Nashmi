@@ -22,6 +22,7 @@ const pageSize = 10;
 const refreshIntervalMs = 45000;
 
 const filters = ["all", "posts", "polls", "surveys", "iec", "parties"] as const;
+const quickFilters = ["all", "posts", "polls", "surveys"] as const;
 const sortOptions = ["newest", "oldest", "mostCommented", "mostLiked", "pollsEndingSoon"] as const;
 const filterLabelKeys = {
   all: "updates.all",
@@ -96,7 +97,6 @@ export default function UpdatesClient({
   const [loadingMore, setLoadingMore] = useState(false);
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const prefetchedPage = useRef<{ key: string; updates: UpdateItem[]; nextCursor: string | null } | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const loadingMoreInFlightRef = useRef(false);
   const { showToast } = useToast();
 
@@ -196,16 +196,6 @@ export default function UpdatesClient({
   }, [debouncedSearch, filter, fromDate, hashtag, initialFilter, initialSearch, initialUpdates.length, load, sort, toDate]);
 
   useEffect(() => {
-    const target = loadMoreRef.current;
-    if (!target || !nextCursor || loading || loadingMore) return;
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) void load(nextCursor);
-    }, { rootMargin: "700px 0px 900px" });
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [load, loading, loadingMore, nextCursor]);
-
-  useEffect(() => {
     const newestPublishedAt = updates[0]?.publishedAt;
     if (!newestPublishedAt || sort !== "newest") return;
     let cancelled = false;
@@ -300,7 +290,7 @@ export default function UpdatesClient({
         <div className="card p-3">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_auto] xl:grid-cols-[minmax(0,1fr)_220px_auto]">
             <label className="relative block">
-              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/45" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/[0.45]" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -319,7 +309,7 @@ export default function UpdatesClient({
               onClick={() => setAdvancedFiltersOpen(true)}
               aria-haspopup="dialog"
               aria-expanded={advancedFiltersOpen}
-              className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-civic/30 bg-civic/10 px-4 py-2.5 text-sm font-black text-civic shadow-sm hover:border-civic hover:bg-civic hover:text-white dark:border-emerald-200/35 dark:bg-emerald-200/10 dark:text-emerald-100 dark:hover:bg-emerald-200 dark:hover:text-slate-950 xl:w-auto"
+              className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-civic/30 bg-civic/10 px-4 py-2.5 text-sm font-black text-civic shadow-sm hover:border-civic hover:bg-civic hover:text-white dark:border-emerald-200/[0.35] dark:bg-emerald-200/10 dark:text-emerald-100 dark:hover:bg-emerald-200 dark:hover:text-slate-950 xl:w-auto"
             >
               <SlidersHorizontal className="h-4 w-4" />
               {t("updates.advancedSearch")}
@@ -327,11 +317,12 @@ export default function UpdatesClient({
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
-              {filters.map((value) => (
+              {quickFilters.map((value) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setFilter(value)}
+                  aria-pressed={filter === value}
                   className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
                     filter === value ? "border-civic bg-civic text-white" : "border-line bg-white text-ink/70 hover:border-civic hover:text-civic dark:bg-slate-900 dark:text-slate-200"
                   }`}
@@ -343,7 +334,7 @@ export default function UpdatesClient({
             <div className="flex items-center gap-2">
               {publisher ? <UpdatesPublishButton publisher={publisher} onPublished={refreshAfterPublish} /> : null}
               {showResultsCount ? (
-                <p className="rounded-full bg-civic/10 px-3 py-2 text-sm font-black text-civic dark:bg-emerald-200/12 dark:text-emerald-100">
+                <p className="rounded-full bg-civic/10 px-3 py-2 text-sm font-black text-civic dark:bg-emerald-200/[0.12] dark:text-emerald-100">
                   {t("updates.resultsCount")} {formatNumber(totalCount, language)}
                 </p>
               ) : null}
@@ -381,8 +372,16 @@ export default function UpdatesClient({
         ) : null}
 
         {nextCursor ? (
-          <div ref={loadMoreRef} className="grid min-h-16 place-items-center text-civic" aria-live="polite">
-            {loadingMore ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+          <div className="grid min-h-16 place-items-center pt-2" aria-live="polite">
+            <button
+              type="button"
+              onClick={() => void load(nextCursor)}
+              disabled={loadingMore}
+              className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-civic/25 bg-white px-5 text-sm font-black text-civic shadow-sm hover:border-civic hover:bg-civic hover:text-white disabled:opacity-60 dark:bg-slate-950 dark:text-emerald-200"
+            >
+              {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {loadingMore ? t("common.loading") : t("common.showMore")}
+            </button>
           </div>
         ) : null}
       </section>
@@ -412,7 +411,7 @@ export default function UpdatesClient({
                 )) : <p className="text-sm text-ink/65">{t("updates.noHashtags")}</p>}
               </div>
             </div>
-            <div className="card border-civic/25 bg-civic/5 p-4 dark:bg-emerald-200/8">
+            <div className="card border-civic/25 bg-civic/5 p-4 dark:bg-emerald-200/[0.08]">
               <div className="flex items-center gap-2 text-civic dark:text-emerald-200">
                 <Bot className="h-5 w-5" />
                 <h2 className="font-bold">{t("nav.chat")}</h2>

@@ -44,7 +44,7 @@ function validateClientFile(file: File, imagesOnly: boolean, t: ReturnType<typeo
   }
   if (file.size <= 0) return t("media.upload.emptyFile");
   const max = file.type.startsWith("video/") ? videoLimit : file.type === "application/pdf" ? documentLimit : imageLimit;
-  if (file.size > max) return `${t("media.upload.tooLarge")} (${Math.floor(max / 1024 / 1024)}MB).`;
+  if (file.size > max) return `${t("media.upload.tooLarge")} ${Math.floor(max / 1024 / 1024)} ${t("media.upload.megabytes")}.`;
   return null;
 }
 

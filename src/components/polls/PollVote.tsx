@@ -106,7 +106,6 @@ export default function PollVote({ poll }: { poll: Poll }) {
         <Vote className="h-4 w-4" />
         {ended ? t("poll.endedMessage") : voted ? t("poll.voted") : loading ? t("poll.voting") : t("poll.vote")}
       </button>
-      <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">{t("poll.disclaimer")}</p>
       <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );
