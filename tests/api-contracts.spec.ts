@@ -40,3 +40,17 @@ test("hidden survey results are absent for an anonymous client", async ({ reques
   expect(resultsResponse.status()).toBe(200);
   expect(await resultsResponse.json()).toMatchObject({ ok: true, data: { canViewResults: false, resultSummary: null } });
 });
+
+test("storage authorization and protected media boundaries reject anonymous clients", async ({ request }) => {
+  const authorization = await request.post("/api/uploads/authorize", {
+    data: { fileName: "test.jpg", mimeType: "image/jpeg", sizeBytes: 128, purpose: "avatar" }
+  });
+  expect(authorization.status()).toBe(401);
+  expect(await authorization.json()).toMatchObject({ ok: false, error: { code: "UNAUTHORIZED" } });
+
+  const relayedUpload = await request.post("/api/uploads", { multipart: { file: { name: "test.jpg", mimeType: "image/jpeg", buffer: Buffer.from([0xff, 0xd8, 0xff]) } } });
+  expect(relayedUpload.status()).toBe(405);
+
+  const missingMedia = await request.get("/api/media/000000000000000000000000", { maxRedirects: 0 });
+  expect(missingMedia.status()).toBe(404);
+});

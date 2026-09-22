@@ -3,7 +3,7 @@ type NormalizeImageUrlOptions = {
   allowHttp?: boolean;
 };
 
-const defaultLocalPrefixes = ["/images/"];
+const defaultLocalPrefixes = ["/images/", "/api/media/"];
 
 function hasPathTraversal(value: string) {
   try {
@@ -21,7 +21,7 @@ export function normalizeSafeImageUrl(value: unknown, options: NormalizeImageUrl
   if (/[\u0000-\u001f\u007f]/.test(trimmed)) return null;
   if (hasPathTraversal(trimmed)) return null;
 
-  const localPrefixes = options.localPrefixes || defaultLocalPrefixes;
+  const localPrefixes = [...new Set([...(options.localPrefixes || defaultLocalPrefixes), "/api/media/"])];
   if (trimmed.startsWith("/")) {
     if (trimmed.startsWith("//")) return null;
     if (hasPathTraversal(trimmed)) return null;

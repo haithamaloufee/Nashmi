@@ -6,16 +6,17 @@ import { requireActiveUser } from "@/lib/auth";
 import { authorityLogoUpdateSchema } from "@/lib/validators";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
+import { resolveOwnedReadyMediaId } from "@/lib/mediaReferences";
 import AuthorityProfile from "@/models/AuthorityProfile";
 import User from "@/models/User";
 
 function isUploadedProfileImageUrl(value: unknown) {
   if (value === null || value === undefined || value === "") return true;
   if (typeof value !== "string") return false;
-  if (value.startsWith("/uploads/")) return true;
+  if (value.startsWith("/uploads/") || value.startsWith("/api/media/")) return true;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com");
+    return url.protocol === "https:" && (url.hostname.endsWith(".public.blob.vercel-storage.com") || url.hostname === "media.nashmi.haitham.website");
   } catch {
     return false;
   }
@@ -75,9 +76,20 @@ export async function PATCH(request: Request) {
     if (changed(input.coverUrl, existing.coverUrl) && !isUploadedProfileImageUrl(input.coverUrl)) {
       return fail("BAD_REQUEST", "ارفع غلاف الهيئة من الجهاز بدلا من إدخال رابط صورة خارجي.", 400);
     }
-    const authority = await AuthorityProfile.findByIdAndUpdate(existing._id, { $set: input }, { new: true }).lean();
+    const update: Record<string, unknown> = { ...input };
     if (changed(input.logoUrl, existing.logoUrl)) {
-      await User.updateOne({ _id: user.id }, { $set: { avatarUrl: input.logoUrl || null } });
+      update.logoMediaId = input.logoUrl
+        ? (await resolveOwnedReadyMediaId({ url: input.logoUrl, ownerUserId: user.id, purposes: ["authority_logo"] })) || null
+        : null;
+    }
+    if (changed(input.coverUrl, existing.coverUrl)) {
+      update.coverMediaId = input.coverUrl
+        ? (await resolveOwnedReadyMediaId({ url: input.coverUrl, ownerUserId: user.id, purposes: ["authority_cover"] })) || null
+        : null;
+    }
+    const authority = await AuthorityProfile.findByIdAndUpdate(existing._id, { $set: update }, { new: true }).lean();
+    if (changed(input.logoUrl, existing.logoUrl)) {
+      await User.updateOne({ _id: user.id }, { $set: { avatarUrl: input.logoUrl || null, avatarMediaId: update.logoMediaId || null } });
     }
     const revalidationFailures = revalidateAuthorityProfilePaths();
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "iec.profile_update", targetType: "authority", targetId: existing._id, request });
@@ -87,7 +99,7 @@ export async function PATCH(request: Request) {
       userId: user.id,
       userRole: user.role,
       targetAuthorityId: String(existing._id),
-      updatedFields: Object.keys(input),
+      updatedFields: Object.keys(update),
       oldImageExisted: Boolean(existing.logoUrl),
       newImageHostname: hostnameOnly(input.logoUrl),
       dbUpdateSuccess: Boolean(authority),

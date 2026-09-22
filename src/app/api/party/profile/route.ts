@@ -5,6 +5,7 @@ import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
 import { partyProfileUpdateSchema } from "@/lib/validators";
 import { createSearchText } from "@/lib/arabicSearch";
+import { resolveOwnedReadyMediaId } from "@/lib/mediaReferences";
 import { readJson, requirePartyForUser, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import Party from "@/models/Party";
@@ -13,10 +14,10 @@ import User from "@/models/User";
 function isUploadedProfileImageUrl(value: unknown) {
   if (value === null || value === undefined || value === "") return true;
   if (typeof value !== "string") return false;
-  if (value.startsWith("/uploads/")) return true;
+  if (value.startsWith("/uploads/") || value.startsWith("/api/media/")) return true;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com");
+    return url.protocol === "https:" && (url.hostname.endsWith(".public.blob.vercel-storage.com") || url.hostname === "media.nashmi.haitham.website");
   } catch {
     return false;
   }
@@ -76,6 +77,16 @@ export async function PATCH(request: Request) {
       return fail("BAD_REQUEST", "ارفع غلاف الحزب من الجهاز بدلا من إدخال رابط صورة خارجي.", 400);
     }
     const update: Record<string, unknown> = { ...input };
+    if (changed(input.logoUrl, party.logoUrl)) {
+      update.logoMediaId = input.logoUrl
+        ? (await resolveOwnedReadyMediaId({ url: input.logoUrl, ownerUserId: user.id, purposes: ["party_logo"] })) || null
+        : null;
+    }
+    if (changed(input.coverUrl, party.coverUrl)) {
+      update.coverMediaId = input.coverUrl
+        ? (await resolveOwnedReadyMediaId({ url: input.coverUrl, ownerUserId: user.id, purposes: ["party_cover"] })) || null
+        : null;
+    }
     update.searchNormalized = createSearchText([
       party.name,
       input.shortDescription || party.shortDescription,
@@ -85,7 +96,7 @@ export async function PATCH(request: Request) {
     ]);
     const updated = await Party.findByIdAndUpdate(party._id, { $set: update }, { new: true }).lean();
     if (changed(input.logoUrl, party.logoUrl)) {
-      await User.updateOne({ _id: user.id }, { $set: { avatarUrl: input.logoUrl || null } });
+      await User.updateOne({ _id: user.id }, { $set: { avatarUrl: input.logoUrl || null, avatarMediaId: update.logoMediaId || null } });
     }
     const revalidationFailures = revalidatePartyProfilePaths(updated?.slug || party.slug);
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "party.profile_update", targetType: "party", targetId: party._id, request });

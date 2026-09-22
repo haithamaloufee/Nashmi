@@ -20,7 +20,7 @@
 - Public list endpoints use explicit projections; rich fields live on detail endpoints.
 - Survey result visibility is enforced before serialization. Hidden totals/summaries are null and the dedicated results route rejects unauthorized clients.
 - Reactions use unique records and atomic/transactional counter updates with non-negative repair semantics.
-- Uploads enforce size, extension, MIME signature, and trusted Vercel Blob URLs. Remote fetch validation blocks private, loopback, link-local, reserved, and unsafe redirect destinations.
+- Uploads enforce role/ownership, quotas, size, extension, declared MIME, and magic bytes. Browser uploads use short-lived, single-key R2 PUT signatures; permanent credentials remain server-only. The private bucket never exposes protected objects through a public origin.
 
 ## AI boundary
 

@@ -67,6 +67,16 @@ export function handleApiError(error: unknown, request?: Request) {
   if (error instanceof Error && error.message === "FORBIDDEN") return fail("FORBIDDEN", undefined, 403);
   if (error instanceof Error && error.message === "NOT_FOUND") return fail("NOT_FOUND", undefined, 404);
   if (error instanceof Error && error.message === "RATE_LIMITED") return fail("RATE_LIMITED", undefined, 429);
+  if (error instanceof Error && error.message === "MEDIA_NOT_FOUND") return fail("NOT_FOUND", "الملف غير موجود", 404);
+  if (error instanceof Error && ["MEDIA_NOT_PENDING", "MEDIA_CONFIRMATION_RACE"].includes(error.message)) {
+    return fail("CONFLICT", "تغيّرت حالة الملف، حدّث الصفحة وحاول مجددًا.", 409);
+  }
+  if (error instanceof Error && ["MEDIA_UPLOAD_EXPIRED", "MEDIA_OBJECT_MISSING", "MEDIA_METADATA_MISMATCH", "MEDIA_MAGIC_MISMATCH"].includes(error.message)) {
+    return fail("BAD_REQUEST", "تعذر التحقق من الملف المرفوع. أعد اختياره وحاول مجددًا.", 400);
+  }
+  if (error instanceof Error && error.message === "R2_STORAGE_NOT_CONFIGURED") {
+    return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل.", 503);
+  }
   if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") return fail("PAYLOAD_TOO_LARGE", messages.PAYLOAD_TOO_LARGE, 413);
   if (error instanceof Error && error.message === "BLOB_STORAGE_NOT_CONFIGURED") {
     return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل. اربط Blob بالمشروع عبر OIDC أو رمز الخادم.", 500);

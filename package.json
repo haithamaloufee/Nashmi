@@ -17,6 +17,12 @@
     "logos:apply": "tsx scripts/apply-party-logos.ts",
     "posts:seed-media:disabled": "tsx scripts/seed-post-media.ts",
     "posts:cleanup-seeded-media": "tsx scripts/cleanup-seeded-media.ts",
+    "storage:inventory": "tsx scripts/storage-inventory.ts",
+    "storage:migrate-r2": "tsx scripts/storage-migrate-r2.ts",
+    "storage:reconcile-r2": "tsx scripts/storage-reconcile-r2.ts",
+    "storage:cleanup-pending": "tsx scripts/storage-cleanup-pending.ts",
+    "test:storage": "tsx scripts/test-storage.ts",
+    "test:migration": "tsx scripts/test-storage-migration.ts",
     "publisher-images:apply": "tsx scripts/apply-party-logos.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx scripts/test-critical.ts",
@@ -36,6 +42,8 @@
     "reset-demo-content": "tsx scripts/reset-demo-content.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1136.0",
+    "@aws-sdk/s3-request-presigner": "^3.1136.0",
     "@google/genai": "^1.52.0",
     "@tailwindcss/forms": "^0.5.10",
     "@vercel/blob": "^2.8.0",

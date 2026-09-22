@@ -124,6 +124,118 @@ export function getMaxVideoUploadSizeBytes() {
   return maxMb * 1024 * 1024;
 }
 
+export function getMaxDocumentUploadSizeBytes() {
+  return getUploadSizeBytes("MAX_DOCUMENT_UPLOAD_SIZE_MB", 20, 50);
+}
+
+export function getR2AccountId() {
+  return getRequiredEnv("R2_ACCOUNT_ID");
+}
+
+export function getR2AccessKeyId() {
+  return getRequiredEnv("R2_ACCESS_KEY_ID");
+}
+
+export function getR2SecretAccessKey() {
+  return getRequiredEnv("R2_SECRET_ACCESS_KEY");
+}
+
+export function getR2BucketName() {
+  return getRequiredEnv("R2_BUCKET_NAME");
+}
+
+export function getR2Endpoint() {
+  const configured = getOptionalEnv("R2_ENDPOINT");
+  const endpoint = configured || `https://${getR2AccountId()}.r2.cloudflarestorage.com`;
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    throw new InvalidEnvError("R2_ENDPOINT", "must be a valid HTTPS URL");
+  }
+  if (url.protocol !== "https:" || !url.hostname.endsWith(".r2.cloudflarestorage.com") || url.username || url.password) {
+    throw new InvalidEnvError("R2_ENDPOINT", "must use the Cloudflare R2 HTTPS S3 endpoint");
+  }
+  return url.origin;
+}
+
+export function getR2PublicBaseUrl() {
+  const value = getOptionalEnv("R2_PUBLIC_BASE_URL");
+  if (!value) return undefined;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new InvalidEnvError("R2_PUBLIC_BASE_URL", "must be a valid HTTPS URL");
+  }
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
+    throw new InvalidEnvError("R2_PUBLIC_BASE_URL", "must be a clean HTTPS origin or path");
+  }
+  return value.replace(/\/+$/, "");
+}
+
+export function getR2UploadExpirySeconds() {
+  const raw = getOptionalEnv("R2_UPLOAD_EXPIRY_SECONDS") || "300";
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 60 || value > 900) {
+    throw new InvalidEnvError("R2_UPLOAD_EXPIRY_SECONDS", "must be an integer between 60 and 900");
+  }
+  return value;
+}
+
+export function getR2DownloadExpirySeconds() {
+  const raw = getOptionalEnv("R2_DOWNLOAD_EXPIRY_SECONDS") || "300";
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 30 || value > 900) {
+    throw new InvalidEnvError("R2_DOWNLOAD_EXPIRY_SECONDS", "must be an integer between 30 and 900");
+  }
+  return value;
+}
+
+export function getR2EnvironmentPrefix() {
+  const fallback = process.env.VERCEL_ENV === "preview"
+    ? "preview"
+    : process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+      ? "production"
+      : "development";
+  const raw = getOptionalEnv("R2_ENV_PREFIX") || fallback;
+  const prefix = raw.replace(/^\/+|\/+$/g, "");
+  if (!/^[a-z0-9][a-z0-9/_-]{0,63}$/i.test(prefix) || prefix.includes("..")) {
+    throw new InvalidEnvError("R2_ENV_PREFIX", "must be a safe object-key prefix");
+  }
+  return prefix;
+}
+
+function getQuotaBytes(name: string, defaultMb: number, maxMb: number) {
+  const raw = getOptionalEnv(name) || String(defaultMb);
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0 || value > maxMb) {
+    throw new InvalidEnvError(name, `must be a number between 1 and ${maxMb}`);
+  }
+  return value * 1024 * 1024;
+}
+
+export function getUserMediaQuotaBytes() {
+  return getQuotaBytes("R2_USER_MEDIA_QUOTA_MB", 1024, 102400);
+}
+
+export function getPublisherMediaQuotaBytes() {
+  return getQuotaBytes("R2_PUBLISHER_MEDIA_QUOTA_MB", 5120, 512000);
+}
+
+export function getDailyUploadQuotaBytes() {
+  return getQuotaBytes("R2_DAILY_UPLOAD_QUOTA_MB", 512, 102400);
+}
+
+export function hasR2Credentials() {
+  return Boolean(
+    getOptionalEnv("R2_ACCOUNT_ID") &&
+    getOptionalEnv("R2_ACCESS_KEY_ID") &&
+    getOptionalEnv("R2_SECRET_ACCESS_KEY") &&
+    getOptionalEnv("R2_BUCKET_NAME")
+  );
+}
+
 export function hasBlobReadWriteToken() {
   return Boolean(getOptionalEnv("BLOB_READ_WRITE_TOKEN"));
 }
@@ -177,8 +289,23 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
   check("MAX_UPLOAD_SIZE_MB", getMaxUploadSizeBytes);
   check("MAX_IMAGE_UPLOAD_SIZE_MB", getMaxImageUploadSizeBytes);
   check("MAX_VIDEO_UPLOAD_SIZE_MB", getMaxVideoUploadSizeBytes);
+  check("MAX_DOCUMENT_UPLOAD_SIZE_MB", getMaxDocumentUploadSizeBytes);
+  if (getOptionalEnv("STORAGE_PROVIDER") === "cloudflare_r2") {
+    check("R2_ACCOUNT_ID", getR2AccountId);
+    check("R2_ACCESS_KEY_ID", getR2AccessKeyId);
+    check("R2_SECRET_ACCESS_KEY", getR2SecretAccessKey);
+    check("R2_BUCKET_NAME", getR2BucketName);
+    check("R2_ENDPOINT", getR2Endpoint);
+    check("R2_PUBLIC_BASE_URL", getR2PublicBaseUrl);
+    check("R2_UPLOAD_EXPIRY_SECONDS", getR2UploadExpirySeconds);
+    check("R2_DOWNLOAD_EXPIRY_SECONDS", getR2DownloadExpirySeconds);
+    check("R2_ENV_PREFIX", getR2EnvironmentPrefix);
+    check("R2_USER_MEDIA_QUOTA_MB", getUserMediaQuotaBytes);
+    check("R2_PUBLISHER_MEDIA_QUOTA_MB", getPublisherMediaQuotaBytes);
+    check("R2_DAILY_UPLOAD_QUOTA_MB", getDailyUploadQuotaBytes);
+  }
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    if (!hasBlobCredentials()) missing.push("BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID with Vercel OIDC");
+    if (!hasR2Credentials() && !hasBlobCredentials()) missing.push("Cloudflare R2 credentials or transitional Vercel Blob credentials");
   }
   check("GEMINI_ENABLE_GOOGLE_SEARCH", () => getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false));
   check("GEMINI_MAX_HISTORY_MESSAGES", () => getGeminiNumber("GEMINI_MAX_HISTORY_MESSAGES", 30, 2, 80));

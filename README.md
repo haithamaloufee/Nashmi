@@ -15,7 +15,7 @@
 - MongoDB + Mongoose
 - Zod validation
 - JWT auth cookies عبر `jose`
-- Vercel Blob للرفع الدائم في الإنتاج عند ضبط `BLOB_READ_WRITE_TOKEN`
+- Cloudflare R2 للتخزين الدائم مع رفع مباشر من المتصفح عبر روابط PUT موقعة قصيرة العمر
 - Gemini AI assistant server-side integration
 - Resend للبريد التشغيلي والتحقق واستعادة كلمة المرور
 
@@ -42,7 +42,13 @@ npm run app
 MONGODB_URI=
 JWT_SECRET=
 GEMINI_API_KEY=
-BLOB_READ_WRITE_TOKEN=
+STORAGE_PROVIDER=cloudflare_r2
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=nashmi-media
+R2_UPLOAD_EXPIRY_SECONDS=300
+R2_DOWNLOAD_EXPIRY_SECONDS=300
 MAX_UPLOAD_SIZE_MB=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 RESEND_API_KEY=
@@ -62,6 +68,9 @@ npm run db:test
 npm run sync-indexes
 npm run recalculate-counters
 npm run email:preview
+npm run storage:inventory
+npm run storage:migrate-r2
+npm run storage:reconcile-r2
 ```
 
 ## Demo Accounts
@@ -73,4 +82,5 @@ npm run email:preview
 - الصلاحيات مطبقة في صفحات dashboard و API routes.
 - حساب الحزب ينشر باسم الحزب المرتبط به من الخادم.
 - رفع الصور يتحقق من الامتداد و MIME والحجم ومحتوى الملف.
-- الإنتاج يحتاج تخزين دائم مثل Vercel Blob، وليس runtime filesystem.
+- أسرار R2 تبقى على الخادم، والعميل يحصل فقط على تفويض PUT محدود بمفتاح واحد وعملية واحدة ومدة قصيرة.
+- الحاوية خاصة؛ الوسائط العامة تمر عبر رابط Nashmi ثابت يعيد التوجيه إلى GET موقع، والوسائط المحمية تتطلب تحقق الملكية/الدور أولًا.

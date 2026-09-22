@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { upload as blobUpload } from "@vercel/blob/client";
 import { ImagePlus, Loader2, Trash2, Upload, X } from "lucide-react";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import SafeImage from "@/components/ui/SafeImage";
@@ -31,21 +30,12 @@ type MediaUploadFieldProps = {
 };
 
 const imageAccept = "image/jpeg,image/png,image/webp,image/gif";
-const mediaAccept = `${imageAccept},video/mp4,video/webm`;
+const mediaAccept = `${imageAccept},video/mp4,video/webm,application/pdf`;
 const allowedImages = new Set(imageAccept.split(","));
 const allowedMedia = new Set(mediaAccept.split(","));
 const imageLimit = 5 * 1024 * 1024;
 const videoLimit = 100 * 1024 * 1024;
-
-function extensionForMimeType(mimeType: string) {
-  if (mimeType === "image/jpeg") return "jpg";
-  if (mimeType === "image/png") return "png";
-  if (mimeType === "image/webp") return "webp";
-  if (mimeType === "image/gif") return "gif";
-  if (mimeType === "video/mp4") return "mp4";
-  if (mimeType === "video/webm") return "webm";
-  return "bin";
-}
+const documentLimit = 20 * 1024 * 1024;
 
 function validateClientFile(file: File, imagesOnly: boolean, t: ReturnType<typeof useTranslation>["t"]) {
   const allowed = imagesOnly ? allowedImages : allowedMedia;
@@ -53,28 +43,27 @@ function validateClientFile(file: File, imagesOnly: boolean, t: ReturnType<typeo
     return imagesOnly ? t("media.upload.invalidImages") : t("media.upload.invalidMedia");
   }
   if (file.size <= 0) return t("media.upload.emptyFile");
-  const max = file.type.startsWith("video/") ? videoLimit : imageLimit;
+  const max = file.type.startsWith("video/") ? videoLimit : file.type === "application/pdf" ? documentLimit : imageLimit;
   if (file.size > max) return `${t("media.upload.tooLarge")} (${Math.floor(max / 1024 / 1024)}MB).`;
   return null;
 }
 
-function xhrUpload(input: { endpoint: string; fileField: string; purpose: string; file: File; failureMessage: string; onProgress: (value: number) => void }) {
+function xhrPut(input: { uploadUrl: string; requiredHeaders: Record<string, string>; file: File; abortSignal?: AbortSignal; failureMessage: string; onProgress: (value: number) => void }) {
   return new Promise<any>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const form = new FormData();
-    form.append(input.fileField, input.file);
-    form.append("purpose", input.purpose);
-    xhr.open("POST", input.endpoint);
+    xhr.open("PUT", input.uploadUrl);
+    for (const [name, value] of Object.entries(input.requiredHeaders)) xhr.setRequestHeader(name, value);
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) input.onProgress(Math.round((event.loaded / event.total) * 100));
     };
     xhr.onerror = () => reject(new Error(input.failureMessage));
+    xhr.onabort = () => reject(new DOMException("Upload aborted", "AbortError"));
     xhr.onload = () => {
-      const json = JSON.parse(xhr.responseText || "{}");
-      if (xhr.status < 200 || xhr.status >= 300 || !json.ok) reject(new Error(input.failureMessage));
-      else resolve(json);
+      if (xhr.status < 200 || xhr.status >= 300) reject(new Error(input.failureMessage));
+      else resolve(xhr.getResponseHeader("ETag"));
     };
-    xhr.send(form);
+    input.abortSignal?.addEventListener("abort", () => xhr.abort(), { once: true });
+    xhr.send(input.file);
   });
 }
 
@@ -85,7 +74,6 @@ export default function MediaUploadField({
   imagesOnly = true,
   endpoint = "/api/uploads",
   completeEndpoint,
-  fileField = "file",
   purpose = "post",
   rounded = "default",
   fallbackText = "ص",
@@ -122,23 +110,32 @@ export default function MediaUploadField({
     onUploadingChange?.(value);
   }
 
-  async function directBlobUpload(file: File) {
-    const extension = extensionForMimeType(file.type);
-    const storageKey = `media/direct/${crypto.randomUUID()}.${extension}`;
-    const result = await blobUpload(storageKey, file, {
-      access: "public",
-      handleUploadUrl: "/api/uploads/blob",
-      contentType: file.type,
-      multipart: file.type.startsWith("video/") || file.size >= 5 * 1024 * 1024,
-      clientPayload: JSON.stringify({ fileName: file.name, mimeType: file.type, sizeBytes: file.size, purpose }),
+  async function directR2Upload(file: File) {
+    const authorizationResponse = await fetch("/api/uploads/authorize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileName: file.name, mimeType: file.type, sizeBytes: file.size, purpose }),
+      signal: abortRef.current?.signal
+    });
+    const authorizationJson = await authorizationResponse.json().catch(() => ({}));
+    if (!authorizationResponse.ok || !authorizationJson.ok) {
+      throw new Error(authorizationJson?.error?.message || t("media.upload.failed"));
+    }
+    const { assetId, authorization } = authorizationJson.data;
+    await xhrPut({
+      uploadUrl: authorization.uploadUrl,
+      requiredHeaders: authorization.requiredHeaders || { "Content-Type": file.type },
+      file,
       abortSignal: abortRef.current?.signal,
-      onUploadProgress: (event) => setProgress(Math.max(1, Math.round(event.percentage)))
+      failureMessage: t("media.upload.failed"),
+      onProgress: (value) => setProgress(Math.max(1, value))
     });
 
     const response = await fetch(completeEndpoint || endpoint, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: result.url, storageKey, mimeType: file.type, sizeBytes: file.size, fileName: file.name, purpose })
+      body: JSON.stringify({ assetId }),
+      signal: abortRef.current?.signal
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok || !json.ok) throw new Error(t("media.upload.finalizeFailed"));
@@ -162,12 +159,7 @@ export default function MediaUploadField({
     abortRef.current = new AbortController();
 
     try {
-      let json: any;
-      try {
-        json = await directBlobUpload(file);
-      } catch {
-        json = await xhrUpload({ endpoint, fileField, purpose, file, failureMessage: t("media.upload.failed"), onProgress: setProgress });
-      }
+      const json: any = await directR2Upload(file);
 
       const asset = json.data.asset || json.data.user;
       onUploaded(json.data.asset || { _id: "", url: asset.avatarUrl, type: "image", mimeType: file.type });
