@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const links = [
   { href: "/admin/surveys", label: "الاستبيانات" },
+  { href: "/admin/news", label: "الأخبار الحية" },
   { href: "/admin", label: "الرئيسية" },
   { href: "/admin/users", label: "المستخدمون" },
   { href: "/admin/parties", label: "الأحزاب" },
@@ -40,6 +41,7 @@ export default async function AdminPage() {
 
   const stats = await getAdminStats();
   const cards = [
+    { label: "الأخبار الحية", value: "إدارة", href: "/admin/news", hint: "مراجعة مصادر شريط المستجدات وإخفاء العناصر" },
     { label: "الاستبيانات", value: stats.surveys, href: "/admin/surveys", hint: "إدارة الاستبيانات متعددة الأسئلة ونتائجها" },
     { label: "المستخدمون", value: stats.users, href: "/admin/users", hint: "إدارة الحسابات والأدوار والحالة" },
     { label: "المواطنون", value: stats.citizens, href: "/admin/users?role=citizen", hint: "مراجعة حسابات المواطنين" },

@@ -1,4 +1,25 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
+import { LEGISLATIVE_STAGES, NEWS_CATEGORIES } from "@/lib/news/types";
+
+const NewsContextSchema = new Schema(
+  {
+    newsId: { type: String, required: true },
+    titleAr: { type: String, required: true },
+    summaryAr: { type: String, required: true },
+    category: { type: String, enum: NEWS_CATEGORIES, required: true },
+    urgency: { type: String, enum: ["normal", "breaking"], required: true },
+    publishedAt: { type: Date, required: true },
+    legislativeStage: { type: String, enum: [...LEGISLATIVE_STAGES, null], default: null },
+    sources: [{
+      _id: false,
+      title: { type: String, required: true },
+      url: { type: String, required: true },
+      publisher: { type: String, required: true },
+      sourceClass: { type: String, enum: ["official", "news_agency", "reputable_media"], required: true }
+    }]
+  },
+  { _id: false }
+);
 
 const ChatSessionSchema = new Schema(
   {
@@ -7,7 +28,8 @@ const ChatSessionSchema = new Schema(
     status: { type: String, enum: ["active", "archived", "deleted"], default: "active" },
     summary: { type: String, default: null },
     provider: { type: String, default: "gemini" },
-    model: { type: String, default: null }
+    model: { type: String, default: null },
+    newsContext: { type: NewsContextSchema, default: null, immutable: true }
   },
   { timestamps: true }
 );
