@@ -1,0 +1,20 @@
+import { InvalidEnvError, MissingEnvError, getGeminiBoolean, getGeminiNumber, getOptionalEnv } from "@/lib/env";
+
+export function getNewsConfig() {
+  const secret = getOptionalEnv("NEWS_REFRESH_SECRET");
+  if ((process.env.NODE_ENV === "production" || process.env.VERCEL) && (!secret || secret.length < 32)) {
+    if (!secret) throw new MissingEnvError("NEWS_REFRESH_SECRET");
+    throw new InvalidEnvError("NEWS_REFRESH_SECRET", "must be at least 32 characters in production");
+  }
+
+  return {
+    refreshSecret: secret || "development-news-refresh-secret-only",
+    autoPublish: getGeminiBoolean("NEWS_AUTO_PUBLISH", false),
+    maxNewItems: Math.floor(getGeminiNumber("NEWS_MAX_NEW_ITEMS", 8, 1, 15)),
+    activeHours: Math.floor(getGeminiNumber("NEWS_ACTIVE_HOURS", 24, 1, 72)),
+    retentionDays: Math.floor(getGeminiNumber("NEWS_RETENTION_DAYS", 7, 1, 30)),
+    discoveryModel: getOptionalEnv("NEWS_GEMINI_MODEL") || getOptionalEnv("GEMINI_MODEL") || "gemini-3-flash-preview",
+    minConfidence: getGeminiNumber("NEWS_MIN_CONFIDENCE", 0.72, 0.5, 1),
+    minJordanRelevance: getGeminiNumber("NEWS_MIN_JORDAN_RELEVANCE", 0.8, 0.5, 1)
+  };
+}

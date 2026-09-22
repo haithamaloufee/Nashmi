@@ -21,3 +21,6 @@ export { default as ChatSession } from "./ChatSession";
 export { default as ChatMessage } from "./ChatMessage";
 export { default as AssistantUsage } from "./AssistantUsage";
 export { default as RateLimitBucket } from "./RateLimitBucket";
+export { default as NewsItem } from "./NewsItem";
+export { default as NewsRefreshState } from "./NewsRefreshState";
+export { default as NewsRefreshReplay } from "./NewsRefreshReplay";

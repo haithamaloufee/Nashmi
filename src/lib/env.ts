@@ -313,6 +313,16 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
   check("GEMINI_MAX_CONTEXT_CHARS", () => getGeminiNumber("GEMINI_MAX_CONTEXT_CHARS", 16_000, 4_000, 40_000));
   check("GEMINI_MAX_OUTPUT_TOKENS", () => getGeminiNumber("GEMINI_MAX_OUTPUT_TOKENS", 1_200, 256, 2_048));
   check("GEMINI_TEMPERATURE", () => getGeminiNumber("GEMINI_TEMPERATURE", 0.3, 0, 1));
+  check("NEWS_AUTO_PUBLISH", () => getGeminiBoolean("NEWS_AUTO_PUBLISH", false));
+  check("NEWS_MAX_NEW_ITEMS", () => getGeminiNumber("NEWS_MAX_NEW_ITEMS", 8, 1, 15));
+  check("NEWS_ACTIVE_HOURS", () => getGeminiNumber("NEWS_ACTIVE_HOURS", 24, 1, 72));
+  check("NEWS_RETENTION_DAYS", () => getGeminiNumber("NEWS_RETENTION_DAYS", 7, 1, 30));
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    check("NEWS_REFRESH_SECRET", () => {
+      const secret = getRequiredEnv("NEWS_REFRESH_SECRET");
+      if (secret.length < 32) throw new InvalidEnvError("NEWS_REFRESH_SECRET", "must be at least 32 characters in production");
+    });
+  }
 
   return { ok: missing.length === 0 && invalid.length === 0, missing, invalid };
 }
