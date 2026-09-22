@@ -85,7 +85,7 @@ export default function MobileNav({ links, dashboardHref, authenticated = false 
             </Link>
             <Link href="/iec" onClick={() => setOpen(false)} className="focus-ring flex min-h-11 items-center gap-3 rounded-xl px-4 text-white/[0.76] hover:bg-white/10 hover:text-white">
               <Landmark className="h-4 w-4 text-emerald-200" />
-              {language === "ar" ? "مصادر ومعلومات رسمية" : "Official resources"}
+              {language === "ar" ? "الهيئة المستقلة للانتخاب" : "Independent Election Commission"}
             </Link>
 
             <div className="mt-1 flex min-h-14 items-center justify-between gap-3 rounded-xl bg-white/[0.06] p-2.5">

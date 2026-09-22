@@ -8,6 +8,8 @@ import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import { cookies } from "next/headers";
 import { defaultLanguage, isLanguage } from "@/lib/i18n";
 import { getSiteUrl } from "@/lib/siteUrl";
+import LiveNewsTicker from "@/components/news/LiveNewsTicker";
+import { getActiveNewsItems } from "@/lib/news/service";
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
@@ -34,6 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const cookieLanguage = cookieStore.get("nashmi-language")?.value;
   const initialLanguage = isLanguage(cookieLanguage) ? cookieLanguage : defaultLanguage;
   const initialDir = initialLanguage === "ar" ? "rtl" : "ltr";
+  const newsItems = await getActiveNewsItems(15).catch(() => []);
   return (
     <html lang={initialLanguage} dir={initialDir} suppressHydrationWarning>
       <head>
@@ -48,6 +51,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <LanguageProvider initialLanguage={initialLanguage}>
           <ToastProvider>
             <Navbar />
+            <LiveNewsTicker initialItems={newsItems} />
             <div id="main-content" tabIndex={-1}><RouteTransitionProvider>{children}</RouteTransitionProvider></div>
             <FloatingAssistant />
           </ToastProvider>

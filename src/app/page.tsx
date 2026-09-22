@@ -57,7 +57,6 @@ export default async function HomePage() {
           <div>
             <p className="text-sm font-black text-civic"><I18nText id="home.latest.eyebrow" /></p>
             <h2 id="latest-title" className="mt-1 text-2xl font-black sm:text-3xl"><I18nText id="home.latest.title" /></h2>
-            <p className="mt-2 max-w-2xl leading-7 text-ink/[0.66] dark:text-slate-300"><I18nText id="home.latest.body" /></p>
           </div>
           <Link href="/updates" className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-civic/25 bg-civic/[0.07] px-4 text-sm font-black text-civic hover:border-civic hover:bg-civic hover:text-white dark:text-emerald-200">
             <I18nText id="home.latest.all" />
