@@ -32,11 +32,13 @@ export async function POST(request: Request) {
           sessionId: input.sessionId,
           message: input.message,
           preferredLawId: input.lawId,
+          newsId: input.newsId,
           request
         })
       : await handleGuestChatMessage({
           message: input.message,
           preferredLawId: input.lawId,
+          newsId: input.newsId,
           history: input.history
         });
 

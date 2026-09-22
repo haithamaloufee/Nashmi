@@ -1,0 +1,9 @@
+name = "nashmi-news-refresh"
+main = "src/index.ts"
+compatibility_date = "2026-09-22"
+
+[triggers]
+crons = ["0 * * * *"]
+
+[vars]
+NASHMI_REFRESH_URL = "https://nashmi.haitham.website/api/internal/news/refresh"

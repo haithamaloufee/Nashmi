@@ -10,6 +10,7 @@ import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { formatNumber } from "@/lib/localization";
 import { cleanAssistantContent } from "@/lib/chatDisplay";
+import NewsContextCard, { type ClientNewsContext } from "@/components/chat/NewsContextCard";
 
 type GroundingSource = {
   title: string;
@@ -30,6 +31,7 @@ type Session = {
   title?: string | null;
   status?: "active" | "archived" | "deleted";
   updatedAt?: string;
+  newsContext?: ClientNewsContext | null;
 };
 
 type Usage = {
@@ -79,6 +81,7 @@ function fallbackError(json: unknown, fallback: string, tFunc: (k: any) => strin
 
 function sourceLabel(sourceType: string, language: "ar" | "en") {
   if (sourceType === "google_search") return language === "en" ? "Web source" : "مصدر ويب";
+  if (sourceType === "news_source") return language === "en" ? "Saved news source" : "مصدر الخبر المحفوظ";
   return language === "en" ? "Nashmi source" : "مصدر من نشمي";
 }
 
@@ -86,16 +89,33 @@ function userAvatarUrl(user: ChatUser) {
   return user?.avatarUrl || user?.image || user?.imageUrl || user?.profileImage || null;
 }
 
-export default function ChatClient({ lawId, authenticated, currentUser = null }: { lawId?: string; authenticated: boolean; currentUser?: ChatUser }) {
+export default function ChatClient({
+  lawId,
+  newsId,
+  initialNewsContext = null,
+  initialNewsSummary,
+  authenticated,
+  currentUser = null
+}: {
+  lawId?: string;
+  newsId?: string;
+  initialNewsContext?: ClientNewsContext | null;
+  initialNewsSummary?: string;
+  authenticated: boolean;
+  currentUser?: ChatUser;
+}) {
   const { dir, language, t } = useTranslation();
   const introMessage = useMemo<Message>(() => ({ role: "assistant", content: t("chat.welcome") }), [t]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([introMessage]);
+  const newsIntroMessage = useMemo<Message | null>(() => initialNewsSummary ? ({ role: "assistant", content: initialNewsSummary, groundingSources: initialNewsContext?.sources.map((source) => ({ title: source.title, url: source.url, sourceType: "news_source" })) || [] }) : null, [initialNewsContext, initialNewsSummary]);
+  const [messages, setMessages] = useState<Message[]>(newsIntroMessage ? [newsIntroMessage] : [introMessage]);
   const [message, setMessage] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sessionsLoading, setSessionsLoading] = useState(authenticated);
+  const [newsSessionLoading, setNewsSessionLoading] = useState(Boolean(authenticated && newsId));
+  const [currentNewsContext, setCurrentNewsContext] = useState<ClientNewsContext | null>(initialNewsContext);
   const [error, setError] = useState<string | null>(null);
   const [showLoginCta, setShowLoginCta] = useState(false);
   const [usage, setUsage] = useState<Usage | null>(null);
@@ -108,11 +128,13 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
   const pendingAssistantFocusRef = useRef(false);
 
   const activeSession = useMemo(() => sessions.find((session) => session._id === activeSessionId) || null, [sessions, activeSessionId]);
+  const activeNewsContext = currentNewsContext;
   const showSuggestions = !loading && messages.length === 1 && messages[0]?.role === "assistant";
 
   useEffect(() => {
+    if (newsIntroMessage) return;
     setMessages((items) => (items.length === 1 && items[0]?.role === "assistant" ? [introMessage] : items));
-  }, [introMessage]);
+  }, [introMessage, newsIntroMessage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,7 +171,7 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
       }
       const nextSessions = json.data.sessions || [];
       setSessions(nextSessions);
-      if (!lawId && nextSessions[0]?._id) {
+      if (!lawId && !newsId && nextSessions[0]?._id) {
         setActiveSessionId(nextSessions[0]._id);
         const messagesResponse = await fetch(`/api/chat/sessions/${nextSessions[0]._id}/messages`, { cache: "no-store" });
         const messagesJson = await messagesResponse.json().catch(() => ({}));
@@ -162,7 +184,35 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
     return () => {
       cancelled = true;
     };
-  }, [lawId, authenticated, introMessage, t]);
+  }, [lawId, newsId, authenticated, introMessage, t]);
+
+  useEffect(() => {
+    if (!authenticated || !newsId) return;
+    let cancelled = false;
+    async function createNewsConversation() {
+      setNewsSessionLoading(true);
+      const response = await fetch("/api/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newsId })
+      });
+      const json = await response.json().catch(() => ({}));
+      if (cancelled) return;
+      setNewsSessionLoading(false);
+      if (!response.ok || !json.ok) {
+        setError(fallbackError(json, t("chat.error"), t));
+        return;
+      }
+      setActiveSessionId(json.data.session._id);
+      setCurrentNewsContext(json.data.session.newsContext || initialNewsContext);
+      setMessages(json.data.initialMessage ? [json.data.initialMessage] : newsIntroMessage ? [newsIntroMessage] : [introMessage]);
+      await refreshSessions(json.data.session._id);
+    }
+    void createNewsConversation();
+    return () => { cancelled = true; };
+    // newsId represents an explicit fresh ticker click; run exactly once for that immutable item.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated, newsId]);
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -208,6 +258,7 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
     setError(null);
     setLastFailedPrompt(null);
     setActiveSessionId(sessionId);
+    setCurrentNewsContext(sessions.find((session) => session._id === sessionId)?.newsContext || null);
     const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, { cache: "no-store" });
     const json = await response.json().catch(() => ({}));
     if (response.status === 401) {
@@ -227,6 +278,7 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
     setMessage("");
     setMessages([introMessage]);
     setActiveSessionId(null);
+    setCurrentNewsContext(null);
     if (!authenticated) return;
 
     const response = await fetch("/api/chat/sessions", {
@@ -285,7 +337,7 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
 
   async function sendMessage(text: string) {
     const clean = text.trim();
-    if (!clean || loading) return;
+    if (!clean || loading || newsSessionLoading) return;
 
     setError(null);
     setShowLoginCta(false);
@@ -309,6 +361,7 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
       body: JSON.stringify({
         message: clean,
         lawId,
+        newsId: authenticated ? undefined : newsId,
         language,
         sessionId: authenticated ? activeSessionId || undefined : undefined,
         history: !authenticated ? messages.slice(-8).map((item) => ({ role: item.role, content: item.content })) : undefined
@@ -339,6 +392,7 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
     if (json.data.usage) setUsage(json.data.usage);
     if (authenticated && json.data.session?._id) {
       setActiveSessionId(json.data.session._id);
+      setCurrentNewsContext(json.data.session.newsContext || currentNewsContext);
       await refreshSessions(json.data.session._id);
     }
     pendingAssistantFocusRef.current = true;
@@ -438,6 +492,8 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
           </div>
         ) : null}
 
+        {activeNewsContext ? <NewsContextCard news={activeNewsContext} /> : null}
+
         {error ? (
           <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-2 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/35 dark:text-red-200">
             <span>{error} {showLoginCta ? <Link href="/login" className="font-bold underline">{t("chat.loginCta")}</Link> : null}</span>
@@ -486,7 +542,11 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
               <div className="rounded border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
                 <p className="mb-3 text-sm font-bold text-slate-600 dark:text-slate-200">{language === "en" ? "Suggested questions" : "أسئلة مقترحة"}</p>
                 <div className="flex flex-wrap gap-2">
-                  {suggestedQuestions[language].map((question) => (
+                  {(activeNewsContext
+                    ? (language === "en"
+                      ? ["What happened?", "How could this affect citizens?", "What do the saved sources say?", "What is the latest status?"]
+                      : ["شو اللي صار باختصار؟", "كيف ممكن يأثر هذا على المواطن؟", "شو بتحكي المصادر المحفوظة؟", "شو آخر تحديث على الموضوع؟"])
+                    : suggestedQuestions[language]).map((question) => (
                     <button
                       key={question}
                       type="button"
@@ -527,12 +587,12 @@ export default function ChatClient({ lawId, authenticated, currentUser = null }:
             className="min-w-0 flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
             maxLength={1500}
             placeholder={t("chat.placeholder")}
-            disabled={loading}
+            disabled={loading || newsSessionLoading}
             aria-label={t("chat.inputLabel")}
           />
           <button
             type="submit"
-            disabled={loading || !message.trim()}
+            disabled={loading || newsSessionLoading || !message.trim()}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-civic text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
             aria-label={t("chat.send")}
           >

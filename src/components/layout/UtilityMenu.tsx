@@ -64,7 +64,7 @@ export default function UtilityMenu() {
           </Link>
           <Link href="/iec" onClick={() => setOpen(false)} className="focus-ring flex min-h-11 items-center gap-3 rounded-xl px-3 text-white/80 hover:bg-white/10 hover:text-white">
             <Landmark className="h-4 w-4 text-emerald-200" />
-            {language === "ar" ? "مصادر ومعلومات رسمية" : "Official resources"}
+            {language === "ar" ? "الهيئة المستقلة للانتخاب" : "Independent Election Commission"}
           </Link>
         </div>
       ) : null}

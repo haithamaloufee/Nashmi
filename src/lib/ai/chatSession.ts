@@ -9,6 +9,9 @@ import ChatMessage from "@/models/ChatMessage";
 import ChatSession from "@/models/ChatSession";
 import Law from "@/models/Law";
 import { logServerError } from "@/lib/observability";
+import { getNewsSnapshot } from "@/lib/news/service";
+import type { NewsContextSnapshot } from "@/lib/news/types";
+import { buildOwnedChatSessionQuery } from "@/lib/ai/chatOwnership";
 
 export const CHAT_ALLOWED_ROLES = ["citizen", "party", "iec", "admin", "super_admin"] as const;
 
@@ -23,8 +26,7 @@ export function logSafeChatError(error: unknown, metadata: Record<string, unknow
 }
 
 export async function getOwnedChatSession(sessionId: string, userId: string) {
-  if (!Types.ObjectId.isValid(sessionId)) throw new Error("NOT_FOUND");
-  const session = await ChatSession.findOne({ _id: sessionId, userId, status: { $ne: "deleted" } });
+  const session = await ChatSession.findOne(buildOwnedChatSessionQuery(sessionId, userId));
   if (!session) throw new Error("NOT_FOUND");
   return session;
 }
@@ -52,11 +54,55 @@ export async function createChatSessionForUser(params: { user: SafeUser; title?:
   return session;
 }
 
+export function buildNewsInitialSummary(news: NewsContextSnapshot) {
+  const sourceNames = news.sources.map((source) => source.publisher).join("، ");
+  return [
+    `## ${news.titleAr}`,
+    "",
+    news.summaryAr,
+    "",
+    `**تاريخ النشر:** ${news.publishedAt.toLocaleString("ar-JO", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Amman" })}`,
+    `**المصادر المحفوظة:** ${sourceNames}`,
+    "",
+    "اسألني عن تفاصيل هذا المستجد أو أثره على المواطن، وسأجيب اعتماداً على السياق والمصادر المحفوظة."
+  ].join("\n");
+}
+
+export async function createNewsChatSessionForUser(params: { user: SafeUser; newsId: string; request?: Request }) {
+  await connectToDatabase();
+  const newsContext = await getNewsSnapshot(params.newsId);
+  const config = getSharekAssistantConfig();
+  const session = await ChatSession.create({
+    userId: params.user.id,
+    title: newsContext.titleAr.slice(0, 160),
+    status: "active",
+    provider: "gemini",
+    model: config.model,
+    newsContext
+  });
+  const initialMessage = await ChatMessage.create({
+    sessionId: session._id,
+    userId: params.user.id,
+    role: "assistant",
+    content: buildNewsInitialSummary(newsContext),
+    sourceLawIds: [],
+    sourcePartyIds: [],
+    groundingSources: newsContext.sources.map((source) => ({ title: source.title, url: source.url, sourceType: "news_source" })),
+    safetyFlags: ["deterministic_news_summary"],
+    model: "local-news-context",
+    tokensUsed: null,
+    retentionUntil: null
+  });
+  await writeAuditLog({ actorUserId: params.user.id, actorRole: params.user.role, action: "chat.news_session_created", targetType: "chat_session", targetId: session._id, metadata: { newsId: params.newsId }, request: params.request });
+  return { session, initialMessage };
+}
+
 export async function handleChatMessage(params: {
   user: SafeUser;
   sessionId?: string | null;
   message: string;
   preferredLawId?: string;
+  newsId?: string;
   request?: Request;
 }) {
   await connectToDatabase();
@@ -73,7 +119,22 @@ export async function handleChatMessage(params: {
     session.title = makeChatTitle(cleanMessage);
   }
 
-  const lawContext = await retrieveRelevantLawContext(cleanMessage, params.preferredLawId, config.maxLawContextResults);
+  const newsContext: NewsContextSnapshot | undefined = session.newsContext ? {
+    newsId: session.newsContext.newsId,
+    titleAr: session.newsContext.titleAr,
+    summaryAr: session.newsContext.summaryAr,
+    category: session.newsContext.category,
+    urgency: session.newsContext.urgency,
+    publishedAt: new Date(session.newsContext.publishedAt),
+    legislativeStage: session.newsContext.legislativeStage || null,
+    sources: session.newsContext.sources.map((source) => ({
+      title: source.title,
+      url: source.url,
+      publisher: source.publisher,
+      sourceClass: source.sourceClass
+    }))
+  } : undefined;
+  const lawContext = newsContext ? [] : await retrieveRelevantLawContext(cleanMessage, params.preferredLawId, config.maxLawContextResults);
   const userMessage = await ChatMessage.create({
     sessionId: session._id,
     userId: params.user.id,
@@ -98,7 +159,8 @@ export async function handleChatMessage(params: {
     const answer = await generateSharekAssistantResponse({
       message: cleanMessage,
       history,
-      lawContext
+      lawContext,
+      newsContext
     });
 
     const assistantMessage = await ChatMessage.create({
@@ -146,13 +208,15 @@ export async function handleGuestChatMessage(params: {
   message: string;
   history?: Array<{ role: "user" | "assistant"; content: string }>;
   preferredLawId?: string;
+  newsId?: string;
 }) {
   await connectToDatabase();
   const config = getSharekAssistantConfig();
   const cleanMessage = params.message.replace(/\s+/g, " ").trim();
   if (!cleanMessage) throw new Error("BAD_REQUEST");
 
-  const lawContext = await retrieveRelevantLawContext(cleanMessage, params.preferredLawId, config.maxLawContextResults);
+  const newsContext = params.newsId ? await getNewsSnapshot(params.newsId) : undefined;
+  const lawContext = newsContext ? [] : await retrieveRelevantLawContext(cleanMessage, params.preferredLawId, config.maxLawContextResults);
   const history = (params.history || [])
     .slice(-8)
     .map((item) => ({ role: item.role, content: item.content.replace(/\s+/g, " ").trim().slice(0, 1200) }))
@@ -161,7 +225,8 @@ export async function handleGuestChatMessage(params: {
   const answer = await generateSharekAssistantResponse({
     message: cleanMessage,
     history,
-    lawContext
+    lawContext,
+    newsContext
   });
 
   if (answer.sourceLawIds.length > 0) {

@@ -376,6 +376,7 @@ export const chatSchema = z.object({
   message: z.string().trim().min(1).max(1500),
   sessionId: objectIdSchema.optional(),
   lawId: objectIdSchema.optional(),
+  newsId: objectIdSchema.optional(),
   language: z.enum(["ar", "en"]).optional(),
   history: z.array(chatHistoryItemSchema).max(8).optional()
 });
@@ -383,9 +384,11 @@ export const chatSchema = z.object({
 export const chatMessageSchema = z.object({
   message: z.string().trim().min(1, "الرسالة مطلوبة").max(1500, "الرسالة طويلة جدًا"),
   lawId: objectIdSchema.optional(),
+  newsId: objectIdSchema.optional(),
   language: z.enum(["ar", "en"]).optional()
 });
 
 export const chatSessionSchema = z.object({
-  title: z.string().trim().max(160).nullable().optional()
+  title: z.string().trim().max(160).nullable().optional(),
+  newsId: objectIdSchema.optional()
 });

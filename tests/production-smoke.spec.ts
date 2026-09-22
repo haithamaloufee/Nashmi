@@ -119,7 +119,7 @@ test("redesigned navigation stays readable over hero and plain page backgrounds"
   await page.getByRole("button", { name: "إعدادات العرض واللغة" }).click();
   const utilityMenu = page.locator("#navbar-utility-menu");
   await expect(utilityMenu.getByRole("link", { name: "عن نشمي", exact: true })).toBeVisible();
-  await expect(utilityMenu.getByRole("link", { name: "مصادر ومعلومات رسمية", exact: true })).toBeVisible();
+  await expect(utilityMenu.getByRole("link", { name: "الهيئة المستقلة للانتخاب", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "تغيير اللغة" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.getByRole("button", { name: "Switch to dark mode" }).click();
@@ -148,6 +148,32 @@ test("redesigned navigation stays readable over hero and plain page backgrounds"
   await menuButton.click();
   await page.keyboard.press("Escape");
   await expect(menuButton).toBeFocused();
+});
+
+test("live-news ticker is compact, pausable, mobile-safe, and reduced-motion friendly", async ({ page }) => {
+  await page.route("**/api/news/live", async (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ ok: true, data: { items: [
+      { id: "507f1f77bcf86cd799439011", newsId: "507f1f77bcf86cd799439011", titleAr: "الحكومة تعلن تحديثاً جديداً على خدمات النقل العام", summaryAr: "ملخص موثق للاختبار فقط.", category: "transport", urgency: "normal", publishedAt: new Date().toISOString(), sources: [] },
+      { id: "507f191e810c19729de860ea", newsId: "507f191e810c19729de860ea", titleAr: "مجلس الأمة يناقش مشروع قانون ذي أثر مدني", summaryAr: "ملخص موثق للاختبار فقط.", category: "legislation", urgency: "normal", publishedAt: new Date().toISOString(), sources: [] }
+    ] } })
+  }));
+  await page.setViewportSize({ width: 320, height: 820 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const ticker = page.getByRole("region", { name: "آخر المستجدات" });
+  await expect(ticker).toBeVisible();
+  await expect(ticker).toHaveCSS("height", "36px");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
+  const track = ticker.locator(".news-ticker-track");
+  await ticker.hover();
+  await expect(track).toHaveCSS("animation-play-state", "paused");
+  await expect(ticker.locator('a[href*="/chat?news="]').first()).toBeVisible();
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator(".news-ticker-track")).toHaveCSS("animation-name", "none");
+  await expect(page.locator('.news-ticker-set[aria-hidden="true"]')).toBeHidden();
 });
 
 test("party and authority profiles use a single social timeline without mixed-language actions", async ({ page }) => {
