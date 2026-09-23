@@ -29,6 +29,8 @@ function testSourceSafety() {
   assert.equal(classifyNewsSource("https://www.rhc.jo/ar/news"), "official");
   assert.equal(classifyNewsSource("https://www.representatives.jo/AR/News"), "official");
   assert.equal(classifyNewsSource("https://www.jrtv.gov.jo/news"), "official");
+  assert.equal(classifyNewsSource("https://pt1.petra.gov.jo/ar/news/search/news_week/2026-09-23"), "news_agency");
+  assert.equal(classifyNewsSource("https://org.petra.gov.jo/"), "news_agency");
   assert.equal(classifyNewsSource("https://almamlaka.tv/news"), "reputable_media");
   assert.equal(classifyNewsSource("https://royanews.tv/news"), "reputable_media");
   assert.equal(classifyNewsSource("https://www.alrai.com/article"), "reputable_media");
