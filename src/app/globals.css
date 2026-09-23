@@ -497,12 +497,17 @@ html[dir="ltr"] .home-hero-overlay {
   z-index: 2;
   display: inline-flex;
   flex: 0 0 auto;
+  align-self: center;
   align-items: center;
   gap: 0.4rem;
-  padding-inline: clamp(0.75rem, 3vw, 1.35rem);
-  background: #137b7e;
+  height: 27px;
+  margin-inline: 0.45rem;
+  padding-inline: clamp(0.65rem, 2vw, 0.9rem);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #c62828, #9f1717);
   color: white;
-  font-size: 0.78rem;
+  box-shadow: 0 3px 10px rgba(159, 23, 23, 0.28);
+  font-size: 0.74rem;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -547,8 +552,8 @@ html[dir="ltr"] .home-hero-overlay {
 .news-ticker-breaking { border-radius: 999px; background: #b42318; padding: 0.1rem 0.42rem; color: white; font-size: 0.65rem; }
 
 @keyframes news-ticker-scroll {
-  from { transform: translateX(50%); }
-  to { transform: translateX(0); }
+  from { transform: translateX(0); }
+  to { transform: translateX(50%); }
 }
 
 @keyframes skeleton-shimmer {
@@ -591,6 +596,6 @@ html[dir="ltr"] .home-hero-overlay {
 
 @media (max-width: 414px) {
   .news-ticker-shell { height: 36px; }
-  .news-ticker-label { padding-inline: 0.65rem; font-size: 0.7rem; }
+  .news-ticker-label { height: 25px; margin-inline: 0.35rem; padding-inline: 0.6rem; font-size: 0.68rem; }
   .news-ticker-item { padding-inline: 0.8rem; font-size: 0.75rem; }
 }
