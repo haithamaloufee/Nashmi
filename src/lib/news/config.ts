@@ -14,6 +14,7 @@ export function getNewsConfig() {
     activeHours: Math.floor(getGeminiNumber("NEWS_ACTIVE_HOURS", 24, 1, 72)),
     retentionDays: Math.floor(getGeminiNumber("NEWS_RETENTION_DAYS", 7, 1, 30)),
     discoveryModel: getOptionalEnv("NEWS_GEMINI_MODEL") || getOptionalEnv("GEMINI_MODEL") || "gemini-3-flash-preview",
+    discoveryFallbackModel: getOptionalEnv("NEWS_GEMINI_FALLBACK_MODEL") || getOptionalEnv("GEMINI_FALLBACK_MODEL") || "gemini-2.5-flash",
     minConfidence: getGeminiNumber("NEWS_MIN_CONFIDENCE", 0.72, 0.5, 1),
     minJordanRelevance: getGeminiNumber("NEWS_MIN_JORDAN_RELEVANCE", 0.8, 0.5, 1)
   };

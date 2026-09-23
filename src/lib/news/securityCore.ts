@@ -43,7 +43,7 @@ export function validateNewsSourceUrlSyntax(value: string) {
 export function classifyNewsSource(value: string): "official" | "news_agency" | "reputable_media" | null {
   const hostname = validateNewsSourceUrlSyntax(value).hostname.toLowerCase().replace(/^www\./, "");
   if (hostname === "petra.gov.jo") return "news_agency";
-  if (hostname.endsWith(".gov.jo") || ["gov.jo", "pm.gov.jo", "parliament.jo", "senate.jo", "representatives.jo", "iec.jo", "parties.iec.jo", "ammancity.gov.jo"].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`))) return "official";
-  if (["almamlaka.tv", "alghad.com", "royanews.tv", "addustour.com", "jordantimes.com"].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`))) return "reputable_media";
+  if (hostname.endsWith(".gov.jo") || ["gov.jo", "pm.gov.jo", "parliament.jo", "senate.jo", "representatives.jo", "iec.jo", "parties.iec.jo", "ammancity.gov.jo", "rhc.jo"].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`))) return "official";
+  if (["almamlaka.tv", "alghad.com", "royanews.tv", "alrai.com", "addustour.com", "jordantimes.com", "jordannews.jo"].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`))) return "reputable_media";
   return null;
 }

@@ -58,7 +58,8 @@ const ASSISTANT_SYSTEM_INSTRUCTION = `
 أنت مساعد منصة نشمي الذكي.
 
 المهمة:
-- ساعد المستخدم في فهم القوانين الأردنية، الانتخابات، الأحزاب، الهيئة المستقلة للانتخاب، واستخدام منصة نشمي.
+- ساعد المستخدم في فهم القوانين الأردنية، الانتخابات، الأحزاب، الهيئة المستقلة للانتخاب، المستجدات المدنية والخدمية والسياسات العامة في الأردن، واستخدام منصة نشمي.
+- سؤال مثل "شو آخر الأخبار عنا بالأردن؟" داخل نطاقك. افهمه على أنه طلب لأهم المستجدات الأردنية المدنية والرسمية الحديثة، واستبعد الرياضة والترفيه والمشاهير والجريمة العشوائية.
 - أجب بالعربية افتراضيًا بلهجة اردنية، بأسلوب عملي وواضح ومناسب للشباب.
 - لا تكن عامًا أو مختصرًا أكثر من اللازم. أعطِ جوابًا مفيدًا ومباشرًا مع أمثلة عند الحاجة.
 - ابدأ بالجواب مباشرة. لا تعرّف بنفسك ولا تكرر اسم المنصة في بداية كل رد.
@@ -89,7 +90,8 @@ const ASSISTANT_SYSTEM_INSTRUCTION = `
 
 خارج النطاق:
 - لا تجب عن الطبخ أو الترفيه أو طلبات لا علاقة لها بنشمي.
-- قل: "أنا مخصص لمساعدتك في القوانين والانتخابات والأحزاب واستخدام منصة نشمي."
+- لا تعتبر سؤالاً عن أحدث الأخبار الأردنية المدنية أو الرسمية خارج النطاق.
+- إذا كان السؤال خارج النطاق فعلًا، قل ذلك بجملة قصيرة واقترح موضوعًا ذا صلة، من دون مقدمة تعريفية مكررة.
 
 الخصوصية:
 - لا تطلب الرقم الوطني أو معلومات شخصية حساسة.
@@ -175,7 +177,18 @@ const STOP_WORDS = new Set([
   "أو"
 ].map(normalizeArabic));
 
-const OFFICIAL_DOMAINS = ["iec.jo", "parties.iec.jo", "pm.gov.jo", "moj.gov.jo", "jordan.gov.jo"];
+const OFFICIAL_DOMAINS = [
+  "gov.jo",
+  "iec.jo",
+  "parties.iec.jo",
+  "pm.gov.jo",
+  "moj.gov.jo",
+  "jordan.gov.jo",
+  "parliament.jo",
+  "representatives.jo",
+  "senate.jo",
+  "rhc.jo"
+];
 
 let cachedClient: GoogleGenAI | null = null;
 
@@ -402,7 +415,8 @@ function buildSystemInstruction(lawContext: LawContextItem[], includeGoogleSearc
     ? [
         "بحث Google مفعّل لهذا السؤال.",
         "استخدم البحث فقط لدعم أو تحديث المعلومات، وليس لاستبدال المصادر المحلية عندما تكون كافية.",
-        "فضّل المصادر الرسمية: iec.jo، parties.iec.jo، pm.gov.jo، moj.gov.jo، الجريدة الرسمية الأردنية، ومواقع حكومية أردنية رسمية.",
+        "فضّل المصادر الرسمية: المواقع الحكومية الأردنية المنتهية بـ gov.jo، iec.jo، pm.gov.jo، representatives.jo، senate.jo، rhc.jo، والجريدة الرسمية الأردنية.",
+        "للأخبار العامة استخدم بترا، المملكة، رؤيا، الغد، الرأي، الدستور، Jordan Times أو Jordan News، ولا تعتمد منشور فيسبوك وحده كمصدر نهائي.",
         "لا تعتمد على مدونات أو منتديات أو صفحات حزبية كمرجع قانوني.",
         "إذا لم تجد مصدرًا رسميًا واضحًا، قل ذلك صراحة."
       ].join("\n")
@@ -556,7 +570,7 @@ export async function generateSharekAssistantResponse(params: {
 
   if (isOutOfScopeRequest(params.message)) {
     return {
-      content: "أنا مخصص لمساعدتك في القوانين والانتخابات والأحزاب واستخدام منصة نشمي. أعد صياغة سؤالك ضمن هذه الموضوعات وسأساعدك بشكل واضح ومحايد.",
+      content: "هذا السؤال خارج نطاق نشمي. اسألني عن القوانين والانتخابات والأحزاب أو المستجدات المدنية والخدمية في الأردن، وسأعطيك جوابًا واضحًا ومحايدًا.",
       model: "local-scope-rule",
       sourceLawIds: [],
       groundingSources: [],
@@ -569,6 +583,17 @@ export async function generateSharekAssistantResponse(params: {
   // environments where no Gemini credential is configured. Only resolve the
   // provider configuration once a request actually needs the provider.
   const config = getSharekAssistantConfig();
+
+  if (isExplicitCurrentNewsQuestion(params.message) && !config.enableGoogleSearch && !params.newsContext) {
+    return {
+      content: "ما بقدر أؤكد آخر الأخبار الآن لأن التحقق المباشر من المصادر غير متاح. جرّب بعد قليل حتى أعطيك مستجدات حديثة وموثقة بدل معلومات قديمة أو غير مؤكدة.",
+      model: "local-freshness-rule",
+      sourceLawIds: [],
+      groundingSources: [],
+      safetyFlags: ["current_news_requires_search"],
+      tokensUsed: null
+    };
+  }
 
   const useGoogleSearch = params.newsContext
     ? config.enableGoogleSearch && isExplicitCurrentNewsQuestion(params.message)
