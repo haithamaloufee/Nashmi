@@ -26,7 +26,15 @@ function testSourceSafety() {
     assert.throws(() => validateNewsSourceUrlSyntax(unsafe));
   }
   assert.equal(classifyNewsSource("https://pm.gov.jo/news"), "official");
+  assert.equal(classifyNewsSource("https://www.rhc.jo/ar/news"), "official");
+  assert.equal(classifyNewsSource("https://www.representatives.jo/AR/News"), "official");
+  assert.equal(classifyNewsSource("https://www.jrtv.gov.jo/news"), "official");
   assert.equal(classifyNewsSource("https://almamlaka.tv/news"), "reputable_media");
+  assert.equal(classifyNewsSource("https://royanews.tv/news"), "reputable_media");
+  assert.equal(classifyNewsSource("https://www.alrai.com/article"), "reputable_media");
+  assert.equal(classifyNewsSource("https://www.addustour.com/articles"), "reputable_media");
+  assert.equal(classifyNewsSource("https://www.jordannews.jo/news"), "reputable_media");
+  assert.equal(classifyNewsSource("https://www.facebook.com/JRTVMedia"), null);
   assert.equal(classifyNewsSource("https://example.com/news"), null);
 }
 
@@ -48,6 +56,8 @@ function testSchemasAndIndexes() {
 
 function testSearchPolicy() {
   assert.equal(isExplicitCurrentNewsQuestion("شو آخر تحديث على الموضوع؟"), true);
+  assert.equal(isExplicitCurrentNewsQuestion("شو اخر الاخبار عنا بالاردن؟"), true);
+  assert.equal(isExplicitCurrentNewsQuestion("What is the latest news in Jordan?"), true);
   assert.equal(isExplicitCurrentNewsQuestion("اشرح لي أثر هذا القرار"), false);
 }
 

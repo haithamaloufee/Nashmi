@@ -7,6 +7,7 @@ import { getNewsConfig } from "@/lib/news/config";
 import { LEGISLATIVE_STAGES, NEWS_CATEGORIES, type NewsSource } from "@/lib/news/types";
 import { classifyNewsSource, resolveGroundedSourceUrl } from "@/lib/news/security";
 import { normalizeArabic } from "@/lib/arabicSearch";
+import { classifyAiProviderError } from "@/lib/ai/resilience";
 
 const CandidateSchema = z.object({
   titleAr: z.string().trim().min(12).max(180),
@@ -50,6 +51,30 @@ const RESPONSE_SCHEMA = {
   }
 };
 
+const FALLBACK_RESPONSE_SCHEMA = {
+  type: "object",
+  required: ["candidates"],
+  properties: {
+    candidates: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["titleAr", "summaryAr", "category", "urgency", "publishedAt", "legislativeStage", "jordanRelevance", "confidence"],
+        properties: {
+          titleAr: { type: "string" },
+          summaryAr: { type: "string" },
+          category: { type: "string" },
+          urgency: { type: "string" },
+          publishedAt: { type: "string" },
+          legislativeStage: { anyOf: [{ type: "string" }, { type: "null" }] },
+          jordanRelevance: { type: "number" },
+          confidence: { type: "number" }
+        }
+      }
+    }
+  }
+};
+
 const DISCOVERY_PROMPT = `
 ابحث في الويب عن أهم المستجدات الأردنية المدنية والسياسية والخدمية المنشورة خلال آخر 24 ساعة فقط.
 
@@ -57,8 +82,10 @@ const DISCOVERY_PROMPT = `
 
 قواعد إلزامية:
 - الأردن هو محور الخبر بوضوح، وليس مجرد ذكر عابر.
-- استخدم المصادر الرسمية أولاً، ثم وكالة الأنباء الأردنية بترا، ثم وسائل إعلام أردنية موثوقة فقط.
-- لا تقبل منشورات شبكات اجتماعية أو رأياً أو شائعة أو خبرًا بلا تاريخ واضح.
+- افحص أولاً المصادر الرسمية الأردنية: رئاسة الوزراء pm.gov.jo، مجلس النواب representatives.jo، مجلس الأعيان senate.jo، الديوان الملكي rhc.jo، الهيئة المستقلة للانتخاب iec.jo، مؤسسة الإذاعة والتلفزيون الأردني jrtv.gov.jo، وبقية المواقع الحكومية المنتهية بـ gov.jo.
+- افحص بعد ذلك وكالة الأنباء الأردنية بترا petra.gov.jo، ثم المملكة almamlaka.tv، رؤيا royanews.tv، الغد alghad.com، الرأي alrai.com، الدستور addustour.com، Jordan Times، وJordan News.
+- يمكن الاستفادة من الحسابات الرسمية الموثقة على فيسبوك أو المنصات الاجتماعية لاكتشاف الحدث فقط، لكن لا تُرجع خبراً إلا إذا وُجد له رابط أصلي في موقع رسمي أو موقع إعلامي أردني موثوق مسموح.
+- لا تقبل منشور شبكة اجتماعية كمصدر نهائي، ولا رأياً أو شائعة أو خبرًا بلا تاريخ ووقت نشر واضحين.
 - لا تنقل ادعاءً لا يسنده مصدر من نتائج Google Search.
 - العنوان عربي محايد وواضح، بلا إثارة أو سؤال أو توجيه سياسي.
 - الملخص عربي واقعي من جملتين أو ثلاث، بلا تحليل أو تأييد.
@@ -86,6 +113,111 @@ function extractGrounding(response: GenerateContentResponse) {
   const chunks = metadata?.groundingChunks || [];
   const supports = metadata?.groundingSupports || [];
   return { chunks, supports };
+}
+
+function sanitizeJsonControlCharacters(value: string) {
+  let result = "";
+  let inString = false;
+  let escaped = false;
+  for (const character of value) {
+    if (inString && character.charCodeAt(0) < 0x20) {
+      result += " ";
+      escaped = false;
+      continue;
+    }
+    result += character;
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (character === '"') inString = !inString;
+  }
+  return result;
+}
+
+function firstJsonObject(value: string) {
+  const start = value.indexOf("{");
+  if (start < 0) return value;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < value.length; index += 1) {
+    const character = value[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (character === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (character === "{") depth += 1;
+    if (character === "}") {
+      depth -= 1;
+      if (depth === 0) return value.slice(start, index + 1);
+    }
+  }
+  return value.slice(start);
+}
+
+function parseDiscoveryPayload(text: string | undefined) {
+  const raw = (text || "").trim();
+  const unfenced = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const json = firstJsonObject(unfenced);
+  return DiscoverySchema.parse(JSON.parse(sanitizeJsonControlCharacters(json || "{}")));
+}
+
+async function requestDiscovery(client: GoogleGenAI, model: string, now: Date, structuredOutput: boolean) {
+  const config = {
+    tools: [{ googleSearch: {} }],
+    temperature: 0.1,
+    maxOutputTokens: 4_096,
+    ...(structuredOutput ? { responseMimeType: "application/json", responseJsonSchema: RESPONSE_SCHEMA } : {})
+  };
+  return client.models.generateContent({
+    model,
+    contents: [{ role: "user", parts: [{ text: `${DISCOVERY_PROMPT}\n\nوقت التنفيذ (UTC): ${now.toISOString()}` }] }],
+    config
+  });
+}
+
+async function normalizeFallbackDiscovery(client: GoogleGenAI, model: string, rawText: string | undefined) {
+  return client.models.generateContent({
+    model,
+    contents: [{
+      role: "user",
+      parts: [{
+        text: [
+          "حوّل بيانات الاكتشاف التالية إلى JSON صالح يطابق المخطط المطلوب حرفيًا.",
+          "حافظ على كل مرشح موجود لديه عنوان وملخص ووقت نشر؛ لا تضف خبراً أو حقيقة غير موجودة في البيانات.",
+          `category يجب أن تكون واحدة من: ${NEWS_CATEGORIES.join(", ")}. حوّل المرادفات إلى أقرب فئة مسموحة.`,
+          "urgency يجب أن تكون normal أو breaking، واستخدم normal افتراضيًا.",
+          `legislativeStage يجب أن تكون null أو واحدة من: ${LEGISLATIVE_STAGES.join(", ")}. استخدم null إذا لم تكن المرحلة مؤكدة.`,
+          "publishedAt يجب أن يكون ISO 8601 مع منطقة زمنية مع الحفاظ على التاريخ والوقت الواردين.",
+          "jordanRelevance وconfidence رقمان بين 0 و1؛ حافظ على القيم الواردة ولا ترفعها.",
+          "احذف المرشح فقط إذا كان العنوان أو الملخص أو وقت النشر مفقودًا بالكامل.",
+          "أعد JSON فقط.",
+          "",
+          rawText || ""
+        ].join("\n")
+      }]
+    }],
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: FALLBACK_RESPONSE_SCHEMA,
+      temperature: 0,
+      maxOutputTokens: 4_096
+    }
+  });
 }
 
 function candidateChunkIndexes(response: GenerateContentResponse, candidate: z.infer<typeof CandidateSchema>, candidateIndex: number) {
@@ -129,37 +261,68 @@ async function sourcesForCandidate(response: GenerateContentResponse, candidate:
 export async function discoverJordanNews(now = new Date()): Promise<{ candidates: DiscoveredCandidate[]; model: string; queryCount: number }> {
   const config = getNewsConfig();
   const client = new GoogleGenAI({ apiKey: getRequiredEnv("GEMINI_API_KEY") });
-  const response = await client.models.generateContent({
-    model: config.discoveryModel,
-    contents: [{ role: "user", parts: [{ text: `${DISCOVERY_PROMPT}\n\nوقت التنفيذ (UTC): ${now.toISOString()}` }] }],
-    config: {
-      tools: [{ googleSearch: {} }],
-      responseMimeType: "application/json",
-      responseJsonSchema: RESPONSE_SCHEMA,
-      temperature: 0.1,
-      maxOutputTokens: 4_096
-    }
-  });
-
-  const parsed = DiscoverySchema.parse(JSON.parse(response.text || "{}"));
+  let model = config.discoveryModel;
+  let response: GenerateContentResponse;
+  let parsed: z.infer<typeof DiscoverySchema>;
+  try {
+    response = await requestDiscovery(client, model, now, true);
+    parsed = parseDiscoveryPayload(response.text);
+  } catch (error) {
+    const classification = classifyAiProviderError(error);
+    if (!classification.retryable || config.discoveryFallbackModel === model) throw error;
+    model = config.discoveryFallbackModel;
+    // Gemini 2.5 search grounding does not support responseMimeType/json-schema
+    // together. Keep the grounded response for citation mapping, then make one
+    // bounded no-search normalization call and validate that result below.
+    response = await requestDiscovery(client, model, now, false);
+    const normalized = await normalizeFallbackDiscovery(client, model, response.text);
+    parsed = parseDiscoveryPayload(normalized.text);
+  }
   const oldestAllowed = now.getTime() - 30 * 60 * 60 * 1000;
   const newestAllowed = now.getTime() + 30 * 60 * 1000;
   const candidates: DiscoveredCandidate[] = [];
+  const diagnostics = {
+    parsed: parsed.candidates.length,
+    invalidTime: 0,
+    belowThreshold: 0,
+    editorial: 0,
+    noValidatedSource: 0,
+    missingOfficialSource: 0,
+    accepted: 0
+  };
 
   for (const [index, candidate] of parsed.candidates.entries()) {
     const publishedAt = new Date(candidate.publishedAt).getTime();
-    if (publishedAt < oldestAllowed || publishedAt > newestAllowed) continue;
-    if (candidate.confidence < config.minConfidence || candidate.jordanRelevance < config.minJordanRelevance) continue;
-    if (!passesEditorialChecks(candidate)) continue;
+    if (publishedAt < oldestAllowed || publishedAt > newestAllowed) {
+      diagnostics.invalidTime += 1;
+      continue;
+    }
+    if (candidate.confidence < config.minConfidence || candidate.jordanRelevance < config.minJordanRelevance) {
+      diagnostics.belowThreshold += 1;
+      continue;
+    }
+    if (!passesEditorialChecks(candidate)) {
+      diagnostics.editorial += 1;
+      continue;
+    }
     const sources = await sourcesForCandidate(response, candidate, index);
-    if (!sources.length) continue;
-    if (["legislation", "elections"].includes(candidate.category) && !sources.some((source) => source.sourceClass === "official")) continue;
+    if (!sources.length) {
+      diagnostics.noValidatedSource += 1;
+      continue;
+    }
+    if (["legislation", "elections"].includes(candidate.category) && !sources.some((source) => source.sourceClass === "official")) {
+      diagnostics.missingOfficialSource += 1;
+      continue;
+    }
     candidates.push({ ...candidate, sources });
+    diagnostics.accepted += 1;
   }
+
+  console.info(JSON.stringify({ level: "info", event: "news.discovery_validation", model, ...diagnostics }));
 
   return {
     candidates: candidates.slice(0, config.maxNewItems),
-    model: config.discoveryModel,
+    model,
     queryCount: response.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length || 0
   };
 }

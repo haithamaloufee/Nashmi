@@ -160,7 +160,11 @@ test("live-news ticker is compact, pausable, mobile-safe, and reduced-motion fri
     ] } })
   }));
   await page.setViewportSize({ width: 320, height: 820 });
+  const initialNewsResponse = page.waitForResponse((response) =>
+    response.url().includes("/api/news/live") && response.status() === 200
+  );
   await page.goto("/", { waitUntil: "domcontentloaded" });
+  await initialNewsResponse;
   const ticker = page.getByRole("region", { name: "آخر المستجدات" });
   await expect(ticker).toBeVisible();
   await expect(ticker).toHaveCSS("height", "36px");
@@ -171,7 +175,11 @@ test("live-news ticker is compact, pausable, mobile-safe, and reduced-motion fri
   await expect(ticker.locator('a[href*="/chat?news="]').first()).toBeVisible();
 
   await page.emulateMedia({ reducedMotion: "reduce" });
+  const reducedMotionNewsResponse = page.waitForResponse((response) =>
+    response.url().includes("/api/news/live") && response.status() === 200
+  );
   await page.reload({ waitUntil: "domcontentloaded" });
+  await reducedMotionNewsResponse;
   await expect(page.locator(".news-ticker-track")).toHaveCSS("animation-name", "none");
   await expect(page.locator('.news-ticker-set[aria-hidden="true"]')).toBeHidden();
 });
