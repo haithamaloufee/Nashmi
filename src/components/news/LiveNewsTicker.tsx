@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Clock3 } from "lucide-react";
+import { Siren } from "lucide-react";
 import type { PublicNewsItem } from "@/lib/news/types";
 
 function TickerItems({ items, duplicate = false }: { items: PublicNewsItem[]; duplicate?: boolean }) {
@@ -49,9 +49,9 @@ export default function LiveNewsTicker({ initialItems }: { initialItems: PublicN
   if (!items.length) return null;
 
   return (
-    <section className={`news-ticker-shell ${pathname === "/" ? "news-ticker-home" : "news-ticker-inner"}`} aria-label="آخر المستجدات">
-      <div className="news-ticker-label"><Clock3 aria-hidden="true" /> آخر المستجدات</div>
-      <div className="news-ticker-window" tabIndex={0} aria-label="عناوين آخر المستجدات؛ مرّر أفقياً أو أوقف الحركة بالتركيز">
+    <section className={`news-ticker-shell ${pathname === "/" ? "news-ticker-home" : "news-ticker-inner"}`} aria-label="أخبار عاجلة">
+      <div className="news-ticker-label"><Siren aria-hidden="true" /> أخبار عاجلة</div>
+      <div className="news-ticker-window" tabIndex={0} aria-label="عناوين الأخبار؛ مرّر أفقياً أو أوقف الحركة بالتركيز">
         <div className="news-ticker-track" style={{ "--ticker-duration": `${duration}s` } as React.CSSProperties}>
           <TickerItems items={items} />
           <TickerItems items={items} duplicate />
