@@ -193,6 +193,21 @@ function parseDiscoveryPayload(text: string | undefined) {
   return DiscoverySchema.parse(JSON.parse(sanitizeJsonControlCharacters(json || "{}")));
 }
 
+function isRecoverableDiscoveryError(error: unknown) {
+  const status = typeof error === "object" && error !== null && "status" in error ? Number((error as { status?: number }).status) : null;
+  return [429, 500, 502, 503, 504].includes(status || 0) || classifyAiProviderError(error).retryable || error instanceof SyntaxError || error instanceof z.ZodError;
+}
+
+async function retryTransientDiscovery<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isRecoverableDiscoveryError(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 1_200));
+    return operation();
+  }
+}
+
 async function requestDiscovery(client: GoogleGenAI, model: string, now: Date, structuredOutput: boolean) {
   const config = {
     tools: [{ googleSearch: {} }],
@@ -200,15 +215,15 @@ async function requestDiscovery(client: GoogleGenAI, model: string, now: Date, s
     maxOutputTokens: 8_192,
     ...(structuredOutput ? { responseMimeType: "application/json", responseJsonSchema: RESPONSE_SCHEMA } : {})
   };
-  return client.models.generateContent({
+  return retryTransientDiscovery(() => client.models.generateContent({
     model,
     contents: [{ role: "user", parts: [{ text: `${DISCOVERY_PROMPT}\n\nوقت التنفيذ (UTC): ${now.toISOString()}` }] }],
     config
-  });
+  }));
 }
 
 async function normalizeFallbackDiscovery(client: GoogleGenAI, model: string, rawText: string | undefined) {
-  return client.models.generateContent({
+  return retryTransientDiscovery(() => client.models.generateContent({
     model,
     contents: [{
       role: "user",
@@ -235,7 +250,7 @@ async function normalizeFallbackDiscovery(client: GoogleGenAI, model: string, ra
       temperature: 0,
       maxOutputTokens: 8_192
     }
-  });
+  }));
 }
 
 function candidateChunkIndexes(response: GenerateContentResponse, candidate: z.infer<typeof CandidateSchema>, candidateIndex: number) {
@@ -286,8 +301,7 @@ export async function discoverJordanNews(now = new Date()): Promise<{ candidates
     response = await requestDiscovery(client, model, now, true);
     parsed = parseDiscoveryPayload(response.text);
   } catch (error) {
-    const classification = classifyAiProviderError(error);
-    if (!classification.retryable || config.discoveryFallbackModel === model) throw error;
+    if (!isRecoverableDiscoveryError(error) || config.discoveryFallbackModel === model) throw error;
     model = config.discoveryFallbackModel;
     // Gemini 2.5 search grounding does not support responseMimeType/json-schema
     // together. Keep the grounded response for citation mapping, then make one
