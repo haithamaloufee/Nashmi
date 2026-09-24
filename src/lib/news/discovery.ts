@@ -197,7 +197,7 @@ async function requestDiscovery(client: GoogleGenAI, model: string, now: Date, s
   const config = {
     tools: [{ googleSearch: {} }],
     temperature: 0.1,
-    maxOutputTokens: 4_096,
+    maxOutputTokens: 8_192,
     ...(structuredOutput ? { responseMimeType: "application/json", responseJsonSchema: RESPONSE_SCHEMA } : {})
   };
   return client.models.generateContent({
@@ -214,7 +214,7 @@ async function normalizeFallbackDiscovery(client: GoogleGenAI, model: string, ra
       role: "user",
       parts: [{
         text: [
-          "حوّل بيانات الاكتشاف التالية إلى JSON صالح يطابق المخطط المطلوب حرفيًا.",
+          "حوّل بيانات الاكتشاف التالية إلى JSON صالح يطابق المخطط المطلوب حرفيًا. إذا كانت البيانات تحتوي JSON غير مكتمل أو علامات اقتباس غير صالحة، أصلح صياغة JSON دون اختراع أخبار أو وقائع.",
           "حافظ على كل مرشح موجود لديه عنوان وملخص ووقت نشر؛ لا تضف خبراً أو حقيقة غير موجودة في البيانات.",
           `category يجب أن تكون واحدة من: ${NEWS_CATEGORIES.join(", ")}. حوّل المرادفات إلى أقرب فئة مسموحة.`,
           "urgency يجب أن تكون normal أو breaking، واستخدم normal افتراضيًا.",
@@ -233,7 +233,7 @@ async function normalizeFallbackDiscovery(client: GoogleGenAI, model: string, ra
       responseMimeType: "application/json",
       responseJsonSchema: FALLBACK_RESPONSE_SCHEMA,
       temperature: 0,
-      maxOutputTokens: 4_096
+      maxOutputTokens: 8_192
     }
   });
 }
@@ -294,7 +294,14 @@ export async function discoverJordanNews(now = new Date()): Promise<{ candidates
     // bounded no-search normalization call and validate that result below.
     response = await requestDiscovery(client, model, now, false);
     const normalized = await normalizeFallbackDiscovery(client, model, response.text);
-    parsed = parseDiscoveryPayload(normalized.text);
+    try {
+      parsed = parseDiscoveryPayload(normalized.text);
+    } catch {
+      // Grounded Gemini 2.5 output occasionally contains incomplete JSON. One
+      // bounded repair pass uses the same grounded text and never adds facts.
+      const repaired = await normalizeFallbackDiscovery(client, model, normalized.text);
+      parsed = parseDiscoveryPayload(repaired.text);
+    }
   }
   const oldestAllowed = now.getTime() - 30 * 60 * 60 * 1000;
   const newestAllowed = now.getTime() + 30 * 60 * 1000;
@@ -312,6 +319,7 @@ export async function discoverJordanNews(now = new Date()): Promise<{ candidates
 
   for (const [index, candidate] of parsed.candidates.entries()) {
     if (!isNashmiRelevant(candidate)) {
+      console.info(JSON.stringify({ level: "info", event: "news.discovery_relevance_rejected", titleAr: candidate.titleAr.slice(0, 180) }));
       diagnostics.irrelevant += 1;
       continue;
     }
