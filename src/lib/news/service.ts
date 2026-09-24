@@ -83,7 +83,7 @@ export async function refreshNews(options: { forceDryRun?: boolean } = {}) {
 
   try {
     const discovery = await discoverJordanNews(now);
-    const stats = { discovered: discovery.candidates.length, created: 0, merged: 0, rejected: 0, dryRun, model: discovery.model, queryCount: discovery.queryCount };
+    const stats = { discovered: discovery.diagnostics.parsed, accepted: discovery.diagnostics.accepted, selected: discovery.candidates.length, rejected: discovery.diagnostics.parsed - discovery.diagnostics.accepted, rejectionReasons: discovery.diagnostics, created: 0, merged: 0, dryRun, model: discovery.model, queryCount: discovery.queryCount };
     const preview: unknown[] = [];
 
     for (const candidate of discovery.candidates) {
@@ -103,7 +103,14 @@ export async function refreshNews(options: { forceDryRun?: boolean } = {}) {
       if (dryRun) continue;
       const publishedAt = new Date(candidate.publishedAt);
       await NewsItem.create({
-        ...candidate,
+        titleAr: candidate.titleAr,
+        summaryAr: candidate.summaryAr,
+        category: candidate.category,
+        urgency: candidate.urgency,
+        legislativeStage: candidate.legislativeStage,
+        jordanRelevance: candidate.jordanRelevance,
+        confidence: candidate.confidence,
+        sources: candidate.sources,
         publishedAt,
         canonicalHash: canonicalNewsHash(candidate.titleAr, publishedAt),
         sourceUrlHashes: candidate.sources.map((source) => sourceUrlHash(source.url)),
