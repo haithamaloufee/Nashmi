@@ -8,6 +8,7 @@ import { LEGISLATIVE_STAGES, NEWS_CATEGORIES, type NewsSource } from "@/lib/news
 import { classifyNewsSource, resolveGroundedSourceUrl } from "@/lib/news/security";
 import { normalizeArabic } from "@/lib/arabicSearch";
 import { classifyAiProviderError } from "@/lib/ai/resilience";
+import { isNashmiRelevant } from "@/lib/news/relevance";
 
 const CandidateSchema = z.object({
   titleAr: z.string().trim().min(12).max(180),
@@ -17,7 +18,10 @@ const CandidateSchema = z.object({
   publishedAt: z.string().datetime({ offset: true }),
   legislativeStage: z.enum(LEGISLATIVE_STAGES).nullable(),
   jordanRelevance: z.number().min(0).max(1),
-  confidence: z.number().min(0).max(1)
+  confidence: z.number().min(0).max(1),
+  nashmiRelevant: z.boolean(),
+  relevanceReason: z.string().trim().min(12).max(400),
+  civicImpact: z.enum(["low", "medium", "high"])
 });
 
 const DiscoverySchema = z.object({ candidates: z.array(CandidateSchema).max(15) });
@@ -35,7 +39,7 @@ const RESPONSE_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["titleAr", "summaryAr", "category", "urgency", "publishedAt", "legislativeStage", "jordanRelevance", "confidence"],
+        required: ["titleAr", "summaryAr", "category", "urgency", "publishedAt", "legislativeStage", "jordanRelevance", "confidence", "nashmiRelevant", "relevanceReason", "civicImpact"],
         properties: {
           titleAr: { type: "string", minLength: 12, maxLength: 180 },
           summaryAr: { type: "string", minLength: 30, maxLength: 900 },
@@ -44,7 +48,10 @@ const RESPONSE_SCHEMA = {
           publishedAt: { type: "string", format: "date-time" },
           legislativeStage: { anyOf: [{ type: "string", enum: LEGISLATIVE_STAGES }, { type: "null" }] },
           jordanRelevance: { type: "number", minimum: 0, maximum: 1 },
-          confidence: { type: "number", minimum: 0, maximum: 1 }
+          confidence: { type: "number", minimum: 0, maximum: 1 },
+          nashmiRelevant: { type: "boolean" },
+          relevanceReason: { type: "string", minLength: 12, maxLength: 400 },
+          civicImpact: { type: "string", enum: ["low", "medium", "high"] }
         }
       }
     }
@@ -59,7 +66,7 @@ const FALLBACK_RESPONSE_SCHEMA = {
       type: "array",
       items: {
         type: "object",
-        required: ["titleAr", "summaryAr", "category", "urgency", "publishedAt", "legislativeStage", "jordanRelevance", "confidence"],
+        required: ["titleAr", "summaryAr", "category", "urgency", "publishedAt", "legislativeStage", "jordanRelevance", "confidence", "nashmiRelevant", "relevanceReason", "civicImpact"],
         properties: {
           titleAr: { type: "string" },
           summaryAr: { type: "string" },
@@ -68,7 +75,10 @@ const FALLBACK_RESPONSE_SCHEMA = {
           publishedAt: { type: "string" },
           legislativeStage: { anyOf: [{ type: "string" }, { type: "null" }] },
           jordanRelevance: { type: "number" },
-          confidence: { type: "number" }
+          confidence: { type: "number" },
+          nashmiRelevant: { type: "boolean" },
+          relevanceReason: { type: "string" },
+          civicImpact: { type: "string" }
         }
       }
     }
@@ -76,9 +86,9 @@ const FALLBACK_RESPONSE_SCHEMA = {
 };
 
 const DISCOVERY_PROMPT = `
-ابحث في الويب عن أهم المستجدات الأردنية المدنية والسياسية والخدمية المنشورة خلال آخر 24 ساعة فقط.
+ابحث في الويب عن مستجدات حديثة وموثقة في الأردن تخص التشريعات، سياسة الحكومة، البرلمان، الأحزاب، الانتخابات، الإصلاح السياسي، القرارات المدنية الكبرى أو التغييرات المهمة في السياسات العامة التي ينبغي للمواطن فهمها، والمنشورة خلال آخر 24 ساعة فقط. نشمي ليست خدمة أخبار عامة.
 
-الموضوعات المسموحة حصراً: التشريعات، الحكومة، مجلس الأمة، الأحزاب الأردنية، الانتخابات، البلديات، الخدمات العامة، التعليم، النقل، والمشاركة المدنية.
+قيّم الحدث نفسه لا فئة الخبر وحدها. قرارات الخدمات والتعليم والنقل والبلديات تُقبل عند تغيير سياسة أو قاعدة تمس شريحة واسعة. تبقى إجراءات العمل التشريعي والسياسي مهمة ولو كان أثرها اليومي المباشر منخفضاً.
 
 قواعد إلزامية:
 - يجب أن تستخدم أداة Google Search فعلياً في هذه العملية؛ لا تعتمد على الذاكرة. ابدأ ببحث مؤرخ لليوم الحالي في المصادر المذكورة أدناه. إذا لم تنفذ الأداة بحثاً، أعد candidates فارغة.
@@ -89,6 +99,9 @@ const DISCOVERY_PROMPT = `
 - يمكن استخدام الموضوعات والوسوم المتداولة في الأردن على X وفيسبوك ومؤشرات Google كإشارات لاكتشاف ما يهم الناس، لكن لا تنشر الإشارة نفسها. ابحث عن أصلها ثم لا تُرجعها إلا بعد توثيقها من موقع رسمي أو مؤسستين إعلاميتين موثوقتين.
 - يمكن الاستفادة من الحسابات الرسمية الموثقة على فيسبوك أو المنصات الاجتماعية لاكتشاف الحدث فقط، لكن لا تُرجع خبراً إلا إذا وُجد له رابط أصلي في موقع رسمي أو موقع إعلامي أردني موثوق مسموح.
 - لا تقبل منشور شبكة اجتماعية كمصدر نهائي، ولا رأياً أو شائعة أو خبرًا بلا تاريخ ووقت نشر واضحين.
+- استبعد أخبار الجرائم والحوادث العادية، مصادرة السلع والإطارات، التفتيش وضبط اعتداءات المياه والكهرباء الفردية، الأسعار والذهب والطقس والرياضة والترفيه، التدريب الروتيني، الزيارات الاحتفالية، مذكرات التفاهم والنشاطات المؤسسية الصغيرة، إلا عند نشوء تغيير كبير وموثق في السياسة العامة.
+- الخبر الملكي يحتاج صلة حقيقية بسياسة الأردن أو الحكومة أو الإصلاح أو تشريع أو دبلوماسية ذات أهمية وطنية واضحة. مجرد حضور أو لقاء بروتوكولي لا يكفي.
+- لكل مرشح أرجع nashmiRelevant بقيمة true فقط إذا اجتاز نطاق نشمي، وrelevanceReason يشرح القرار بإيجاز، وcivicImpact بقيمة low أو medium أو high. لا ترفع الأثر لتجاوز الفلتر.
 - publishedAt هو وقت النشر الظاهر في صفحة المصدر نفسها محولاً إلى ISO 8601 مع المنطقة الزمنية. لا تخمّن وقتاً ولا تستخدم وقت منتصف الليل كقيمة افتراضية.
 - لا تنقل ادعاءً لا يسنده مصدر من نتائج Google Search.
 - العنوان عربي محايد وواضح، بلا إثارة أو سؤال أو توجيه سياسي.
@@ -208,6 +221,7 @@ async function normalizeFallbackDiscovery(client: GoogleGenAI, model: string, ra
           `legislativeStage يجب أن تكون null أو واحدة من: ${LEGISLATIVE_STAGES.join(", ")}. استخدم null إذا لم تكن المرحلة مؤكدة.`,
           "publishedAt يجب أن يكون ISO 8601 مع منطقة زمنية مع الحفاظ على التاريخ والوقت الواردين.",
           "jordanRelevance وconfidence رقمان بين 0 و1؛ حافظ على القيم الواردة ولا ترفعها.",
+          "nashmiRelevant قيمة boolean وrelevanceReason سبب الملاءمة وcivicImpact واحدة من low أو medium أو high؛ حافظ على التقييم الوارد ولا تحول مرشحاً غير مناسب إلى مناسب.",
           "احذف المرشح فقط إذا كان العنوان أو الملخص أو وقت النشر مفقودًا بالكامل.",
           "أعد JSON فقط.",
           "",
@@ -262,7 +276,7 @@ async function sourcesForCandidate(response: GenerateContentResponse, candidate:
   return sources;
 }
 
-export async function discoverJordanNews(now = new Date()): Promise<{ candidates: DiscoveredCandidate[]; model: string; queryCount: number }> {
+export async function discoverJordanNews(now = new Date()): Promise<{ candidates: DiscoveredCandidate[]; model: string; queryCount: number; diagnostics: Record<string, number> }> {
   const config = getNewsConfig();
   const client = new GoogleGenAI({ apiKey: getRequiredEnv("GEMINI_API_KEY") });
   let model = config.discoveryModel;
@@ -287,6 +301,7 @@ export async function discoverJordanNews(now = new Date()): Promise<{ candidates
   const candidates: DiscoveredCandidate[] = [];
   const diagnostics = {
     parsed: parsed.candidates.length,
+    irrelevant: 0,
     invalidTime: 0,
     belowThreshold: 0,
     editorial: 0,
@@ -296,6 +311,10 @@ export async function discoverJordanNews(now = new Date()): Promise<{ candidates
   };
 
   for (const [index, candidate] of parsed.candidates.entries()) {
+    if (!isNashmiRelevant(candidate)) {
+      diagnostics.irrelevant += 1;
+      continue;
+    }
     const publishedAt = new Date(candidate.publishedAt).getTime();
     if (publishedAt < oldestAllowed || publishedAt > newestAllowed) {
       diagnostics.invalidTime += 1;
@@ -327,6 +346,7 @@ export async function discoverJordanNews(now = new Date()): Promise<{ candidates
   return {
     candidates: candidates.slice(0, config.maxNewItems),
     model,
-    queryCount: response.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length || 0
+    queryCount: response.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length || 0,
+    diagnostics
   };
 }
