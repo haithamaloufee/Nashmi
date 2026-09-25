@@ -165,14 +165,17 @@ test("live-news ticker is compact, pausable, mobile-safe, and reduced-motion fri
   );
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await initialNewsResponse;
-  const ticker = page.getByRole("region", { name: "آخر المستجدات" });
+  const ticker = page.getByRole("region", { name: "آخر الأخبار" });
   await expect(ticker).toBeVisible();
-  await expect(ticker).toHaveCSS("height", "36px");
+  await expect(ticker).toHaveCSS("height", "46px");
+  await expect(ticker.locator(".news-ticker-label")).toHaveCSS("background-image", /gradient/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
   const track = ticker.locator(".news-ticker-track");
   await ticker.hover();
   await expect(track).toHaveCSS("animation-play-state", "paused");
   await expect(ticker.locator('a[href*="/chat?news="]').first()).toBeVisible();
+  await ticker.locator(".news-ticker-window").focus();
+  await expect(track).toHaveCSS("animation-play-state", "paused");
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reducedMotionNewsResponse = page.waitForResponse((response) =>
@@ -182,6 +185,30 @@ test("live-news ticker is compact, pausable, mobile-safe, and reduced-motion fri
   await reducedMotionNewsResponse;
   await expect(page.locator(".news-ticker-track")).toHaveCSS("animation-name", "none");
   await expect(page.locator('.news-ticker-set[aria-hidden="true"]')).toBeHidden();
+});
+
+test("live-news ticker visual matrix integrates with home and inner pages", async ({ page }) => {
+  const items = [
+    { id: "507f1f77bcf86cd799439011", newsId: "507f1f77bcf86cd799439011", titleAr: "مجلس الوزراء يقر مشروع قانون الإدارة المحلية", summaryAr: "تحديث تشريعي موثق للاختبار.", category: "legislation", urgency: "normal", publishedAt: new Date().toISOString(), sources: [{ publisher: "قناة المملكة" }] },
+    { id: "507f191e810c19729de860ea", newsId: "507f191e810c19729de860ea", titleAr: "الهيئة المستقلة للانتخاب تعلن تعليمات انتخابية جديدة", summaryAr: "تحديث انتخابي موثق للاختبار.", category: "elections", urgency: "breaking", publishedAt: new Date().toISOString(), sources: [{ publisher: "رؤيا الإخباري" }] }
+  ];
+  await page.route("**/api/news/live", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, data: { items } }) }));
+  for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }, { width: 1920, height: 1080 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const ticker = page.getByRole("region", { name: "آخر الأخبار" });
+    await expect(ticker).toBeVisible();
+    await expect(ticker).toHaveCSS("height", viewport.width <= 414 ? "46px" : "50px");
+    await expect(ticker.locator(".news-ticker-breaking").first()).toHaveText("عاجل");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
+    await page.screenshot({ path: path.join(screenshotDir, `news-ticker-home-${viewport.width}x${viewport.height}.png`) });
+  }
+  await page.goto("/updates", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("region", { name: "آخر الأخبار" })).toBeVisible();
+  await page.evaluate(() => localStorage.setItem("nashmi-theme", "dark"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("region", { name: "آخر الأخبار" })).toBeVisible();
+  await page.screenshot({ path: path.join(screenshotDir, "news-ticker-inner-dark-1440.png") });
 });
 
 test("party and authority profiles use a single social timeline without mixed-language actions", async ({ page }) => {

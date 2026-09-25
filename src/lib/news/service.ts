@@ -2,7 +2,7 @@ import "server-only";
 
 import { connectToDatabase } from "@/lib/db";
 import { getNewsConfig } from "@/lib/news/config";
-import { canonicalNewsHash, newsTitleSimilarity, sourceUrlHash } from "@/lib/news/dedupe";
+import { canonicalNewsHash, isSameNewsEvent, sourceUrlHash } from "@/lib/news/dedupe";
 import { discoverJordanNews, type DiscoveredCandidate } from "@/lib/news/feedDiscovery";
 import { newRefreshToken } from "@/lib/news/security";
 import type { NewsContextSnapshot, PublicNewsItem } from "@/lib/news/types";
@@ -37,7 +37,7 @@ export async function getActiveNewsItems(limit = 10) {
   await connectToDatabase();
   const config = getNewsConfig();
   const items = await NewsItem.find(buildActiveNewsQuery(new Date(), config.activeHours))
-    .sort({ urgency: -1, lastSeenAt: -1 })
+    .sort({ urgency: -1, publishedAt: -1 })
     .limit(Math.min(Math.max(limit, 1), 10))
     .lean();
   return items.map(serializePublicNews);
@@ -68,9 +68,9 @@ async function findDuplicate(candidate: DiscoveredCandidate) {
   if (direct) return direct;
   const nearby = await NewsItem.find({
     category: candidate.category,
-    publishedAt: { $gte: new Date(new Date(candidate.publishedAt).getTime() - 36 * 60 * 60 * 1000), $lte: new Date(new Date(candidate.publishedAt).getTime() + 36 * 60 * 60 * 1000) }
+    publishedAt: { $gte: new Date(new Date(candidate.publishedAt).getTime() - 12 * 60 * 60 * 1000), $lte: new Date(new Date(candidate.publishedAt).getTime() + 12 * 60 * 60 * 1000) }
   }).select("titleAr sources sourceUrlHashes").limit(50);
-  return nearby.find((item) => newsTitleSimilarity(item.titleAr, candidate.titleAr) >= 0.62) || null;
+  return nearby.find((item) => isSameNewsEvent(item.titleAr, candidate.titleAr)) || null;
 }
 
 export async function refreshNews(options: { forceDryRun?: boolean } = {}) {

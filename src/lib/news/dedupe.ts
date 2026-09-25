@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { normalizeArabic } from "@/lib/arabicSearch";
 
-const TITLE_STOP_WORDS = new Set(["في", "من", "على", "الى", "إلى", "عن", "هذا", "هذه", "مع", "بعد", "قبل", "الأردن", "الاردن"]);
+const TITLE_STOP_WORDS = new Set(["في", "من", "على", "الى", "إلى", "عن", "هذا", "هذه", "مع", "بعد", "قبل", "الأردن", "الاردن", "اليوم"]);
+const EVENT_GENERIC = new Set(["مجلس", "نواب", "وزراء", "حكومه", "يناقش", "مناقشه", "يقر", "اقرار", "تعديل", "مشروع", "قانون", "نظام", "قرار", "جديد", "جديده"]);
 
 export function normalizeNewsTitle(value: string) {
   return normalizeArabic(value)
@@ -36,4 +37,13 @@ export function newsTitleSimilarity(left: string, right: string) {
   const intersection = [...a].filter((token) => b.has(token)).length;
   const union = new Set([...a, ...b]).size;
   return intersection / union;
+}
+
+export function isSameNewsEvent(left: string, right: string) {
+  const leftTokens = new Set(normalizeNewsTitle(left).split(" ").filter(Boolean));
+  const rightTokens = new Set(normalizeNewsTitle(right).split(" ").filter(Boolean));
+  const shared = [...leftTokens].filter((token) => rightTokens.has(token));
+  if (shared.length < 3) return false;
+  if (!shared.some((token) => !EVENT_GENERIC.has(token))) return false;
+  return newsTitleSimilarity(left, right) >= 0.5 && shared.length / Math.min(leftTokens.size, rightTokens.size) >= 0.65;
 }

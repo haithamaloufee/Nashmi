@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Siren } from "lucide-react";
+import { Radio } from "lucide-react";
 import type { PublicNewsItem } from "@/lib/news/types";
 
-function TickerItems({ items, duplicate = false }: { items: PublicNewsItem[]; duplicate?: boolean }) {
+function TickerItems({ items, duplicate = false, measureRef }: { items: PublicNewsItem[]; duplicate?: boolean; measureRef?: React.Ref<HTMLDivElement> }) {
   return (
-    <div className="news-ticker-set" aria-hidden={duplicate || undefined}>
+    <div ref={measureRef} className="news-ticker-set" aria-hidden={duplicate || undefined}>
       {items.map((item) => (
         <Link
           key={`${duplicate ? "duplicate-" : ""}${item.id}`}
@@ -18,7 +18,8 @@ function TickerItems({ items, duplicate = false }: { items: PublicNewsItem[]; du
           title={item.summaryAr}
         >
           {item.urgency === "breaking" ? <span className="news-ticker-breaking">عاجل</span> : null}
-          <span>{item.titleAr}</span>
+          <span className="news-ticker-headline">{item.titleAr}</span>
+          {item.sources[0]?.publisher ? <span className="news-ticker-source">{item.sources[0].publisher}</span> : null}
         </Link>
       ))}
     </div>
@@ -28,7 +29,18 @@ function TickerItems({ items, duplicate = false }: { items: PublicNewsItem[]; du
 export default function LiveNewsTicker({ initialItems }: { initialItems: PublicNewsItem[] }) {
   const pathname = usePathname();
   const [items, setItems] = useState(initialItems);
-  const duration = useMemo(() => Math.max(32, Math.min(110, items.reduce((total, item) => total + item.titleAr.length, 0) * 0.48)), [items]);
+  const firstSetRef = useRef<HTMLDivElement>(null);
+  const [duration, setDuration] = useState(48);
+
+  useEffect(() => {
+    const set = firstSetRef.current;
+    if (!set) return;
+    const measure = () => setDuration(Math.max(18, set.getBoundingClientRect().width / 58));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(set);
+    return () => observer.disconnect();
+  }, [items]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,11 +61,11 @@ export default function LiveNewsTicker({ initialItems }: { initialItems: PublicN
   if (!items.length) return null;
 
   return (
-    <section className={`news-ticker-shell ${pathname === "/" ? "news-ticker-home" : "news-ticker-inner"}`} aria-label="أخبار عاجلة">
-      <div className="news-ticker-label"><Siren aria-hidden="true" /> أخبار عاجلة</div>
+    <section className={`news-ticker-shell ${pathname === "/" ? "news-ticker-home" : "news-ticker-inner"}`} aria-label="آخر الأخبار">
+      <div className="news-ticker-label"><Radio aria-hidden="true" /><span className="news-ticker-label-desktop">آخر الأخبار</span><span className="news-ticker-label-mobile">الأخبار</span></div>
       <div className="news-ticker-window" tabIndex={0} aria-label="عناوين الأخبار؛ مرّر أفقياً أو أوقف الحركة بالتركيز">
         <div className="news-ticker-track" style={{ "--ticker-duration": `${duration}s` } as React.CSSProperties}>
-          <TickerItems items={items} />
+          <TickerItems items={items} measureRef={firstSetRef} />
           <TickerItems items={items} duplicate />
         </div>
       </div>
