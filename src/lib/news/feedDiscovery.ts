@@ -4,23 +4,21 @@ import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { getRequiredEnv } from "@/lib/env";
 import { getNewsConfig } from "@/lib/news/config";
-import { classifyNewsSource, assertPublicNewsSourceUrl } from "@/lib/news/security";
+import { assertPublicNewsSourceUrl } from "@/lib/news/security";
 import { NEWS_CATEGORIES, type NewsCategory, type NewsSource } from "@/lib/news/types";
+import { NEWS_REASON_CODES, isPublishableDecision, obviousCivicDecision, prefilterCivicNews, type NewsDecision } from "@/lib/news/editorial";
+import { FEEDS, parseFeed, type FeedItem } from "@/lib/news/feedParsing";
 
-const FEEDS = [
-  { id: "mamlaka", url: "https://almamlakatv.com/rss.xml", host: "almamlakatv.com", publisher: "قناة المملكة", format: "rss" },
-  { id: "roya", url: "https://royanews.tv/rss", host: "royanews.tv", publisher: "رؤيا الإخباري", format: "atom" },
-] as const;
 const FEED_EDGE_URL = "https://nashmi-news-refresh.hytham-r181.workers.dev/feed";
 const FeedDecisionSchema = z.object({
   items: z.array(z.object({
     index: z.number().int().min(0),
     relevant: z.boolean(),
     category: z.enum(NEWS_CATEGORIES),
+    civicImpact: z.enum(["low", "medium", "high"]),
+    reasonCode: z.enum(NEWS_REASON_CODES),
   })).max(20),
 });
-
-type FeedItem = { title: string; summary: string; url: string; publishedAt: string; publisher: string };
 
 export type DiscoveredCandidate = {
   titleAr: string;
@@ -33,48 +31,9 @@ export type DiscoveredCandidate = {
   confidence: number;
   nashmiRelevant: boolean;
   relevanceReason: string;
-  civicImpact: "medium";
+  civicImpact: "medium" | "high";
   sources: NewsSource[];
 };
-
-function cleanText(value: string) {
-  return value
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&quot;|&#34;/g, '"')
-    .replace(/&apos;|&#39;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function feedField(item: string, name: string) {
-  return item.match(new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)<\\/${name}>`, "i"))?.[1]?.trim() || "";
-}
-
-function parseFeed(xml: string, now: Date, feed: typeof FEEDS[number]) {
-  const items: FeedItem[] = [];
-  // This publisher's feed occasionally has non-standard whitespace, so read item
-  // fields conservatively rather than relying on the entire document being valid XML.
-  for (const match of xml.matchAll(feed.format === "atom" ? /<entry>([\s\S]*?)<\/entry>/gi : /<item>([\s\S]*?)<\/item>/gi)) {
-    const raw = match[1];
-    const title = cleanText(feedField(raw, "title"));
-    const summary = cleanText(feed.format === "atom" ? feedField(raw, "summary") || feedField(raw, "content") : feedField(raw, "description"));
-    const url = feed.format === "atom" ? raw.match(/<link\b[^>]*rel="alternate"[^>]*href="([^"]+)"/i)?.[1] || "" : feedField(raw, "link");
-    const timestamp = Date.parse(feedField(raw, feed.format === "atom" ? "updated" : "pubDate"));
-    if (title.length < 12 || summary.length < 20 || !Number.isFinite(timestamp)) continue;
-    if (timestamp > now.getTime() + 10 * 60_000 || timestamp < now.getTime() - 30 * 60 * 60_000) continue;
-    try {
-      const parsedUrl = new URL(url);
-      if (parsedUrl.hostname !== feed.host || !/^\/news\/\d+-?$/.test(parsedUrl.pathname)) continue;
-      if (classifyNewsSource(url) !== "reputable_media") continue;
-    } catch { continue; }
-    items.push({ title: title.slice(0, 180), summary: summary.slice(0, 900), url, publishedAt: new Date(timestamp).toISOString(), publisher: feed.publisher });
-  }
-  return items.slice(0, 25);
-}
 
 async function fetchPublisherFeed(feed: typeof FEEDS[number]) {
   try {
@@ -86,10 +45,6 @@ async function fetchPublisherFeed(feed: typeof FEEDS[number]) {
   return response.text();
 }
 
-function fallbackRelevant(item: FeedItem) {
-  return /الأردن|الأردني|الأردنية|عمّان|عمان|إربد|اربد|الزرقاء|العقبة|الكرك|السلط|مادبا|جرش|عجلون|الطفيلة|المفرق|معان|الصفدي|مجلس النواب|الحكومة الأردنية|الديوان الملكي|القوات المسلحة الأردنية|الضمان الاجتماعي|أمانة عمان|وزارة (الصحة|التربية|التعليم|النقل|العمل|الداخلية|الخارجية)|الغذاء والدواء|الأمن العام|البنك المركزي الأردني/.test(`${item.title} ${item.summary}`);
-}
-
 function isPromotional(item: FeedItem) {
   return /الراعي (البلاتيني|الذهبي|الفضي)|مزوّد .* الحصري|يرعى .* (مؤتمر|مهرجان)|شركة .* تعلن عن (عروض|خدمات)/.test(item.title);
 }
@@ -99,11 +54,11 @@ async function classifyFeed(items: FeedItem[], model: string) {
     const ai = new GoogleGenAI({ apiKey: getRequiredEnv("GEMINI_API_KEY") });
     const response = await ai.models.generateContent({
       model,
-      contents: `صنّف عناصر خلاصات الأخبار الأردنية التالية. اختر relevant=true فقط للخبر الذي يتمحور حول الأردن أو يؤثر على مواطنيه مباشرة. استبعد الرياضة والترفيه والعالم بلا صلة واضحة بالأردن. لا تؤلف أي خبر ولا تغير عنوانه أو ملخصه أو رابطه. أعد JSON فقط: {"items":[{"index":0,"relevant":true,"category":"government"}]}، واستخدم إحدى الفئات: ${NEWS_CATEGORIES.join(", ")}. العناصر: ${JSON.stringify(items.map((item, index) => ({ index, title: item.title, summary: item.summary })))}`,
-      config: { responseMimeType: "application/json", maxOutputTokens: 2000, temperature: 0 },
+      contents: `أنت محرر منصة نشمي الأردنية للشؤون السياسية والتشريعية والمدنية. صنّف كل عنصر على حدة. relevant=true فقط لتطور جديد ومهم في تشريع أردني أو سياسة حكومية عامة أو البرلمان أو الأحزاب أو الانتخابات أو إصلاح سياسي أو قرار محلي تنظيمي واسع الأثر. مجرد وقوع الخبر في الأردن أو ذكر وزارة أو جهة رسمية لا يكفي. ارفض الضبط والتفتيش الروتيني والجرائم والحوادث والطقس والرياضة والترفيه والإعلانات واستطلاعات الناشر واللقاءات والورش المعتادة. لا تُنشئ خبراً ولا تغيّر الوقائع. أعد لكل index قراراً واحداً؛ إن شككت فاجعل relevant=false وreasonCode=NOT_RELEVANT. JSON فقط بالصيغة {"items":[{"index":0,"relevant":true,"category":"legislation","civicImpact":"high","reasonCode":"NEW_LEGISLATION"}]}. category من ${NEWS_CATEGORIES.join(", ")}. reasonCode من ${NEWS_REASON_CODES.join(", ")}. العناصر: ${JSON.stringify(items.map((item, index) => ({ index, title: item.title, summary: item.summary })))}`,
+      config: { responseMimeType: "application/json", maxOutputTokens: 4000, temperature: 0 },
     });
     const parsed = FeedDecisionSchema.parse(JSON.parse(response.text || "{}"));
-    return new Map(parsed.items.map((item) => [item.index, item]));
+    return new Map<number, NewsDecision>(parsed.items.filter((item) => item.index < items.length).map((item) => [item.index, item]));
   } catch (error) {
     console.warn("news.feed_classification_fallback", { reason: error instanceof Error ? error.message.slice(0, 160) : "unknown" });
     return null;
@@ -116,40 +71,50 @@ export async function discoverJordanNews(now = new Date()) {
     if (xml.length > 250_000) throw new Error(`NEWS_FEED_${feed.id}_TOO_LARGE`);
     return parseFeed(xml, now, feed);
   }));
+  const sourceCounts = Object.fromEntries(FEEDS.map((feed, index) => [feed.id, results[index].status === "fulfilled" ? results[index].value.length : 0]));
   const parsedItems = results.flatMap((result) => result.status === "fulfilled" ? result.value : [])
     .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
-  const items = parsedItems.filter((item) => fallbackRelevant(item) && !isPromotional(item)).slice(0, 20);
+  const config = getNewsConfig();
+  const items = parsedItems.filter((item) =>
+    Date.parse(item.publishedAt) >= now.getTime() - config.activeHours * 60 * 60_000 &&
+    prefilterCivicNews(item.title, item.summary) && !isPromotional(item)
+  ).slice(0, 20);
   if (!items.length && results.every((result) => result.status === "rejected")) {
     throw new Error(`NEWS_FEEDS_UNAVAILABLE: ${results.map((result) => result.status === "rejected" ? String(result.reason).slice(0, 80) : "ok").join("; ")}`);
   }
-  const config = getNewsConfig();
-  const decisions = items.length ? await classifyFeed(items, config.discoveryModel) : null;
+  let decisions = items.length ? await classifyFeed(items, config.discoveryModel) : null;
+  let usedModel = config.discoveryModel;
+  if (!decisions && items.length && config.discoveryFallbackModel !== config.discoveryModel) {
+    decisions = await classifyFeed(items, config.discoveryFallbackModel);
+    usedModel = config.discoveryFallbackModel;
+  }
   const candidates: DiscoveredCandidate[] = [];
+  let editorial = 0;
+  let noValidatedSource = 0;
   for (const [index, item] of items.entries()) {
-    const decision = decisions?.get(index);
-    // Keep the publisher's original title, summary, date and link. The AI can
-    // only classify; a conservative keyword fallback keeps refreshes functional.
-    await assertPublicNewsSourceUrl(item.url);
+    const decision = decisions ? decisions.get(index) : obviousCivicDecision(item.title, item.summary, index);
+    if (!isPublishableDecision(decision)) { editorial += 1; continue; }
+    try { await assertPublicNewsSourceUrl(item.url); } catch { noValidatedSource += 1; continue; }
     candidates.push({
       titleAr: item.title,
       summaryAr: item.summary,
-      category: decision?.category || "civic",
+      category: decision!.category,
       urgency: "normal",
       publishedAt: item.publishedAt,
       legislativeStage: null,
       jordanRelevance: 0.9,
-      confidence: 0.9,
+      confidence: decisions ? 0.85 : 0.75,
       nashmiRelevant: true,
-      relevanceReason: `خبر أردني حديث منشور مباشرة في موقع ${item.publisher}.`,
-      civicImpact: "medium",
+      relevanceReason: `${decision!.reasonCode}: تطور في الشأن العام الأردني نشره ${item.publisher}.`,
+      civicImpact: decision!.civicImpact as "medium" | "high",
       sources: [{ title: item.title, url: item.url, publisher: item.publisher, sourceClass: "reputable_media" }],
     });
     if (candidates.length >= config.maxNewItems) break;
   }
   return {
     candidates,
-    model: decisions ? config.discoveryModel : "publisher-rss-fallback",
+    model: decisions ? usedModel : "strict-deterministic-fallback",
     queryCount: FEEDS.length,
-    diagnostics: { parsed: parsedItems.length, accepted: candidates.length, irrelevant: parsedItems.length - candidates.length, invalidTime: 0, belowThreshold: 0, editorial: 0, noValidatedSource: 0, missingOfficialSource: 0 },
+    diagnostics: { parsed: parsedItems.length, sourceCounts, prefiltered: items.length, accepted: candidates.length, irrelevant: parsedItems.length - items.length, invalidTime: 0, belowThreshold: 0, editorial, noValidatedSource, missingOfficialSource: 0 },
   };
 }
