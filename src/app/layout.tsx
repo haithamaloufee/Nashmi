@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const cookieLanguage = cookieStore.get("nashmi-language")?.value;
   const initialLanguage = isLanguage(cookieLanguage) ? cookieLanguage : defaultLanguage;
   const initialDir = initialLanguage === "ar" ? "rtl" : "ltr";
-  const newsItems = await getActiveNewsItems(15).catch(() => []);
+  const newsItems = await getActiveNewsItems(10).catch(() => []);
   return (
     <html lang={initialLanguage} dir={initialDir} suppressHydrationWarning>
       <head>

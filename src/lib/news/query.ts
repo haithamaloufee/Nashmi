@@ -2,7 +2,7 @@ export function buildActiveNewsQuery(now: Date, activeHours: number) {
   return {
     status: "published" as const,
     isActive: true,
-    publishedAt: { $gte: new Date(now.getTime() - activeHours * 60 * 60 * 1000) },
+    lastSeenAt: { $gte: new Date(now.getTime() - activeHours * 60 * 60 * 1000) },
     expiresAt: { $gt: now }
   };
 }

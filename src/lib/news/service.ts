@@ -33,12 +33,12 @@ export function serializePublicNews(item: any): PublicNewsItem {
   return { ...snapshot, id: snapshot.newsId, publishedAt: snapshot.publishedAt.toISOString() };
 }
 
-export async function getActiveNewsItems(limit = 15) {
+export async function getActiveNewsItems(limit = 10) {
   await connectToDatabase();
   const config = getNewsConfig();
   const items = await NewsItem.find(buildActiveNewsQuery(new Date(), config.activeHours))
-    .sort({ urgency: -1, publishedAt: -1 })
-    .limit(Math.min(Math.max(limit, 1), 15))
+    .sort({ urgency: -1, lastSeenAt: -1 })
+    .limit(Math.min(Math.max(limit, 1), 10))
     .lean();
   return items.map(serializePublicNews);
 }
