@@ -8,6 +8,7 @@ import { classifyNewsSource, assertPublicNewsSourceUrl } from "@/lib/news/securi
 import { NEWS_CATEGORIES, type NewsCategory, type NewsSource } from "@/lib/news/types";
 
 const FEED_URL = "https://almamlakatv.com/rss.xml";
+const FEED_EDGE_URL = "https://nashmi-news-refresh.hytham-r181.workers.dev/feed";
 const PUBLISHER = "قناة المملكة";
 const FeedDecisionSchema = z.object({
   items: z.array(z.object({
@@ -93,7 +94,8 @@ async function classifyFeed(items: FeedItem[], model: string) {
 }
 
 export async function discoverJordanNews(now = new Date()) {
-  const response = await fetch(FEED_URL, { cache: "no-store", signal: AbortSignal.timeout(12_000) });
+  let response = await fetch(FEED_URL, { cache: "no-store", signal: AbortSignal.timeout(12_000) });
+  if (!response.ok) response = await fetch(FEED_EDGE_URL, { cache: "no-store", signal: AbortSignal.timeout(12_000) });
   if (!response.ok) throw new Error(`NEWS_FEED_HTTP_${response.status}`);
   const xml = await response.text();
   if (xml.length > 250_000) throw new Error("NEWS_FEED_TOO_LARGE");
