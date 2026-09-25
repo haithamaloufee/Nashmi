@@ -3,7 +3,7 @@ import "server-only";
 import { connectToDatabase } from "@/lib/db";
 import { getNewsConfig } from "@/lib/news/config";
 import { canonicalNewsHash, newsTitleSimilarity, sourceUrlHash } from "@/lib/news/dedupe";
-import { discoverJordanNews, type DiscoveredCandidate } from "@/lib/news/discovery";
+import { discoverJordanNews, type DiscoveredCandidate } from "@/lib/news/feedDiscovery";
 import { newRefreshToken } from "@/lib/news/security";
 import type { NewsContextSnapshot, PublicNewsItem } from "@/lib/news/types";
 import NewsItem from "@/models/NewsItem";
