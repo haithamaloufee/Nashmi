@@ -73,7 +73,7 @@ function parseFeed(xml: string, now: Date, feed: typeof FEEDS[number]) {
     } catch { continue; }
     items.push({ title: title.slice(0, 180), summary: summary.slice(0, 900), url, publishedAt: new Date(timestamp).toISOString(), publisher: feed.publisher });
   }
-  return items.slice(0, 10);
+  return items.slice(0, 25);
 }
 
 async function fetchPublisherFeed(feed: typeof FEEDS[number]) {
@@ -116,8 +116,9 @@ export async function discoverJordanNews(now = new Date()) {
     if (xml.length > 250_000) throw new Error(`NEWS_FEED_${feed.id}_TOO_LARGE`);
     return parseFeed(xml, now, feed);
   }));
-  const items = results.flatMap((result) => result.status === "fulfilled" ? result.value : [])
-    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt)).slice(0, 20);
+  const parsedItems = results.flatMap((result) => result.status === "fulfilled" ? result.value : [])
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+  const items = parsedItems.filter((item) => fallbackRelevant(item) && !isPromotional(item)).slice(0, 20);
   if (!items.length && results.every((result) => result.status === "rejected")) {
     throw new Error(`NEWS_FEEDS_UNAVAILABLE: ${results.map((result) => result.status === "rejected" ? String(result.reason).slice(0, 80) : "ok").join("; ")}`);
   }
@@ -128,7 +129,6 @@ export async function discoverJordanNews(now = new Date()) {
     const decision = decisions?.get(index);
     // Keep the publisher's original title, summary, date and link. The AI can
     // only classify; a conservative keyword fallback keeps refreshes functional.
-    if (!fallbackRelevant(item) || isPromotional(item)) continue;
     await assertPublicNewsSourceUrl(item.url);
     candidates.push({
       titleAr: item.title,
@@ -150,6 +150,6 @@ export async function discoverJordanNews(now = new Date()) {
     candidates,
     model: decisions ? config.discoveryModel : "publisher-rss-fallback",
     queryCount: FEEDS.length,
-    diagnostics: { parsed: items.length, accepted: candidates.length, irrelevant: items.length - candidates.length, invalidTime: 0, belowThreshold: 0, editorial: 0, noValidatedSource: 0, missingOfficialSource: 0 },
+    diagnostics: { parsed: parsedItems.length, accepted: candidates.length, irrelevant: parsedItems.length - candidates.length, invalidTime: 0, belowThreshold: 0, editorial: 0, noValidatedSource: 0, missingOfficialSource: 0 },
   };
 }
