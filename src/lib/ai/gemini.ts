@@ -200,8 +200,8 @@ function getGeminiClient() {
 
 export function getSharekAssistantConfig() {
   return {
-    model: getOptionalEnv("GEMINI_MODEL") || "gemini-3.1-flash-lite",
-    fallbackModel: getOptionalEnv("GEMINI_FALLBACK_MODEL") || "gemini-3.5-flash",
+    model: getOptionalEnv("GEMINI_MODEL") || "gemini-3.5-flash-lite",
+    fallbackModel: getOptionalEnv("GEMINI_FALLBACK_MODEL") || "gemini-3.1-flash-lite",
     // Google Search grounding is unavailable to Gemini 3.x on the free API tier.
     searchModel: getOptionalEnv("GEMINI_SEARCH_MODEL") || "gemini-2.5-flash-lite",
     enableGoogleSearch: getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false),
