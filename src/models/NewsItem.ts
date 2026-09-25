@@ -36,6 +36,7 @@ const NewsItemSchema = new Schema(
 
 NewsItemSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 NewsItemSchema.index({ status: 1, isActive: 1, publishedAt: -1 });
+NewsItemSchema.index({ status: 1, isActive: 1, lastSeenAt: -1 });
 NewsItemSchema.index({ sourceUrlHashes: 1 });
 
 export type NewsItemDocument = InferSchemaType<typeof NewsItemSchema>;

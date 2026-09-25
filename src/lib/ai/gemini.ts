@@ -200,8 +200,10 @@ function getGeminiClient() {
 
 export function getSharekAssistantConfig() {
   return {
-    model: getOptionalEnv("GEMINI_MODEL") || "gemini-3-flash-preview",
-    fallbackModel: getOptionalEnv("GEMINI_FALLBACK_MODEL") || "gemini-2.5-flash",
+    model: getOptionalEnv("GEMINI_MODEL") || "gemini-3.5-flash",
+    fallbackModel: getOptionalEnv("GEMINI_FALLBACK_MODEL") || "gemini-3.1-flash-lite",
+    // Google Search grounding is unavailable to Gemini 3.x on the free API tier.
+    searchModel: getOptionalEnv("GEMINI_SEARCH_MODEL") || "gemini-2.5-flash-lite",
     enableGoogleSearch: getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false),
     maxHistoryMessages: getGeminiNumber("GEMINI_MAX_HISTORY_MESSAGES", 30, 2, 80),
     maxLawContextResults: getGeminiNumber("GEMINI_MAX_LAW_CONTEXT_RESULTS", 6, 0, 12),
@@ -607,15 +609,17 @@ export async function generateSharekAssistantResponse(params: {
   };
 
   let response: GenerateContentResponse;
-  let usedModel = config.model;
+  const primaryModel = useGoogleSearch ? config.searchModel : config.model;
+  const fallbackModel = useGoogleSearch ? primaryModel : config.fallbackModel;
+  let usedModel = primaryModel;
 
   try {
-    response = await callGemini({ ...responseConfig, model: config.model });
+    response = await callGemini({ ...responseConfig, model: primaryModel });
   } catch (error) {
-    if (!shouldFallback(error) || config.fallbackModel === config.model) throw toFriendlyError(error);
-    usedModel = config.fallbackModel;
+    if (!shouldFallback(error) || fallbackModel === primaryModel) throw toFriendlyError(error);
+    usedModel = fallbackModel;
     try {
-      response = await callGemini({ ...responseConfig, model: config.fallbackModel });
+      response = await callGemini({ ...responseConfig, model: fallbackModel });
     } catch (fallbackError) {
       throw toFriendlyError(fallbackError);
     }

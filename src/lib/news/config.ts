@@ -10,12 +10,12 @@ export function getNewsConfig() {
   return {
     refreshSecret: secret || "development-news-refresh-secret-only",
     autoPublish: getGeminiBoolean("NEWS_AUTO_PUBLISH", false),
-    maxNewItems: Math.floor(getGeminiNumber("NEWS_MAX_NEW_ITEMS", 8, 1, 15)),
-    activeHours: Math.floor(getGeminiNumber("NEWS_ACTIVE_HOURS", 24, 1, 72)),
+    maxNewItems: Math.floor(getGeminiNumber("NEWS_MAX_NEW_ITEMS", 10, 1, 10)),
+    activeHours: Math.floor(getGeminiNumber("NEWS_ACTIVE_HOURS", 1, 1, 72)),
     retentionDays: Math.floor(getGeminiNumber("NEWS_RETENTION_DAYS", 7, 1, 30)),
-    discoveryModel: getOptionalEnv("NEWS_GEMINI_MODEL") || getOptionalEnv("GEMINI_MODEL") || "gemini-3-flash-preview",
-    discoveryFallbackModel: getOptionalEnv("NEWS_GEMINI_FALLBACK_MODEL") || getOptionalEnv("GEMINI_FALLBACK_MODEL") || "gemini-2.5-flash",
-    minConfidence: getGeminiNumber("NEWS_MIN_CONFIDENCE", 0.72, 0.5, 1),
-    minJordanRelevance: getGeminiNumber("NEWS_MIN_JORDAN_RELEVANCE", 0.8, 0.5, 1)
+    discoveryModel: getOptionalEnv("NEWS_GEMINI_MODEL") || "gemini-2.5-flash-lite",
+    discoveryFallbackModel: getOptionalEnv("NEWS_GEMINI_FALLBACK_MODEL") || "gemini-2.5-flash-lite",
+    minConfidence: getGeminiNumber("NEWS_MIN_CONFIDENCE", 0.6, 0.5, 1),
+    minJordanRelevance: getGeminiNumber("NEWS_MIN_JORDAN_RELEVANCE", 0.7, 0.5, 1)
   };
 }

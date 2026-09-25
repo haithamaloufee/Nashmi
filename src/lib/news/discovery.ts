@@ -86,9 +86,9 @@ const FALLBACK_RESPONSE_SCHEMA = {
 };
 
 const DISCOVERY_PROMPT = `
-ابحث في الويب عن مستجدات حديثة وموثقة في الأردن تخص التشريعات، سياسة الحكومة، البرلمان، الأحزاب، الانتخابات، الإصلاح السياسي، القرارات المدنية الكبرى أو التغييرات المهمة في السياسات العامة التي ينبغي للمواطن فهمها، والمنشورة خلال آخر 24 ساعة فقط. نشمي ليست خدمة أخبار عامة.
+ابحث في الويب عن أهم الأخبار الأردنية الموثقة المنشورة خلال آخر 24 ساعة: قرارات الحكومة، البرلمان، الأحزاب والانتخابات، الخدمات العامة، التعليم، النقل، الاقتصاد الذي يمس المواطنين، والقضايا الوطنية أو الإقليمية ذات الصلة المباشرة بالأردن. اختر مزيجاً متنوعاً من المصادر الموثوقة، ولا تحصر الأخبار في التشريعات وحدها.
 
-قيّم الحدث نفسه لا فئة الخبر وحدها. قرارات الخدمات والتعليم والنقل والبلديات تُقبل عند تغيير سياسة أو قاعدة تمس شريحة واسعة. تبقى إجراءات العمل التشريعي والسياسي مهمة ولو كان أثرها اليومي المباشر منخفضاً.
+قيّم أهمية الحدث للمواطن الأردني لا فئة الخبر وحدها. اقبل الخبر المحلي الجديد والمفيد حتى لو لم يغيّر سياسة عامة، مع إعطاء الأولوية للأحداث المؤثرة على شريحة واسعة.
 
 قواعد إلزامية:
 - يجب أن تستخدم أداة Google Search فعلياً في هذه العملية؛ لا تعتمد على الذاكرة. ابدأ ببحث مؤرخ لليوم الحالي في المصادر المذكورة أدناه. إذا لم تنفذ الأداة بحثاً، أعد candidates فارغة.
@@ -99,8 +99,7 @@ const DISCOVERY_PROMPT = `
 - يمكن استخدام الموضوعات والوسوم المتداولة في الأردن على X وفيسبوك ومؤشرات Google كإشارات لاكتشاف ما يهم الناس، لكن لا تنشر الإشارة نفسها. ابحث عن أصلها ثم لا تُرجعها إلا بعد توثيقها من موقع رسمي أو مؤسستين إعلاميتين موثوقتين.
 - يمكن الاستفادة من الحسابات الرسمية الموثقة على فيسبوك أو المنصات الاجتماعية لاكتشاف الحدث فقط، لكن لا تُرجع خبراً إلا إذا وُجد له رابط أصلي في موقع رسمي أو موقع إعلامي أردني موثوق مسموح.
 - لا تقبل منشور شبكة اجتماعية كمصدر نهائي، ولا رأياً أو شائعة أو خبرًا بلا تاريخ ووقت نشر واضحين.
-- استبعد أخبار الجرائم والحوادث العادية، مصادرة السلع والإطارات، التفتيش وضبط اعتداءات المياه والكهرباء الفردية، الأسعار والذهب والطقس والرياضة والترفيه، التدريب الروتيني، الزيارات الاحتفالية، مذكرات التفاهم والنشاطات المؤسسية الصغيرة، إلا عند نشوء تغيير كبير وموثق في السياسة العامة.
-- الخبر الملكي يحتاج صلة حقيقية بسياسة الأردن أو الحكومة أو الإصلاح أو تشريع أو دبلوماسية ذات أهمية وطنية واضحة. مجرد حضور أو لقاء بروتوكولي لا يكفي.
+- استبعد الشائعات والرأي والرياضة والترفيه والأخبار العالمية غير المرتبطة بالأردن. تجنب الحوادث الفردية والأنشطة البروتوكولية الصغيرة إذا وُجدت أخبار أردنية أهم.
 - لكل مرشح أرجع nashmiRelevant بقيمة true فقط إذا اجتاز نطاق نشمي، وrelevanceReason يشرح القرار بإيجاز، وcivicImpact بقيمة low أو medium أو high. لا ترفع الأثر لتجاوز الفلتر.
 - publishedAt هو وقت النشر الظاهر في صفحة المصدر نفسها محولاً إلى ISO 8601 مع المنطقة الزمنية. لا تخمّن وقتاً ولا تستخدم وقت منتصف الليل كقيمة افتراضية.
 - لا تنقل ادعاءً لا يسنده مصدر من نتائج Google Search.
@@ -109,7 +108,7 @@ const DISCOVERY_PROMPT = `
 - urgency تكون breaking فقط لقرار رسمي عاجل أو حدث عام كبير جارٍ الآن.
 - legislativeStage يعبأ فقط عند وجود مرحلة تشريعية مؤكدة، وإلا null.
 - لا تكرر الحدث نفسه بصياغات مختلفة.
-- أعد بحد أقصى 12 مرشحاً مرتبة حسب الأهمية العامة والثقة.
+- أعد حتى 10 مرشحين متنوعين مرتبين حسب الحداثة والأهمية والثقة.
 - أعد JSON فقط وفق المخطط المطلوب.
 `.trim();
 
@@ -202,7 +201,8 @@ async function retryTransientDiscovery<T>(operation: () => Promise<T>): Promise<
   try {
     return await operation();
   } catch (error) {
-    if (!isRecoverableDiscoveryError(error)) throw error;
+    // A quota-exhausted 429 is not helped by an immediate retry.
+    if ((typeof error === "object" && error !== null && "status" in error && Number((error as { status?: number }).status) === 429) || !isRecoverableDiscoveryError(error)) throw error;
     await new Promise((resolve) => setTimeout(resolve, 1_200));
     return operation();
   }
@@ -253,6 +253,20 @@ async function normalizeFallbackDiscovery(client: GoogleGenAI, model: string, ra
   }));
 }
 
+async function fetchAndParseDiscovery(client: GoogleGenAI, model: string, now: Date) {
+  // Gemini 2.5 can ground with Search, but not with JSON schema in the same call.
+  const structuredOutput = !model.startsWith("gemini-2.5");
+  const response = await requestDiscovery(client, model, now, structuredOutput);
+  if (structuredOutput) return { response, parsed: parseDiscoveryPayload(response.text) };
+  const normalized = await normalizeFallbackDiscovery(client, model, response.text);
+  try {
+    return { response, parsed: parseDiscoveryPayload(normalized.text) };
+  } catch {
+    const repaired = await normalizeFallbackDiscovery(client, model, normalized.text);
+    return { response, parsed: parseDiscoveryPayload(repaired.text) };
+  }
+}
+
 function candidateChunkIndexes(response: GenerateContentResponse, candidate: z.infer<typeof CandidateSchema>, candidateIndex: number) {
   const { chunks, supports } = extractGrounding(response);
   const normalizedTitle = normalizeArabic(candidate.titleAr);
@@ -298,24 +312,11 @@ export async function discoverJordanNews(now = new Date()): Promise<{ candidates
   let response: GenerateContentResponse;
   let parsed: z.infer<typeof DiscoverySchema>;
   try {
-    response = await requestDiscovery(client, model, now, true);
-    parsed = parseDiscoveryPayload(response.text);
+    ({ response, parsed } = await fetchAndParseDiscovery(client, model, now));
   } catch (error) {
     if (!isRecoverableDiscoveryError(error) || config.discoveryFallbackModel === model) throw error;
     model = config.discoveryFallbackModel;
-    // Gemini 2.5 search grounding does not support responseMimeType/json-schema
-    // together. Keep the grounded response for citation mapping, then make one
-    // bounded no-search normalization call and validate that result below.
-    response = await requestDiscovery(client, model, now, false);
-    const normalized = await normalizeFallbackDiscovery(client, model, response.text);
-    try {
-      parsed = parseDiscoveryPayload(normalized.text);
-    } catch {
-      // Grounded Gemini 2.5 output occasionally contains incomplete JSON. One
-      // bounded repair pass uses the same grounded text and never adds facts.
-      const repaired = await normalizeFallbackDiscovery(client, model, normalized.text);
-      parsed = parseDiscoveryPayload(repaired.text);
-    }
+    ({ response, parsed } = await fetchAndParseDiscovery(client, model, now));
   }
   const oldestAllowed = now.getTime() - 30 * 60 * 60 * 1000;
   const newestAllowed = now.getTime() + 30 * 60 * 1000;

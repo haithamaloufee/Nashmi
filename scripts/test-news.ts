@@ -72,8 +72,8 @@ function testIsolationAndRetentionQueries() {
   assert.throws(() => buildOwnedChatSessionQuery(sessionId, "not-an-owner-id"), /NOT_FOUND/);
 
   const now = new Date("2026-09-22T12:00:00Z");
-  const active = buildActiveNewsQuery(now, 24);
-  assert.equal(active.publishedAt.$gte.toISOString(), "2026-09-21T12:00:00.000Z");
+  const active = buildActiveNewsQuery(now, 1);
+  assert.equal(active.lastSeenAt.$gte.toISOString(), "2026-09-22T11:00:00.000Z");
   assert.equal(active.expiresAt.$gt, now);
   const lock = buildRefreshLockFilter(now);
   assert.equal(lock._id, "global");
@@ -81,36 +81,10 @@ function testIsolationAndRetentionQueries() {
 }
 
 function testEditorialRelevance() {
-  const base = { summaryAr: "تطور أردني موثق يستدعي تقييم صلته بنطاق نشمي وأثره المدني.", nashmiRelevant: true, relevanceReason: "تقييم صلة الحدث بالحياة المدنية والسياسية في الأردن", civicImpact: "medium" as const };
-  const rejected = [
-    ["ضبط خمسة آلاف إطار منتهي الصلاحية في عمان", "transport"],
-    ["ضبط اعتداءات على شبكة المياه في إحدى المناطق", "public_services"],
-    ["فوز المنتخب في مباراة ودية", "civic"],
-    ["ارتفاع سعر الذهب في السوق المحلية", "government"],
-    ["حادث سير على الطريق الصحراوي", "transport"],
-    ["وزارة تنظم دورة تدريبية لموظفيها", "education"],
-    ["الملك يشارك في اجتماع متعدد الأطراف دون إعلان قرار", "government"]
-  ] as const;
-  for (const [titleAr, category] of rejected) {
-    assert.equal(isNashmiRelevant({ ...base, titleAr, category }), false, `Expected rejection: ${titleAr}`);
-  }
-
-  const allowed = [
-    ["مجلس النواب يبدأ مناقشة مشروع قانون جديد", "legislation", "low"],
-    ["مجلس الوزراء يقر نظاماً جديداً لتنظيم النقل العام", "government", "medium"],
-    ["الهيئة المستقلة للانتخاب تعلن تعديل تعليمات تسجيل الأحزاب", "elections", "low"],
-    ["الهيئة تعلن تسجيل حزب سياسي جديد", "parties", "low"],
-    ["الحكومة تقر تعديلاً على رسوم الخدمات العامة", "public_services", "high"],
-    ["الحكومة تعتمد سياسة وطنية جديدة للتعليم", "government", "high"],
-    ["الملك يؤكد سياسة الأردن بشأن القضية الفلسطينية", "government", "high"]
-  ] as const;
-  for (const [titleAr, category, civicImpact] of allowed) {
-    assert.equal(isNashmiRelevant({ ...base, titleAr, category, civicImpact }), true, `Expected acceptance: ${titleAr}`);
-  }
-
-  assert.equal(isNashmiRelevant({ ...base, titleAr: "الحكومة تغير قواعد خدمة المياه للمواطنين في جميع المحافظات", category: "public_services", civicImpact: "high" }), true);
-  assert.equal(isNashmiRelevant({ ...base, titleAr: "ضبط مخالفة مياه في حي واحد", category: "public_services", civicImpact: "high" }), false);
-  assert.equal(isNashmiRelevant({ ...base, titleAr: "مجلس النواب يناقش مشروع قانون", category: "legislation", civicImpact: "low", nashmiRelevant: false }), false);
+  const base = { titleAr: "خبر أردني موثق عن الخدمات العامة", summaryAr: "تطور أردني موثق يستدعي اطلاع المواطنين عليه.", category: "public_services" as const, nashmiRelevant: true, relevanceReason: "خبر محلي جديد يهم المواطنين في الأردن", civicImpact: "low" as const };
+  assert.equal(isNashmiRelevant(base), true);
+  assert.equal(isNashmiRelevant({ ...base, nashmiRelevant: false }), false);
+  assert.equal(isNashmiRelevant({ ...base, relevanceReason: "غير مهم" }), false);
 }
 
 testHmac();
