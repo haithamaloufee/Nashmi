@@ -7,6 +7,18 @@ interface ScheduledEventController { cron: string; scheduledTime: number; }
 interface WorkerExecutionContext { waitUntil(promise: Promise<unknown>): void; }
 
 const encoder = new TextEncoder();
+const FEED_URL = "https://almamlakatv.com/rss.xml";
+
+async function publisherFeed() {
+  const response = await fetch(FEED_URL, {
+    headers: { "accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8", "user-agent": "Mozilla/5.0 (compatible; NashmiNews/1.0)" },
+    signal: AbortSignal.timeout(12_000)
+  });
+  if (!response.ok) return new Response("Publisher feed unavailable", { status: 502 });
+  const body = await response.text();
+  if (body.length > 250_000 || !body.includes("<item>")) return new Response("Invalid publisher feed", { status: 502 });
+  return new Response(body, { headers: { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "public, max-age=60" } });
+}
 
 function hex(bytes: ArrayBuffer) {
   return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -38,8 +50,10 @@ const worker = {
     ctx.waitUntil(refresh(env));
   },
   async fetch(request: Request) {
-    if (new URL(request.url).pathname !== "/health") return new Response("Not found", { status: 404 });
-    return Response.json({ ok: true, service: "nashmi-news-refresh" });
+    const path = new URL(request.url).pathname;
+    if (path === "/feed" && request.method === "GET") return publisherFeed();
+    if (path === "/health") return Response.json({ ok: true, service: "nashmi-news-refresh" });
+    return new Response("Not found", { status: 404 });
   }
 };
 
