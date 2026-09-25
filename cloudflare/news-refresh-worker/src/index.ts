@@ -7,17 +7,24 @@ interface ScheduledEventController { cron: string; scheduledTime: number; }
 interface WorkerExecutionContext { waitUntil(promise: Promise<unknown>): void; }
 
 const encoder = new TextEncoder();
-const FEED_URL = "https://almamlakatv.com/rss.xml";
+const FEEDS = {
+  mamlaka: { url: "https://almamlakatv.com/rss.xml", marker: "<item>" },
+  roya: { url: "https://royanews.tv/rss", marker: "<entry>" }
+} as const;
 
-async function publisherFeed() {
-  const response = await fetch(FEED_URL, {
-    headers: { "accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8", "user-agent": "Mozilla/5.0 (compatible; NashmiNews/1.0)" },
-    signal: AbortSignal.timeout(12_000)
-  });
-  if (!response.ok) return new Response("Publisher feed unavailable", { status: 502 });
-  const body = await response.text();
-  if (body.length > 250_000 || !body.includes("<item>")) return new Response("Invalid publisher feed", { status: 502 });
-  return new Response(body, { headers: { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "public, max-age=60" } });
+async function publisherFeed(source: string | null) {
+  const feed = FEEDS[source === "roya" ? "roya" : "mamlaka"];
+  if (source && !(source in FEEDS)) return new Response("Unknown publisher", { status: 404 });
+  try {
+    const response = await fetch(feed.url, {
+      headers: { "accept": "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8", "user-agent": "Mozilla/5.0 (compatible; NashmiNews/1.0)" },
+      signal: AbortSignal.timeout(12_000)
+    });
+    if (!response.ok) return new Response("Publisher feed unavailable", { status: 502 });
+    const body = await response.text();
+    if (body.length > 250_000 || !body.includes(feed.marker)) return new Response("Invalid publisher feed", { status: 502 });
+    return new Response(body, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=60" } });
+  } catch { return new Response("Publisher feed unavailable", { status: 502 }); }
 }
 
 function hex(bytes: ArrayBuffer) {
@@ -42,6 +49,7 @@ async function refresh(env: Env) {
   });
   const body = await response.text();
   if (!response.ok) throw new Error(`Nashmi refresh failed (${response.status}): ${body.slice(0, 300)}`);
+  console.log(`Nashmi refresh success: ${body.slice(0, 300)}`);
   return body;
 }
 
@@ -50,9 +58,9 @@ const worker = {
     ctx.waitUntil(refresh(env));
   },
   async fetch(request: Request) {
-    const path = new URL(request.url).pathname;
-    if (path === "/feed" && request.method === "GET") return publisherFeed();
-    if (path === "/health") return Response.json({ ok: true, service: "nashmi-news-refresh" });
+    const url = new URL(request.url);
+    if (url.pathname === "/feed" && request.method === "GET") return publisherFeed(url.searchParams.get("source"));
+    if (url.pathname === "/health") return Response.json({ ok: true, service: "nashmi-news-refresh" });
     return new Response("Not found", { status: 404 });
   }
 };
