@@ -55,6 +55,12 @@ export function getMongoUri() {
     if (/[\\/."$\s]/.test(databaseName)) {
       throw new InvalidEnvError("MONGODB_URI", "contains an invalid database name");
     }
+    if (process.env.VERCEL_ENV === "preview" && databaseName !== "nashmi_preview") {
+      throw new InvalidEnvError("MONGODB_URI", "PREVIEW_DATABASE_ISOLATION_FAILED");
+    }
+    if (process.env.VERCEL_ENV === "production" && databaseName === "nashmi_preview") {
+      throw new InvalidEnvError("MONGODB_URI", "PRODUCTION_DATABASE_ISOLATION_FAILED");
+    }
   } catch (error) {
     if (error instanceof InvalidEnvError) throw error;
     throw new InvalidEnvError("MONGODB_URI", "is not a valid MongoDB connection string");
