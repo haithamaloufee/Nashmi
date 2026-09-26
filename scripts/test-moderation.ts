@@ -45,6 +45,7 @@ async function integrationTests() {
     ]);
     await connectToDatabase();
     await Comment.init();
+    await Comment.collection.dropIndex("authorUserId_1_clientRequestId_1");
     const publisherId = new Types.ObjectId();
     const post = await Post.create({ authorType: "party", authorUserId: publisherId, content: "منشور اختبار" });
     const poll = await Poll.create({ authorType: "party", authorUserId: publisherId, question: "سؤال اختبار", options: [{ text: "نعم" }, { text: "لا" }] });
@@ -57,6 +58,7 @@ async function integrationTests() {
     const postInput = input(String(first._id), "post", "أنا ضد هذا القرار.");
     const accepted = await createModeratedComment(postInput, async () => allow);
     assert.equal(accepted.created, true);
+    assert.ok((await Comment.collection.indexes()).some((index) => index.name === "authorUserId_1_clientRequestId_1" && index.unique));
     assert.equal(accepted.comment.content, postInput.content);
     assert.equal((await Post.findById(post._id))?.commentsCount, 1);
     const retry = await createModeratedComment(postInput, async () => { throw new Error("classifier must not run on retry"); });

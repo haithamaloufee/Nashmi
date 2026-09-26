@@ -24,6 +24,23 @@ export type CommentClassifier = (content: string) => Promise<ModerationDecision>
 
 type Input = { targetType: CommentTarget; targetId: string; userId: string; userRole: "citizen"; content: string; clientRequestId?: string };
 
+let idempotencyIndexPromise: Promise<string> | null = null;
+
+async function ensureIdempotencyIndex() {
+  if (!idempotencyIndexPromise) {
+    // Production disables Mongoose autoIndex. Block comment writes until the
+    // retry index exists, including on the first request after deployment.
+    idempotencyIndexPromise = Comment.collection.createIndex(
+      { authorUserId: 1, clientRequestId: 1 },
+      { name: "authorUserId_1_clientRequestId_1", unique: true, partialFilterExpression: { clientRequestId: { $type: "string" } } }
+    ).catch((error) => {
+      idempotencyIndexPromise = null;
+      throw error;
+    });
+  }
+  await idempotencyIndexPromise;
+}
+
 function metric(event: string, startedAt: number, category = "NONE") {
   console.info({ event: `moderation.${event}`, category, durationMs: Date.now() - startedAt });
 }
@@ -39,6 +56,7 @@ export async function createModeratedComment(input: Input, classify: CommentClas
   const content = cleanContent(input.content);
   if (!content) throw new CommentRejectedError("EMPTY_CONTENT");
   await connectToDatabase();
+  await ensureIdempotencyIndex();
 
   // Retry of a completed request returns the same public comment and cannot increment twice.
   if (input.clientRequestId) {
