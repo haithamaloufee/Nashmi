@@ -7,6 +7,11 @@ export const FEEDS = [
 
 export type FeedItem = { title: string; summary: string; url: string; publishedAt: string; publisher: string };
 
+export function availableFeedLists(results: PromiseSettledResult<FeedItem[]>[]) {
+  if (results.every((result) => result.status === "rejected")) throw new Error("NEWS_ALL_FEEDS_UNAVAILABLE");
+  return results.map((result) => result.status === "fulfilled" ? result.value : []);
+}
+
 function cleanText(value: string) {
   return value
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")

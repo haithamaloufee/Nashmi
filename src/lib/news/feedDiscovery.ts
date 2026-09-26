@@ -5,7 +5,7 @@ import { getRequiredEnv } from "@/lib/env";
 import { getNewsConfig } from "@/lib/news/config";
 import { dedupeExactFeedItems } from "@/lib/news/dedupe";
 import { isObviousNonNashmiNews } from "@/lib/news/editorial";
-import { FEEDS, parseFeed, type FeedItem } from "@/lib/news/feedParsing";
+import { availableFeedLists, FEEDS, parseFeed, type FeedItem } from "@/lib/news/feedParsing";
 import { assertPublicNewsSourceUrl } from "@/lib/news/security";
 import { NEWS_CATEGORIES, type NewsCategory, type NewsSource } from "@/lib/news/types";
 import { parseNewsSelection } from "@/lib/news/selection";
@@ -23,10 +23,10 @@ export type DiscoveredCandidate = {
 
 async function fetchPublisherFeed(feed: typeof FEEDS[number]) {
   try {
-    const response = await fetch(feed.url, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+    const response = await fetch(feed.url, { cache: "no-store", signal: AbortSignal.timeout(7_000) });
     if (response.ok) return await response.text();
-  } catch { /* Vercel egress can be blocked; try the fixed-source Worker. */ }
-  const response = await fetch(`${FEED_EDGE_URL}?source=${feed.id}`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+  } catch { /* Try the fixed-source Worker once. */ }
+  const response = await fetch(`${FEED_EDGE_URL}?source=${feed.id}`, { cache: "no-store", signal: AbortSignal.timeout(7_000) });
   if (!response.ok) throw new Error(`NEWS_FEED_${feed.id}_HTTP_${response.status}`);
   return response.text();
 }
@@ -43,13 +43,18 @@ async function selectFeedItems(items: FeedItem[], model: string, maximum: number
 
 export async function discoverJordanNews(now = new Date()) {
   const config = getNewsConfig();
-  const feedLists = await Promise.all(FEEDS.map(async (feed) => {
+  const feedResults = await Promise.allSettled(FEEDS.map(async (feed) => {
     const xml = await fetchPublisherFeed(feed);
     if (xml.length > 250_000) throw new Error(`NEWS_FEED_${feed.id}_TOO_LARGE`);
     const items = parseFeed(xml, now, feed);
     console.info("feeds_fetched", { source: feed.id, count: items.length });
     return items;
   }));
+  feedResults.forEach((result, index) => {
+    if (result.status === "rejected") console.warn("feed_unavailable", { source: FEEDS[index].id, reason: result.reason instanceof Error ? result.reason.message.slice(0, 100) : "unknown" });
+  });
+  const feedLists = availableFeedLists(feedResults);
+  const failedSources = FEEDS.filter((_, index) => feedResults[index].status === "rejected").map((feed) => feed.id);
   const parsed = feedLists.flat().sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   const nonObvious = parsed.filter((item) => !isObviousNonNashmiNews(item.title));
   const items = dedupeExactFeedItems(nonObvious).slice(0, 40);
@@ -59,7 +64,7 @@ export async function discoverJordanNews(now = new Date()) {
     console.info("selected_count", { count: 0, model: "none" });
     return {
     candidates: [] as DiscoveredCandidate[], model: "none", queryCount: FEEDS.length,
-    diagnostics: { parsed: parsed.length, sourceCounts: Object.fromEntries(FEEDS.map((feed, index) => [feed.id, feedLists[index].length])), candidates: 0, selected: 0, excluded: parsed.length }
+    diagnostics: { parsed: parsed.length, sourceCounts: Object.fromEntries(FEEDS.map((feed, index) => [feed.id, feedLists[index].length])), failedSources, candidates: 0, selected: 0, excluded: parsed.length }
   };
   }
 
@@ -91,6 +96,6 @@ export async function discoverJordanNews(now = new Date()) {
     candidates,
     model: usedModel,
     queryCount: FEEDS.length,
-    diagnostics: { parsed: parsed.length, sourceCounts: Object.fromEntries(FEEDS.map((feed, index) => [feed.id, feedLists[index].length])), candidates: items.length, selected: candidates.length, excluded: parsed.length - items.length }
+    diagnostics: { parsed: parsed.length, sourceCounts: Object.fromEntries(FEEDS.map((feed, index) => [feed.id, feedLists[index].length])), failedSources, candidates: items.length, selected: candidates.length, excluded: parsed.length - items.length }
   };
 }

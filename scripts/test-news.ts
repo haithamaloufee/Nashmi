@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import { activateBatch, batchDocuments, type BatchCandidate } from "../src/lib/news/batchStore";
 import { dedupeExactFeedItems, sourceUrlHash } from "../src/lib/news/dedupe";
 import { isObviousNonNashmiNews } from "../src/lib/news/editorial";
-import { FEEDS, parseFeed } from "../src/lib/news/feedParsing";
+import { availableFeedLists, FEEDS, parseFeed } from "../src/lib/news/feedParsing";
 import { buildActiveNewsQuery, buildRefreshLockFilter } from "../src/lib/news/query";
 import { classifyNewsSource, signNewsRefreshWithSecret, validateNewsSourceUrlSyntax, verifyNewsRefreshSignatureWithSecret } from "../src/lib/news/securityCore";
 import { parseNewsSelection } from "../src/lib/news/selection";
@@ -39,6 +39,8 @@ function testDiscoveryRules() {
   assert.equal(parseFeed(feed(item("Sat, 19 Sep 2026 23:30:00 +0300")), now, FEEDS[0]).length, 1, "six-day-old story must remain eligible");
   assert.equal(parseFeed(feed(item("Thu, 17 Sep 2026 23:30:00 +0300")), now, FEEDS[0]).length, 0, "story older than seven days must be rejected");
   assert.equal(parseFeed(feed(item("Sat, 19 Sep 2026 23:30:00 +0300", "https://almamlakatv.com.evil.test/news/1-")), now, FEEDS[0]).length, 0);
+  assert.deepEqual(availableFeedLists([{ status: "rejected", reason: new Error("publisher unavailable") }, { status: "fulfilled", value: parseFeed(feed(item("Sat, 19 Sep 2026 23:30:00 +0300")), now, FEEDS[0]) }]).map((list) => list.length), [0, 1]);
+  assert.throws(() => availableFeedLists([{ status: "rejected", reason: new Error("mamlaka") }, { status: "rejected", reason: new Error("roya") }]), /NEWS_ALL_FEEDS_UNAVAILABLE/);
   assert.equal(sourceUrlHash("https://royanews.tv/news/1?utm_source=x"), sourceUrlHash("https://royanews.tv/news/1"));
   const items = [
     { title: "مجلس الوزراء يقر مشروع قانون", url: "https://royanews.tv/news/1" },
