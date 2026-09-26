@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
@@ -31,9 +32,10 @@ async function run() {
   let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   try {
     await mongoose.connect(process.env.MONGODB_URI);
+    const testPassword = randomBytes(24).toString("base64url");
     const user = await User.create({
       name: "مواطن اختبار", email: "citizen@test.invalid", emailNormalized: "citizen@test.invalid",
-      emailVerified: true, status: "active", role: "citizen", passwordHash: await hash("LocalTestPassword123!", 8)
+      emailVerified: true, status: "active", role: "citizen", passwordHash: await hash(testPassword, 8)
     });
     const post = await Post.create({ authorType: "admin", authorUserId: user._id, content: "منشور محلي لاختبار التعليقات", publisherSnapshot: { name: "ناشر اختبار", type: "admin" } });
     const appEnv: NodeJS.ProcessEnv = { ...process.env, MONGODB_URI: process.env.MONGODB_URI, JWT_SECRET: process.env.JWT_SECRET, RATE_LIMIT_SECRET: process.env.RATE_LIMIT_SECRET };
@@ -50,7 +52,7 @@ async function run() {
     if (!ready) throw new Error("Local Next server did not become ready");
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
-    const login = await context.request.post(`${baseUrl}/api/auth/login`, { data: { email: user.email, password: "LocalTestPassword123!" } });
+    const login = await context.request.post(`${baseUrl}/api/auth/login`, { data: { email: user.email, password: testPassword } });
     assert.equal(login.status(), 200, `Local citizen login failed: ${login.status()}`);
     const page = await context.newPage();
     await page.route(`**/api/posts/${post._id}/comments`, async (route) => {
