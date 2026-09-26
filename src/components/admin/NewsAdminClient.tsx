@@ -19,6 +19,7 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
   const [state, setState] = useState(initialState);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const funnel = state?.lastStats?.rejectionReasons;
 
   async function toggle(item: AdminNews) {
     setBusy(item._id);
@@ -52,6 +53,21 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
           <div className="rounded-xl bg-slate-50 p-3"><b>آخر تشغيل</b><p>{state?.lastCompletedAt ? new Date(state.lastCompletedAt).toLocaleString("ar-JO") : "—"}</p></div>
           <div className="rounded-xl bg-slate-50 p-3"><b>النتيجة</b><p>{state?.lastStats ? `${state.lastStats.created || 0} منشور / ${state.lastStats.discovered || 0} مرشح` : "—"}</p></div>
         </div>
+        {funnel?.rawFeedItems !== undefined ? (
+          <div className="mt-3 rounded-xl border border-line p-3 text-sm">
+            <p className="font-bold">مسار آخر تحديث</p>
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-ink/70">
+              <span>رؤيا: {funnel.publisherRaw?.roya ?? 0} وارد / {funnel.publisherTopicMatches?.roya ?? 0} مطابق</span>
+              <span>المملكة: {funnel.publisherRaw?.mamlaka ?? 0} وارد / {funnel.publisherTopicMatches?.mamlaka ?? 0} مطابق</span>
+              <span>ضمن 7 أيام: {funnel.afterAgeWindow}</span>
+              <span>بعد حذف التكرار: {funnel.afterExactDedupe}</span>
+              <span>بعد الاستبعاد الواضح: {funnel.afterHardExclusions}</span>
+              <span>مطابق للمواضيع: {funnel.positiveTopicMatches}</span>
+              <span>إلى Gemini: {funnel.geminiInputCount}</span>
+              <span>مختار: {funnel.selectedCount}</span>
+            </div>
+          </div>
+        ) : null}
         {message ? <p className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm font-bold text-civic">{message}</p> : null}
       </section>
 

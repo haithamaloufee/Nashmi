@@ -4,7 +4,8 @@ import mongoose from "mongoose";
 import { activateBatch, batchDocuments, type BatchCandidate } from "../src/lib/news/batchStore";
 import { dedupeExactFeedItems, sourceUrlHash } from "../src/lib/news/dedupe";
 import { isObviousNonNashmiNews } from "../src/lib/news/editorial";
-import { availableFeedLists, FEEDS, parseFeed } from "../src/lib/news/feedParsing";
+import { availableFeedLists, FEEDS, parseFeed, parseFeedWithStats } from "../src/lib/news/feedParsing";
+import { NEWS_TOPIC_THRESHOLD, scoreNewsTopic } from "../src/lib/news/topicScoring";
 import { buildActiveNewsQuery, buildRefreshLockFilter } from "../src/lib/news/query";
 import { classifyNewsSource, signNewsRefreshWithSecret, validateNewsSourceUrlSyntax, verifyNewsRefreshSignatureWithSecret } from "../src/lib/news/securityCore";
 import { parseNewsSelection } from "../src/lib/news/selection";
@@ -39,6 +40,9 @@ function testDiscoveryRules() {
   assert.equal(parseFeed(feed(item("Sat, 19 Sep 2026 23:30:00 +0300")), now, FEEDS[0]).length, 1, "six-day-old story must remain eligible");
   assert.equal(parseFeed(feed(item("Thu, 17 Sep 2026 23:30:00 +0300")), now, FEEDS[0]).length, 0, "story older than seven days must be rejected");
   assert.equal(parseFeed(feed(item("Sat, 19 Sep 2026 23:30:00 +0300", "https://almamlakatv.com.evil.test/news/1-")), now, FEEDS[0]).length, 0);
+  const many = feed(Array.from({ length: 42 }, (_, index) => item("Sat, 19 Sep 2026 23:30:00 +0300", `https://almamlakatv.com/news/${index + 1}-`)).join(""));
+  assert.equal(parseFeedWithStats(many, now, FEEDS[0]).rawFeedItems, 42);
+  assert.equal(parseFeed(many, now, FEEDS[0]).length, 42, "publisher input must not be cut to 25 before topic discovery");
   assert.deepEqual(availableFeedLists([{ status: "rejected", reason: new Error("publisher unavailable") }, { status: "fulfilled", value: parseFeed(feed(item("Sat, 19 Sep 2026 23:30:00 +0300")), now, FEEDS[0]) }]).map((list) => list.length), [0, 1]);
   assert.throws(() => availableFeedLists([{ status: "rejected", reason: new Error("mamlaka") }, { status: "rejected", reason: new Error("roya") }]), /NEWS_ALL_FEEDS_UNAVAILABLE/);
   assert.equal(sourceUrlHash("https://royanews.tv/news/1?utm_source=x"), sourceUrlHash("https://royanews.tv/news/1"));
@@ -55,6 +59,85 @@ function testDiscoveryRules() {
   assert.throws(() => parseNewsSelection({ selected: [{ index: 3, category: "legislation" }] }, 3, 10), /INVALID_INDEX/);
   assert.throws(() => parseNewsSelection({ selected: [{ index: 1, category: "legislation" }, { index: 1, category: "government" }] }, 3, 10), /INVALID_INDEX/);
   assert.throws(() => parseNewsSelection({ selected: Array.from({ length: 11 }, (_, index) => ({ index, category: "legislation" })) }, 20, 10));
+}
+
+function testTopicScoring() {
+  const jordan = "تطور أردني يتعلق بالشأن العام في الأردن.";
+  const allow = [
+    "مجلس الوزراء يقر مشروع قانون معدل للإدارة المحلية",
+    "مجلس النواب يبدأ مناقشة مشروع قانون الضمان الاجتماعي",
+    "مجلس الأعيان يقر تعديلات على قانون العمل",
+    "الهيئة المستقلة للانتخاب تصدر تعليمات جديدة للترشح",
+    "الحكومة تعلن تعديلات على نظام الخدمة المدنية",
+    "حزب سياسي يعلن اندماجاً رسمياً مع حزب آخر",
+    "تعديل جديد على قانون الأحزاب يدخل حيز التنفيذ",
+    "أمانة عمان تعتمد نظاماً جديداً لتنظيم الأرصفة",
+    "الحكومة تقر سياسة جديدة للنقل العام",
+    "وزارة العمل تعدل تعليمات تصاريح العمل",
+    "مجلس الوزراء يحيل مشروع قانون الموازنة إلى النواب",
+    "مجلس النواب يصوت على قانون جديد لحقوق العمال",
+    "اللجنة القانونية تناقش تعديلات قانون الانتخاب",
+    "الهيئة المستقلة للانتخاب تعتمد قائمة انتخابية جديدة",
+    "الأحزاب السياسية تناقش تعديل قانون الأحزاب",
+    "مجلس بلدي يقر قراراً جديداً لتنظيم الأسواق",
+    "بلدية إربد تعتمد تعليمات جديدة لرخص البناء",
+    "الحكومة تعدل تعرفة المياه للمنازل",
+    "رئيس الوزراء يعلن خطة حكومية لإصلاح الإدارة العامة",
+    "مجلس الأمة يقر مشروع قانون حماية البيانات",
+    "الحكومة تعتمد قراراً جديداً بشأن رسوم الجامعات",
+    "النواب يناقشون مشروع نظام للأحزاب السياسية",
+    "الهيئة المستقلة للانتخاب تعلن تعديلات على تعليمات الاقتراع",
+    "أمانة عمان تقر سياسة جديدة للنقل العام",
+    "وزارة التربية تعدل نظام امتحانات الثانوية العامة",
+    "مجلس الوزراء يعتمد إصلاحاً في نظام الرواتب",
+    "لجنة نيابية تحيل مشروع قانون إلى مجلس النواب",
+    "بلدية الزرقاء تعتمد نظاماً جديداً لتنظيم المدن",
+    "الحكومة تصدر تعليمات جديدة بشأن تصاريح العمل",
+    "حزب أردني يعلن تسجيل اندماج رسمي لدى الهيئة"
+  ];
+  const reject = [
+    "ضبط لحوم منتهية الصلاحية في الكرك",
+    "إزالة بسطات مخالفة في وسط عمان",
+    "حملة تفتيش على المحال في إربد",
+    "حادث سير في عمان يسفر عن إصابات",
+    "حالة الطقس في الأردن غداً",
+    "مباراة المنتخب الأردني تنتهي بالتعادل",
+    "فنان يعلن حفلاً جديداً في عمان",
+    "وزارة العمل تستقبل وفداً في زيارة اعتيادية",
+    "ورشة تدريب لموظفين في وزارة العمل",
+    "إطلاق حملة توعوية روتينية في بلدية عمان",
+    "أمانة عمان تنظّم حملة تنظيف في الأحياء",
+    "أمانة عمان تزيل مخالفات في السوق",
+    "وزارة العمل تعلن دورة تدريبية جديدة",
+    "وزارة التربية تستقبل طلبة في مقرها",
+    "الحكومة تحتفل بيوم العمل التطوعي",
+    "مجلس الوزراء يستقبل وفداً زائراً",
+    "مجلس النواب يزور معرضاً تراثياً",
+    "حزب سياسي ينظم إفطاراً خيرياً",
+    "الهيئة المستقلة للانتخاب تقيم حفلاً للموظفين",
+    "بلدية الكرك تضبط مواد غذائية منتهية الصلاحية",
+    "إصلاح كسر خط مياه في عمان",
+    "انقطاع الكهرباء عن حي في الزرقاء",
+    "أسعار الفضة العالمية تسجل ارتفاعاً",
+    "المنتخب يفوز في دوري الأمم",
+    "رئيس الوزراء المصري يقر مشروع قانون جديد",
+    "مجلس النواب اللبناني يناقش قانون الانتخابات",
+    "الحكومة الفرنسية تعدل تعرفة النقل العام",
+    "مدينة إسبانية تقر حظراً جديداً على تغطية الوجه",
+    "الملك يحضر مناسبة احتفالية في عمان",
+    "رئيس الوزراء يرعى حفل تخريج دفعة جديدة"
+  ];
+  for (const title of allow) {
+    const result = scoreNewsTopic(title, jordan);
+    assert.ok(result.score >= NEWS_TOPIC_THRESHOLD, `expected candidate: ${title} (score ${result.score})`);
+    assert.ok(result.matchedTopics.length && result.signals.length);
+  }
+  for (const title of reject) {
+    const result = scoreNewsTopic(title, title.includes("المصري") || title.includes("اللبناني") || title.includes("الفرنسية") ? "قرار يتعلق بالشأن الداخلي في تلك الدولة." : jordan);
+    assert.ok(result.score < NEWS_TOPIC_THRESHOLD || isObviousNonNashmiNews(title), `expected rejection: ${title} (score ${result.score})`);
+  }
+  assert.ok(scoreNewsTopic("مجلس النواب يقر مشروع قانون", "البرلمان الأردني أقر التشريع اليوم.").score > scoreNewsTopic("خبر محلي", "مجلس النواب يقر مشروع قانون أردني جديد.").score, "title signals should outweigh summary signals");
+  console.log(`Topic scoring regression: ${allow.length} allow, ${reject.length} reject`);
 }
 
 function testQueriesAndChat() {
@@ -111,6 +194,7 @@ async function testAtomicBatchSwap() {
 async function main() {
   testSecurity();
   testDiscoveryRules();
+  testTopicScoring();
   testQueriesAndChat();
   await testAtomicBatchSwap();
   console.log("Daily news batch tests passed.");
