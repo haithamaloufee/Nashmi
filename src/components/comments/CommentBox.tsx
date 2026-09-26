@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Loader2, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useToast } from "@/components/ui/ToastProvider";
 import ReportButton from "@/components/reports/ReportButton";
@@ -71,6 +71,9 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const submitLock = useRef(false);
   const { showToast } = useToast();
 
   const loadComments = useCallback(async (cursor?: string | null) => {
@@ -86,7 +89,11 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
         showToast(json.error?.message || t("common.error"), "error");
         return;
       }
-      setComments((current) => (cursor ? [...current, ...(json.data.comments || [])] : json.data.comments || []));
+      setComments((current) => {
+        const incoming: Comment[] = json.data.comments || [];
+        const retained = cursor ? current : current.filter((item) => item.pending);
+        return [...retained, ...incoming.filter((item) => !retained.some((saved) => saved._id === item._id))];
+      });
       setNextCursor(json.nextCursor || null);
     } catch {
       setLoading(false);
@@ -101,10 +108,13 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
 
   async function submit() {
     const clean = content.trim();
-    if (!clean || submitting) return;
+    if (!clean || submitLock.current) return;
+    submitLock.current = true;
+    setSubmitError("");
+    const clientRequestId = crypto.randomUUID();
 
     const optimistic: Comment = {
-      _id: `pending-${Date.now()}`,
+      _id: `pending-${clientRequestId}`,
       content: clean,
       createdAt: new Date().toISOString(),
       authorUserId: { name: t("comments.you") },
@@ -113,37 +123,41 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
     setContent("");
     setSubmitting(true);
     setComments((current) => [optimistic, ...current]);
-    onCountChange?.(1);
 
     try {
       const response = await fetch(`/api/${targetType}/${targetId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: clean })
+        body: JSON.stringify({ content: clean, clientRequestId })
       });
       const json = await response.json().catch(() => ({}));
-      setSubmitting(false);
-
       if (response.status === 401) {
         setComments((current) => current.filter((item) => item._id !== optimistic._id));
-        onCountChange?.(-1);
+        setContent(clean);
         setLoginOpen(true);
         return;
       }
       if (!json.ok) {
-        setComments((current) => current.map((item) => (item._id === optimistic._id ? { ...item, pending: false, failed: true } : item)));
-        onCountChange?.(-1);
-        showToast(json.error?.message || t("common.error"), "error");
+        setComments((current) => current.filter((item) => item._id !== optimistic._id));
+        setContent(clean);
+        setSubmitError(json.error?.message || t("common.error"));
+        requestAnimationFrame(() => composerRef.current?.focus());
         return;
       }
 
-      setComments((current) => current.map((item) => (item._id === optimistic._id ? json.data.comment : item)));
-      showToast(t("comments.added"), "success");
+      setComments((current) => {
+        const withoutPending = current.filter((item) => item._id !== optimistic._id && item._id !== json.data.comment._id);
+        return [json.data.comment, ...withoutPending];
+      });
+      onCountChange?.(1);
     } catch {
+      setComments((current) => current.filter((item) => item._id !== optimistic._id));
+      setContent(clean);
+      setSubmitError(t("poll.connectionFailed"));
+      requestAnimationFrame(() => composerRef.current?.focus());
+    } finally {
+      submitLock.current = false;
       setSubmitting(false);
-      setComments((current) => current.map((item) => (item._id === optimistic._id ? { ...item, pending: false, failed: true } : item)));
-      onCountChange?.(-1);
-      showToast(t("poll.connectionFailed"), "error");
     }
   }
 
@@ -153,8 +167,10 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
     <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
       <div className="flex flex-col gap-2 sm:flex-row">
         <textarea
+          ref={composerRef}
           value={content}
           onChange={(event) => setContent(event.target.value)}
+          disabled={submitting}
           className="min-h-11 flex-1 resize-y rounded border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
           rows={2}
           maxLength={1000}
@@ -167,10 +183,11 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
           className="inline-flex h-11 min-w-24 items-center justify-center gap-2 rounded bg-civic px-3 text-sm font-semibold text-white transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
           type="button"
         >
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
+          <MessageSquare className="h-4 w-4" />
           {t("comments.label")}
         </button>
       </div>
+      {submitError ? <p role="alert" className="mt-2 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">{submitError}</p> : null}
 
       <div className="mt-4 space-y-3">
         {loading && !comments.length ? (
