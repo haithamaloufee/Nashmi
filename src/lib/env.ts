@@ -55,6 +55,12 @@ export function getMongoUri() {
     if (/[\\/."$\s]/.test(databaseName)) {
       throw new InvalidEnvError("MONGODB_URI", "contains an invalid database name");
     }
+    if (process.env.VERCEL_ENV === "preview" && databaseName !== "nashmi_preview") {
+      throw new InvalidEnvError("MONGODB_URI", "PREVIEW_DATABASE_ISOLATION_FAILED");
+    }
+    if (process.env.VERCEL_ENV === "production" && databaseName === "nashmi_preview") {
+      throw new InvalidEnvError("MONGODB_URI", "PRODUCTION_DATABASE_ISOLATION_FAILED");
+    }
   } catch (error) {
     if (error instanceof InvalidEnvError) throw error;
     throw new InvalidEnvError("MONGODB_URI", "is not a valid MongoDB connection string");
@@ -249,6 +255,14 @@ export function getGeminiApiKey() {
   return getRequiredEnv("GEMINI_API_KEY");
 }
 
+export function getGeminiModerationModel() {
+  const model = getOptionalEnv("GEMINI_MODERATION_MODEL") || getOptionalEnv("GEMINI_MODEL") || "gemini-3.5-flash-lite";
+  if (!/^gemini-[a-z0-9][a-z0-9.-]{0,63}$/.test(model)) {
+    throw new InvalidEnvError("GEMINI_MODERATION_MODEL", "must be a Gemini model name");
+  }
+  return model;
+}
+
 export function getGeminiBoolean(name: string, defaultValue: boolean) {
   const raw = getOptionalEnv(name);
   if (!raw) return defaultValue;
@@ -285,6 +299,7 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
   if (options.requireAuth || process.env.NODE_ENV === "production") check("JWT_SECRET", getJwtSecret);
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) check("RATE_LIMIT_SECRET", getRateLimitSecret);
   if (options.requireGemini) check("GEMINI_API_KEY", getGeminiApiKey);
+  check("GEMINI_MODERATION_MODEL", getGeminiModerationModel);
   check("MONGODB_SERVER_SELECTION_TIMEOUT_MS", getServerSelectionTimeoutMs);
   check("MAX_UPLOAD_SIZE_MB", getMaxUploadSizeBytes);
   check("MAX_IMAGE_UPLOAD_SIZE_MB", getMaxImageUploadSizeBytes);

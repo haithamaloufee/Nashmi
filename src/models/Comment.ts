@@ -8,6 +8,7 @@ const CommentSchema = new Schema(
     authorRoleSnapshot: { type: String, enum: ["citizen", "party", "iec", "admin", "super_admin"], required: true },
     partyId: { type: Schema.Types.ObjectId, ref: "Party", default: null },
     content: { type: String, required: true, maxlength: 1000 },
+    clientRequestId: { type: String, default: undefined },
     status: { type: String, enum: ["published", "hidden", "deleted"], default: "published" },
     reportsCount: { type: Number, default: 0 },
     isEdited: { type: Boolean, default: false },
@@ -23,6 +24,7 @@ const CommentSchema = new Schema(
 
 CommentSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
 CommentSchema.index({ authorUserId: 1, createdAt: -1 });
+CommentSchema.index({ authorUserId: 1, clientRequestId: 1 }, { unique: true, partialFilterExpression: { clientRequestId: { $type: "string" } } });
 CommentSchema.index({ status: 1, createdAt: -1 });
 
 export type CommentDocument = InferSchemaType<typeof CommentSchema>;

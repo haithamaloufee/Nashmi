@@ -34,6 +34,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test:security
+      - run: npm run test:moderation
       - run: npm run test:news
       - run: npm run test:concurrency
       - run: npm run test:storage

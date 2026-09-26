@@ -203,7 +203,8 @@ export const reactionSchema = z.object({
 });
 
 export const commentSchema = z.object({
-  content: z.string().trim().min(1).max(1000)
+  content: z.string().trim().min(1).max(1000),
+  clientRequestId: z.string().uuid().optional()
 });
 
 export const pollCreateSchema = z.object({

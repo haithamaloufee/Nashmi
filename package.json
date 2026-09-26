@@ -27,6 +27,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx scripts/test-critical.ts",
     "test:security": "tsx scripts/test-critical.ts",
+    "test:moderation": "tsx scripts/test-moderation.ts",
+    "test:moderation:ui": "tsx scripts/test-moderation-ui.ts",
     "test:news": "tsx scripts/test-news.ts",
     "test:concurrency": "tsx scripts/test-reaction-concurrency.ts",
     "audit:legacy-credentials": "tsx scripts/audit-legacy-credentials.ts",

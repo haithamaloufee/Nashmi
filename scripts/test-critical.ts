@@ -339,6 +339,28 @@ function testMongoSeedListValidation() {
   }
 }
 
+function testMongoEnvironmentIsolation() {
+  const previousUri = process.env.MONGODB_URI;
+  const previousEnvironment = process.env.VERCEL_ENV;
+  try {
+    process.env.VERCEL_ENV = "preview";
+    process.env.MONGODB_URI = "mongodb+srv://example.test/sharek?retryWrites=true";
+    assert.throws(() => getMongoUri(), /PREVIEW_DATABASE_ISOLATION_FAILED/);
+    process.env.MONGODB_URI = "mongodb+srv://example.test/nashmi_preview?retryWrites=true";
+    assert.equal(getMongoUri(), process.env.MONGODB_URI);
+
+    process.env.VERCEL_ENV = "production";
+    assert.throws(() => getMongoUri(), /PRODUCTION_DATABASE_ISOLATION_FAILED/);
+    process.env.MONGODB_URI = "mongodb+srv://example.test/sharek?retryWrites=true";
+    assert.equal(getMongoUri(), process.env.MONGODB_URI);
+  } finally {
+    if (previousUri === undefined) delete process.env.MONGODB_URI;
+    else process.env.MONGODB_URI = previousUri;
+    if (previousEnvironment === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = previousEnvironment;
+  }
+}
+
 async function testSessionTokenVerification() {
   const previous = process.env.JWT_SECRET;
   process.env.JWT_SECRET = "test-only-session-secret-with-at-least-32-characters";
@@ -405,6 +427,7 @@ async function main() {
   testDefaultPostMediaFiltering();
   testSecurityRegressionRules();
   testMongoSeedListValidation();
+  testMongoEnvironmentIsolation();
   await testAiEndpointBoundaries();
   await testSessionTokenVerification();
   testAuthEmailSecurity();
