@@ -1,32 +1,19 @@
-# Nashmi live-news operations
+# Nashmi daily news batch
 
-## Production pipeline
+## One daily run
 
-The Cloudflare Worker runs hourly (`0 * * * *`) and signs `POST /api/internal/news/refresh` with HMAC. Nashmi fetches the public RSS feed from Al Mamlaka (`almamlakatv.com/rss.xml`) and the Atom feed from Roya (`royanews.tv/rss`). When Vercel cannot reach a publisher directly, the Worker serves only these two explicitly allow-listed feeds through `/feed?source=mamlaka|roya`. It is not an open proxy.
+Cloudflare Cron `0 3 * * *` runs at 03:00 UTC, approximately 06:00 Asia/Amman (UTC+3). Its HMAC-signed request reaches `POST /api/internal/news/refresh`. There should be exactly one Production trigger; the former hourly `0 * * * *` trigger must not remain.
 
-These publishers are discovery sources, not blanket publication approvals. Petra remains a trusted national wire for corroboration and official Jordanian institutions are primary sources for legal or government facts. No automated connectors are enabled for Petra, official institutions, Al Ghad, Al Rai or Addustour. Their public listings were assessed, but a stable permitted machine-readable feed with sufficiently precise timestamps has not been verified for the one-hour active window; do not add fragile HTML scraping or bypass publisher restrictions.
+Nashmi fetches the public Al Mamlaka RSS (`almamlakatv.com/rss.xml`) and Roya Atom (`royanews.tv/rss`) feeds. Direct fetch is attempted first; the Worker provides a fallback for only these two fixed sources. Up to 25 valid articles per feed are considered. Articles older than seven days, obvious unrelated headlines, repeated normalized URLs, and repeated exact normalized titles are removed. At most 40 recent candidates go to one small Gemini selection request. The model returns up to 10 indexes and categories; it does not write or research stories. Publisher title, summary, source URL, and publication time are preserved. A fallback model is attempted only if the primary request fails.
 
-## Editorial gate
+Production uses `NEWS_AUTO_PUBLISH=true`, `NEWS_GEMINI_MODEL=gemini-3.5-flash-lite`, `NEWS_GEMINI_FALLBACK_MODEL=gemini-3.1-flash-lite`, `NEWS_MAX_NEW_ITEMS=10`, and `NEWS_RETENTION_DAYS=7`. `NEWS_ACTIVE_HOURS` is obsolete. No images or article pages are created. The ticker still links directly to a fresh Nashmi chat with the story context; live verification happens only when a user asks for an update.
 
-The inexpensive first filter requires civic/political subject matter and a change/action signal, and excludes obvious routine incidents and promotions. Gemini then returns a structured decision for each candidate: `relevant`, category, civic impact and reason code. Only positively relevant medium/high-impact items proceed. A model failure tries the configured fallback model, then permits only unmistakable legislative/electoral phrases; it never falls back to geography or a ministry mention. An item must still have a recent timestamp and validated HTTPS source URL. The original publisher title, summary, publication time and link remain unchanged.
+## Safe activation
 
-The public ticker reads `published`, active, non-expired records whose **publishedAt** is within `NEWS_ACTIVE_HOURS` (one hour in Production). Repeated RSS discovery only updates `lastSeenAt`; it does not extend visibility. MongoDB TTL removes stored records after seven days. If no qualifying story exists, the ticker hides instead of filling with unrelated headlines. Source URL hashes and same-event matching merge duplicate coverage without merging different legislative topics.
+`NewsRefreshState.currentBatchId` identifies the one current batch; `NewsItem.batchId` associates its stories. A MongoDB transaction inserts and verifies the selected items, deactivates the previous items, and changes the current pointer together. An exception rolls everything back. A feed error, invalid model output, source validation failure, or database error leaves the previous batch untouched. Zero selected stories also leave it unchanged. Public visibility requires the current batch, published/active status, non-expired retention, and a publication date within the last seven days. A hidden item is excluded. Older batches remain stored temporarily for audit and TTL cleanup.
 
-## Current production configuration
-
-The intended automatic-publishing settings are:
-
-```text
-NEWS_AUTO_PUBLISH=true
-NEWS_GEMINI_MODEL=gemini-3.5-flash-lite
-NEWS_GEMINI_FALLBACK_MODEL=gemini-3.1-flash-lite
-NEWS_MAX_NEW_ITEMS=10
-NEWS_ACTIVE_HOURS=1
-NEWS_RETENTION_DAYS=7
-```
-
-`NEWS_REFRESH_SECRET` must be the same random 32+ character secret in Vercel Production and the Cloudflare Worker secret store; never commit it. `GEMINI_API_KEY` is required by the classifier. `NEWS_MIN_CONFIDENCE` and `NEWS_MIN_JORDAN_RELEVANCE` remain available to the separate search-based discovery module but are not a substitute for this feed editorial gate. Confirm actual Vercel values before changing them.
+Preview deployments and local defaults only dry-run; they must not replace Production's current batch. The existing admin manual refresh runs the same batch pipeline: it publishes in Production and previews in Preview. Admin hide/unhide remains available. `NEWS_REFRESH_SECRET` must be the same random 32+ character secret in Vercel Production and the Cloudflare Worker secret store; never commit it.
 
 ## Verification and rollback
 
-Run `npm run test:news`, `npm run typecheck`, `npm run lint`, `npm run build`, and the public Playwright smoke tests. Use a dry-run signed refresh to inspect accepted/rejected counts before production publication. Check `/api/news/live` and click a headline to confirm the selected-story chat context. Admins can hide an existing item without deleting it. Setting `NEWS_AUTO_PUBLISH=false` and redeploying stops new publication; pausing the Cloudflare Cron stops discovery. Rotating the shared secret requires updating both sides together.
+Run `npm run test:news`, `npm run test:security`, `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run bundle:check`. Check `NewsRefreshState.lastStats`, `currentBatchId`, the public `/api/news/live`, and a headline-to-chat click after a controlled Production refresh. To stop new batches, set `NEWS_AUTO_PUBLISH=false` and redeploy or pause the daily Cloudflare trigger. Neither action deletes the current batch; items older than seven days hide naturally. Rotate the HMAC secret on both sides together.

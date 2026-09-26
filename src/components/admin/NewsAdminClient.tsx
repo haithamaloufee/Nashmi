@@ -29,23 +29,23 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
     setItems((current) => current.map((entry) => entry._id === item._id ? json.data.item : entry));
   }
 
-  async function dryRun() {
+  async function refreshBatch() {
     setBusy("refresh");
     setMessage(null);
     const response = await fetch("/api/admin/news/refresh", { method: "POST" });
     const json = await response.json().catch(() => ({}));
     setBusy(null);
-    if (!response.ok || !json.ok) return setMessage(json.error?.message || "تعذر تنفيذ المعاينة.");
-    setState({ ...(state || {}), lastStatus: "dry_run", lastStats: json.data.stats, lastDryRunCandidates: json.data.preview });
-    setMessage(`اكتملت المعاينة: ${json.data.stats.discovered} مرشح، بدون نشر.`);
+    if (!response.ok || !json.ok) return setMessage(json.error?.message || "تعذر تحديث الأخبار.");
+    setState({ ...(state || {}), lastStatus: json.data.stats.dryRun ? "dry_run" : "success", lastStats: json.data.stats, lastDryRunCandidates: json.data.preview });
+    setMessage(json.data.stats.dryRun ? `اكتملت المعاينة الآمنة: ${json.data.stats.selected} خبر مختار، بدون نشر.` : `اكتمل التحديث: ${json.data.stats.created} خبر في الدفعة الجديدة.`);
   }
 
   return (
     <div className="space-y-5">
       <section className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div><h1 className="text-2xl font-black">الأخبار الحية</h1><p className="mt-1 text-sm text-ink/60">مراجعة المصادر، إخفاء العناصر، وتشغيل معاينة آمنة بدون نشر.</p></div>
-          <button type="button" onClick={dryRun} disabled={busy === "refresh"} className="btn-primary inline-flex items-center gap-2 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${busy === "refresh" ? "animate-spin" : ""}`} />معاينة تحديث يدوي</button>
+          <div><h1 className="text-2xl font-black">الأخبار الحية</h1><p className="mt-1 text-sm text-ink/60">مراجعة المصادر وإخفاء العناصر. التحديث اليدوي ينشئ دفعة جديدة في الإنتاج، ويظل معاينة آمنة في Preview.</p></div>
+          <button type="button" onClick={refreshBatch} disabled={busy === "refresh"} className="btn-primary inline-flex items-center gap-2 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${busy === "refresh" ? "animate-spin" : ""}`} />تحديث الأخبار الآن</button>
         </div>
         <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
           <div className="rounded-xl bg-slate-50 p-3"><b>آخر حالة</b><p>{state?.lastStatus || "لم يبدأ"}</p></div>

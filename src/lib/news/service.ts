@@ -2,8 +2,8 @@ import "server-only";
 
 import { connectToDatabase } from "@/lib/db";
 import { getNewsConfig } from "@/lib/news/config";
-import { canonicalNewsHash, isSameNewsEvent, sourceUrlHash } from "@/lib/news/dedupe";
-import { discoverJordanNews, type DiscoveredCandidate } from "@/lib/news/feedDiscovery";
+import { activateBatch } from "@/lib/news/batchStore";
+import { discoverJordanNews } from "@/lib/news/feedDiscovery";
 import { newRefreshToken } from "@/lib/news/security";
 import type { NewsContextSnapshot, PublicNewsItem } from "@/lib/news/types";
 import NewsItem from "@/models/NewsItem";
@@ -12,18 +12,11 @@ import { buildActiveNewsQuery, buildRefreshLockFilter } from "@/lib/news/query";
 
 function asSnapshot(item: any): NewsContextSnapshot {
   return {
-    newsId: String(item._id),
-    titleAr: item.titleAr,
-    summaryAr: item.summaryAr,
-    category: item.category,
-    urgency: item.urgency,
-    publishedAt: new Date(item.publishedAt),
+    newsId: String(item._id), titleAr: item.titleAr, summaryAr: item.summaryAr,
+    category: item.category, urgency: item.urgency, publishedAt: new Date(item.publishedAt),
     legislativeStage: item.legislativeStage || null,
     sources: item.sources.map((source: any) => ({
-      title: source.title,
-      url: source.url,
-      publisher: source.publisher,
-      sourceClass: source.sourceClass
+      title: source.title, url: source.url, publisher: source.publisher, sourceClass: source.sourceClass
     }))
   };
 }
@@ -35,11 +28,10 @@ export function serializePublicNews(item: any): PublicNewsItem {
 
 export async function getActiveNewsItems(limit = 10) {
   await connectToDatabase();
-  const config = getNewsConfig();
-  const items = await NewsItem.find(buildActiveNewsQuery(new Date(), config.activeHours))
-    .sort({ urgency: -1, publishedAt: -1 })
-    .limit(Math.min(Math.max(limit, 1), 10))
-    .lean();
+  const state = await NewsRefreshState.findById("global").select("currentBatchId").lean();
+  // Before the first daily swap, keep eligible legacy news visible on refresh failure.
+  const items = await NewsItem.find(buildActiveNewsQuery(new Date(), state?.currentBatchId || null))
+    .sort({ publishedAt: -1 }).limit(Math.min(Math.max(limit, 1), 10)).lean();
   return items.map(serializePublicNews);
 }
 
@@ -62,75 +54,39 @@ async function acquireRefreshLock(now: Date) {
   return token;
 }
 
-async function findDuplicate(candidate: DiscoveredCandidate) {
-  const hashes = candidate.sources.map((source) => sourceUrlHash(source.url));
-  const direct = await NewsItem.findOne({ $or: [{ canonicalHash: canonicalNewsHash(candidate.titleAr, new Date(candidate.publishedAt)) }, { sourceUrlHashes: { $in: hashes } }] });
-  if (direct) return direct;
-  const nearby = await NewsItem.find({
-    category: candidate.category,
-    publishedAt: { $gte: new Date(new Date(candidate.publishedAt).getTime() - 12 * 60 * 60 * 1000), $lte: new Date(new Date(candidate.publishedAt).getTime() + 12 * 60 * 60 * 1000) }
-  }).select("titleAr sources sourceUrlHashes").limit(50);
-  return nearby.find((item) => isSameNewsEvent(item.titleAr, candidate.titleAr)) || null;
-}
-
 export async function refreshNews(options: { forceDryRun?: boolean } = {}) {
-  await connectToDatabase();
   const config = getNewsConfig();
   const now = new Date();
-  const lockToken = await acquireRefreshLock(now);
   const runId = newRefreshToken();
-  const dryRun = options.forceDryRun ?? !config.autoPublish;
+  // Preview must not mutate Production data even if it shares a database URL.
+  const dryRun = Boolean(process.env.VERCEL && process.env.VERCEL_ENV !== "production") || (options.forceDryRun ?? !config.autoPublish);
+  if (!dryRun) await connectToDatabase();
+  const lockToken = dryRun ? null : await acquireRefreshLock(now);
+  console.info("daily_news_batch_started", { runId, dryRun });
 
   try {
     const discovery = await discoverJordanNews(now);
-    const stats = { discovered: discovery.diagnostics.parsed, accepted: discovery.diagnostics.accepted, selected: discovery.candidates.length, rejected: discovery.diagnostics.parsed - discovery.diagnostics.accepted, rejectionReasons: discovery.diagnostics, created: 0, merged: 0, dryRun, model: discovery.model, queryCount: discovery.queryCount };
-    const preview: unknown[] = [];
-
-    for (const candidate of discovery.candidates) {
-      const duplicate = await findDuplicate(candidate);
-      if (duplicate) {
-        stats.merged += 1;
-        if (!dryRun) {
-          const known = new Set(duplicate.sources.map((source: any) => source.url));
-          const mergedSources = [...duplicate.sources.map((source: any) => source.toObject?.() || source), ...candidate.sources.filter((source) => !known.has(source.url))].slice(0, 6);
-          duplicate.set({ sources: mergedSources, sourceUrlHashes: mergedSources.map((source: any) => sourceUrlHash(source.url)), lastSeenAt: now });
-          await duplicate.save();
-        }
-        continue;
-      }
-
-      preview.push(candidate);
-      if (dryRun) continue;
-      const publishedAt = new Date(candidate.publishedAt);
-      await NewsItem.create({
-        titleAr: candidate.titleAr,
-        summaryAr: candidate.summaryAr,
-        category: candidate.category,
-        urgency: candidate.urgency,
-        legislativeStage: candidate.legislativeStage,
-        jordanRelevance: candidate.jordanRelevance,
-        confidence: candidate.confidence,
-        sources: candidate.sources,
-        publishedAt,
-        canonicalHash: canonicalNewsHash(candidate.titleAr, publishedAt),
-        sourceUrlHashes: candidate.sources.map((source) => sourceUrlHash(source.url)),
-        status: "published",
-        isActive: true,
-        discoveredAt: now,
-        lastSeenAt: now,
-        expiresAt: new Date(now.getTime() + config.retentionDays * 24 * 60 * 60 * 1000),
-        discoveryRunId: runId
-      });
-      stats.created += 1;
+    const stats = {
+      discovered: discovery.diagnostics.parsed, candidates: discovery.diagnostics.candidates,
+      selected: discovery.candidates.length, created: 0, dryRun, model: discovery.model,
+      queryCount: discovery.queryCount, rejectionReasons: discovery.diagnostics
+    };
+    if (dryRun) return { runId, stats, preview: discovery.candidates };
+    if (!dryRun && discovery.candidates.length) {
+      stats.created = await activateBatch(discovery.candidates, runId, lockToken!, now, config.retentionDays, { ...stats, created: discovery.candidates.length });
+      console.info("batch_created", { runId, count: stats.created });
+      console.info("batch_activated", { batchId: runId, count: stats.created });
+      return { runId, stats, preview: [] };
     }
-
+    // Empty selection is successful discovery, not an empty replacement batch.
     await NewsRefreshState.updateOne(
       { _id: "global", lockToken },
-      { $set: { lockToken: null, lockUntil: null, lastCompletedAt: new Date(), lastStatus: dryRun ? "dry_run" : "success", lastRunId: runId, lastStats: stats, lastDryRunCandidates: dryRun ? preview.slice(0, 15) : [] } }
+      { $set: { lockToken: null, lockUntil: null, lastCompletedAt: new Date(), lastStatus: "success", lastRunId: runId, lastStats: stats, lastDryRunCandidates: [] } }
     );
-    return { runId, stats, preview: dryRun ? preview : [] };
+    return { runId, stats, preview: [] };
   } catch (error) {
-    await NewsRefreshState.updateOne(
+    console.error("batch_failed", { runId, reason: error instanceof Error ? error.message.slice(0, 160) : "unknown" });
+    if (lockToken) await NewsRefreshState.updateOne(
       { _id: "global", lockToken },
       { $set: { lockToken: null, lockUntil: null, lastCompletedAt: new Date(), lastStatus: "failed", lastRunId: runId, lastError: error instanceof Error ? error.message.slice(0, 500) : "unknown" } }
     ).catch(() => undefined);
