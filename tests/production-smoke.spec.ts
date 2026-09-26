@@ -58,6 +58,26 @@ test.afterAll(() => {
   writeFileSync(timingsPath, JSON.stringify(timings, null, 2));
 });
 
+test("chat keeps the sent message at the top of the conversation viewport", async ({ page }) => {
+  await page.route("**/api/chat", async (route) => {
+    if (route.request().method() === "GET") {
+      return route.fulfill({ json: { ok: true, data: { usage: { subjectType: "guest", limit: 10, used: 0, remaining: 10, resetAt: new Date().toISOString() } } } });
+    }
+    return route.fulfill({ json: { ok: true, data: { message: { role: "assistant", content: "هذا رد تجريبي واضح. ".repeat(80) } } } });
+  });
+  await page.goto("/chat", { waitUntil: "domcontentloaded" });
+  const input = page.locator("#chat-composer input");
+  await input.fill("سؤالي للاختبار عن قانون الأحزاب");
+  await input.press("Enter");
+  await expect(page.getByText("سؤالي للاختبار عن قانون الأحزاب", { exact: true })).toBeVisible();
+  await expect(page.getByText(/هذا رد تجريبي واضح/).first()).toBeVisible();
+  await expect(input).toBeFocused();
+  await expect.poll(async () => page.locator(".assistant-scrollbar").evaluate((container) => {
+    const user = [...container.querySelectorAll("div")].find((element) => element.textContent === "سؤالي للاختبار عن قانون الأحزاب");
+    return user ? Math.round(user.getBoundingClientRect().top - container.getBoundingClientRect().top) : null;
+  })).toBeLessThan(45);
+});
+
 test("critical public routes remain usable at small mobile and tablet widths", async ({ page, request }) => {
   test.setTimeout(600_000);
   const routes = [

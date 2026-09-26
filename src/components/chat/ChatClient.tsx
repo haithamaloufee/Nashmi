@@ -121,15 +121,16 @@ export default function ChatClient({
   const [usage, setUsage] = useState<Usage | null>(null);
   const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [anchorActiveTurn, setAnchorActiveTurn] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const latestUserRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLFormElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const isNearBottomRef = useRef(true);
-  const pendingAssistantFocusRef = useRef(false);
 
   const activeSession = useMemo(() => sessions.find((session) => session._id === activeSessionId) || null, [sessions, activeSessionId]);
   const activeNewsContext = currentNewsContext;
   const showSuggestions = !loading && messages.length === 1 && messages[0]?.role === "assistant";
+  const latestUserIndex = messages.reduce((last, item, index) => item.role === "user" ? index : last, -1);
 
   useEffect(() => {
     if (newsIntroMessage) return;
@@ -221,7 +222,6 @@ export default function ChatClient({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       const nearBottom = scrollTop + clientHeight >= scrollHeight - 120;
-      isNearBottomRef.current = nearBottom;
       setShowScrollToBottom(!nearBottom);
     };
 
@@ -231,16 +231,15 @@ export default function ChatClient({
   }, []);
 
   useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.role === "user") {
-      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-    } else if (pendingAssistantFocusRef.current && lastMessage?.role === "assistant") {
-      if (isNearBottomRef.current) {
-        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-      }
-      pendingAssistantFocusRef.current = false;
-    }
-  }, [messages]);
+    if (!anchorActiveTurn || latestUserIndex < 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      const container = scrollRef.current;
+      const user = latestUserRef.current;
+      if (!container || !user) return;
+      container.scrollTop += user.getBoundingClientRect().top - container.getBoundingClientRect().top - 12;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages, anchorActiveTurn, latestUserIndex]);
 
   useEffect(() => {
     if (!newsId || newsSessionLoading) return;
@@ -270,6 +269,7 @@ export default function ChatClient({
     if (!authenticated) return;
     setError(null);
     setLastFailedPrompt(null);
+    setAnchorActiveTurn(false);
     setActiveSessionId(sessionId);
     setCurrentNewsContext(sessions.find((session) => session._id === sessionId)?.newsContext || null);
     const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, { cache: "no-store" });
@@ -288,6 +288,7 @@ export default function ChatClient({
   async function newConversation() {
     setError(null);
     setLastFailedPrompt(null);
+    setAnchorActiveTurn(false);
     setMessage("");
     setMessages([introMessage]);
     setActiveSessionId(null);
@@ -355,6 +356,7 @@ export default function ChatClient({
     setError(null);
     setShowLoginCta(false);
     setMessage("");
+    setAnchorActiveTurn(true);
     setMessages((items) => {
       const last = items[items.length - 1];
       if (last?.role === "user" && last.content === clean) return items;
@@ -403,7 +405,6 @@ export default function ChatClient({
       setShowLoginCta(json.error?.messageKey === "chat.limit.guestReached");
       setError(friendlyError);
       setLastFailedPrompt(clean);
-      pendingAssistantFocusRef.current = true;
       // Do NOT append backend/internal error text as a chat bubble. Errors
       // are shown via the error banner above.
       return;
@@ -415,7 +416,6 @@ export default function ChatClient({
       setCurrentNewsContext(json.data.session.newsContext || currentNewsContext);
       await refreshSessions(json.data.session._id);
     }
-    pendingAssistantFocusRef.current = true;
     setMessages((items) => [...items, json.data.message]);
   }
 
@@ -526,9 +526,9 @@ export default function ChatClient({
         ) : null}
 
         <div className="relative">
-          <div ref={scrollRef} className="assistant-scrollbar h-[min(560px,calc(100vh-18rem))] space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#071217]" aria-live="polite">
+          <div ref={scrollRef} className={`assistant-scrollbar h-[min(560px,calc(100vh-18rem))] space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#071217] ${anchorActiveTurn ? "pb-[min(560px,calc(100vh-18rem))]" : ""}`} aria-live="polite">
             {messages.map((item, index) => (
-              <div key={item._id || `${item.role}-${index}`} dir="ltr" className={`flex items-end gap-2 ${item.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
+              <div key={item._id || `${item.role}-${index}`} ref={index === latestUserIndex ? latestUserRef : undefined} dir="ltr" className={`flex items-end gap-2 ${item.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
                 <ChatAvatar role={item.role} name={item.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={item.role === "user" ? userAvatarUrl(currentUser) : null} />
                 <div
                   dir={dir}
