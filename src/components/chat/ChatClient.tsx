@@ -122,8 +122,8 @@ export default function ChatClient({
   const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const latestAssistantRef = useRef<HTMLDivElement | null>(null);
-  const latestUserRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLFormElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const isNearBottomRef = useRef(true);
   const pendingAssistantFocusRef = useRef(false);
 
@@ -231,13 +231,26 @@ export default function ChatClient({
   }, []);
 
   useEffect(() => {
-    if (pendingAssistantFocusRef.current && messages.length > 1 && messages[messages.length - 1].role === "assistant") {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === "user") {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    } else if (pendingAssistantFocusRef.current && lastMessage?.role === "assistant") {
       if (isNearBottomRef.current) {
-        latestAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       }
       pendingAssistantFocusRef.current = false;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (!newsId || newsSessionLoading) return;
+    const frame = window.requestAnimationFrame(() => {
+      composerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+      inputRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [newsId, newsSessionLoading]);
 
   const scrollToBottom = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -348,27 +361,34 @@ export default function ChatClient({
       return [...items, { role: "user", content: clean }];
     });
     setLoading(true);
-    window.requestAnimationFrame(() => {
-      latestUserRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      scrollToBottom();
-    });
+    window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
 
     const url = authenticated && activeSessionId ? `/api/chat/sessions/${activeSessionId}/messages` : lawId ? `/api/chat/law/${lawId}` : "/api/chat";
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-nashmi-language": language },
-      body: JSON.stringify({
-        message: clean,
-        lawId,
-        newsId: authenticated ? undefined : newsId,
-        language,
-        sessionId: authenticated ? activeSessionId || undefined : undefined,
-        history: !authenticated ? messages.slice(-8).map((item) => ({ role: item.role, content: item.content })) : undefined
-      })
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-nashmi-language": language },
+        body: JSON.stringify({
+          message: clean,
+          lawId,
+          newsId: authenticated ? undefined : newsId,
+          language,
+          sessionId: authenticated ? activeSessionId || undefined : undefined,
+          history: !authenticated ? messages.slice(-8).map((item) => ({ role: item.role, content: item.content })) : undefined
+        })
+      });
+    } catch {
+      setLoading(false);
+      setError(t("chat.error"));
+      setLastFailedPrompt(clean);
+      inputRef.current?.focus({ preventScroll: true });
+      return;
+    }
     const json = await response.json().catch(() => ({}));
     setLoading(false);
+    inputRef.current?.focus({ preventScroll: true });
 
     if (response.status === 401) {
       setLoginOpen(true);
@@ -511,7 +531,6 @@ export default function ChatClient({
               <div key={item._id || `${item.role}-${index}`} dir="ltr" className={`flex items-end gap-2 ${item.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
                 <ChatAvatar role={item.role} name={item.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={item.role === "user" ? userAvatarUrl(currentUser) : null} />
                 <div
-                  ref={item.role === "user" && index === messages.length - 1 ? latestUserRef : item.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
                   dir={dir}
                   className={`min-w-0 max-w-[78%] rounded-2xl p-4 text-start leading-8 shadow-sm sm:max-w-[84%] ${item.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-bl-md border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
                 >
@@ -580,14 +599,15 @@ export default function ChatClient({
           )}
         </div>
 
-        <form onSubmit={submit} className="flex gap-2 border-t border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/95">
+        <form id="chat-composer" ref={composerRef} onSubmit={submit} className="flex gap-2 border-t border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/95">
           <input
+            ref={inputRef}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             className="min-w-0 flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
             maxLength={1500}
             placeholder={t("chat.placeholder")}
-            disabled={loading || newsSessionLoading}
+            disabled={newsSessionLoading}
             aria-label={t("chat.inputLabel")}
           />
           <button

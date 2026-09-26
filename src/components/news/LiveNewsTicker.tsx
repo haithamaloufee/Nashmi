@@ -12,7 +12,7 @@ function TickerItems({ items, duplicate = false, measureRef }: { items: PublicNe
       {items.map((item) => (
         <Link
           key={`${duplicate ? "duplicate-" : ""}${item.id}`}
-          href={`/chat?news=${encodeURIComponent(item.id)}&fresh=1`}
+          href={`/chat?news=${encodeURIComponent(item.id)}&fresh=1#chat-composer`}
           tabIndex={duplicate ? -1 : undefined}
           className="news-ticker-item focus-ring"
           title={item.summaryAr}
