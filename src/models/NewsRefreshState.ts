@@ -11,7 +11,11 @@ const NewsRefreshStateSchema = new Schema(
     lastRunId: { type: String, default: null },
     lastError: { type: String, default: null, maxlength: 500 },
     lastStats: { type: Schema.Types.Mixed, default: null },
-    lastDryRunCandidates: { type: [Schema.Types.Mixed], default: [] }
+    lastDryRunCandidates: { type: [Schema.Types.Mixed], default: [] },
+    currentBatchId: { type: String, default: null },
+    currentBatchCreatedAt: { type: Date, default: null },
+    currentBatchWindowStart: { type: Date, default: null },
+    currentBatchWindowEnd: { type: Date, default: null }
   },
   { timestamps: true }
 );

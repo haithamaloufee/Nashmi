@@ -13,8 +13,7 @@ async function main() {
     await Promise.all([
       NewsItem.collection.createIndex({ canonicalHash: 1 }, { name: "canonicalHash_1", unique: true }),
       NewsItem.collection.createIndex({ expiresAt: 1 }, { name: "expiresAt_1", expireAfterSeconds: 0 }),
-      NewsItem.collection.createIndex({ status: 1, isActive: 1, publishedAt: -1 }, { name: "status_1_isActive_1_publishedAt_-1" }),
-      NewsItem.collection.createIndex({ sourceUrlHashes: 1 }, { name: "sourceUrlHashes_1" }),
+      NewsItem.collection.createIndex({ batchId: 1, status: 1, isActive: 1, publishedAt: -1 }, { name: "batchId_1_status_1_isActive_1_publishedAt_-1" }),
       NewsRefreshReplay.collection.createIndex({ signatureHash: 1 }, { name: "signatureHash_1", unique: true }),
       NewsRefreshReplay.collection.createIndex({ expiresAt: 1 }, { name: "expiresAt_1", expireAfterSeconds: 0 })
     ]);

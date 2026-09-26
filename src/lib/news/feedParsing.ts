@@ -33,7 +33,7 @@ export function parseFeed(xml: string, now: Date, feed: typeof FEEDS[number]) {
     const url = feed.format === "atom" ? raw.match(/<link\b[^>]*rel="alternate"[^>]*href="([^"]+)"/i)?.[1] || "" : feedField(raw, "link");
     const timestamp = Date.parse(feedField(raw, feed.format === "atom" ? "updated" : "pubDate"));
     if (title.length < 12 || summary.length < 20 || !Number.isFinite(timestamp)) continue;
-    if (timestamp > now.getTime() + 10 * 60_000 || timestamp < now.getTime() - 30 * 60 * 60_000) continue;
+    if (timestamp > now.getTime() + 10 * 60_000 || timestamp < now.getTime() - 7 * 24 * 60 * 60_000) continue;
     try {
       const parsedUrl = new URL(url);
       if (![feed.host, `www.${feed.host}`].includes(parsedUrl.hostname) || !/^\/news\/\d+-?$/.test(parsedUrl.pathname)) continue;

@@ -315,7 +315,6 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
   check("GEMINI_TEMPERATURE", () => getGeminiNumber("GEMINI_TEMPERATURE", 0.3, 0, 1));
   check("NEWS_AUTO_PUBLISH", () => getGeminiBoolean("NEWS_AUTO_PUBLISH", false));
   check("NEWS_MAX_NEW_ITEMS", () => getGeminiNumber("NEWS_MAX_NEW_ITEMS", 10, 1, 10));
-  check("NEWS_ACTIVE_HOURS", () => getGeminiNumber("NEWS_ACTIVE_HOURS", 1, 1, 72));
   check("NEWS_RETENTION_DAYS", () => getGeminiNumber("NEWS_RETENTION_DAYS", 7, 1, 30));
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
     check("NEWS_REFRESH_SECRET", () => {

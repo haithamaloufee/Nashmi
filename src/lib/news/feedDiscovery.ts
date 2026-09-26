@@ -1,37 +1,23 @@
 import "server-only";
 
 import { GoogleGenAI } from "@google/genai";
-import { z } from "zod";
 import { getRequiredEnv } from "@/lib/env";
 import { getNewsConfig } from "@/lib/news/config";
+import { dedupeExactFeedItems } from "@/lib/news/dedupe";
+import { isObviousNonNashmiNews } from "@/lib/news/editorial";
+import { FEEDS, parseFeed, type FeedItem } from "@/lib/news/feedParsing";
 import { assertPublicNewsSourceUrl } from "@/lib/news/security";
 import { NEWS_CATEGORIES, type NewsCategory, type NewsSource } from "@/lib/news/types";
-import { NEWS_REASON_CODES, isPublishableDecision, obviousCivicDecision, prefilterCivicNews, type NewsDecision } from "@/lib/news/editorial";
-import { FEEDS, parseFeed, type FeedItem } from "@/lib/news/feedParsing";
+import { parseNewsSelection } from "@/lib/news/selection";
 
 const FEED_EDGE_URL = "https://nashmi-news-refresh.hytham-r181.workers.dev/feed";
-const FeedDecisionSchema = z.object({
-  items: z.array(z.object({
-    index: z.number().int().min(0),
-    relevant: z.boolean(),
-    category: z.enum(NEWS_CATEGORIES),
-    civicImpact: z.enum(["low", "medium", "high"]),
-    reasonCode: z.enum(NEWS_REASON_CODES),
-  })).max(20),
-});
 
 export type DiscoveredCandidate = {
   titleAr: string;
   summaryAr: string;
   category: NewsCategory;
-  urgency: "normal" | "breaking";
+  urgency: "normal";
   publishedAt: string;
-  legislativeStage: null;
-  jordanRelevance: number;
-  confidence: number;
-  nashmiRelevant: boolean;
-  relevanceReason: string;
-  civicImpact: "medium" | "high";
   sources: NewsSource[];
 };
 
@@ -39,82 +25,72 @@ async function fetchPublisherFeed(feed: typeof FEEDS[number]) {
   try {
     const response = await fetch(feed.url, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
     if (response.ok) return await response.text();
-  } catch { /* Edge fallback handles blocked publisher egress and timeouts. */ }
+  } catch { /* Vercel egress can be blocked; try the fixed-source Worker. */ }
   const response = await fetch(`${FEED_EDGE_URL}?source=${feed.id}`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(`NEWS_FEED_${feed.id}_HTTP_${response.status}`);
   return response.text();
 }
 
-function isPromotional(item: FeedItem) {
-  return /الراعي (البلاتيني|الذهبي|الفضي)|مزوّد .* الحصري|يرعى .* (مؤتمر|مهرجان)|شركة .* تعلن عن (عروض|خدمات)/.test(item.title);
-}
-
-async function classifyFeed(items: FeedItem[], model: string) {
-  try {
-    const ai = new GoogleGenAI({ apiKey: getRequiredEnv("GEMINI_API_KEY") });
-    const response = await ai.models.generateContent({
-      model,
-      contents: `أنت محرر منصة نشمي الأردنية للشؤون السياسية والتشريعية والمدنية. صنّف كل عنصر على حدة. relevant=true فقط لتطور جديد ومهم في تشريع أردني أو سياسة حكومية عامة أو البرلمان أو الأحزاب أو الانتخابات أو إصلاح سياسي أو قرار محلي تنظيمي واسع الأثر. مجرد وقوع الخبر في الأردن أو ذكر وزارة أو جهة رسمية لا يكفي. ارفض الضبط والتفتيش الروتيني والجرائم والحوادث والطقس والرياضة والترفيه والإعلانات واستطلاعات الناشر واللقاءات والورش المعتادة. لا تُنشئ خبراً ولا تغيّر الوقائع. أعد لكل index قراراً واحداً؛ إن شككت فاجعل relevant=false وreasonCode=NOT_RELEVANT. JSON فقط بالصيغة {"items":[{"index":0,"relevant":true,"category":"legislation","civicImpact":"high","reasonCode":"NEW_LEGISLATION"}]}. category من ${NEWS_CATEGORIES.join(", ")}. reasonCode من ${NEWS_REASON_CODES.join(", ")}. العناصر: ${JSON.stringify(items.map((item, index) => ({ index, title: item.title, summary: item.summary })))}`,
-      config: { responseMimeType: "application/json", maxOutputTokens: 4000, temperature: 0 },
-    });
-    const parsed = FeedDecisionSchema.parse(JSON.parse(response.text || "{}"));
-    return new Map<number, NewsDecision>(parsed.items.filter((item) => item.index < items.length).map((item) => [item.index, item]));
-  } catch (error) {
-    console.warn("news.feed_classification_fallback", { reason: error instanceof Error ? error.message.slice(0, 160) : "unknown" });
-    return null;
-  }
+async function selectFeedItems(items: FeedItem[], model: string, maximum: number) {
+  const ai = new GoogleGenAI({ apiKey: getRequiredEnv("GEMINI_API_KEY") });
+  const response = await ai.models.generateContent({
+    model,
+    contents: `اختر حتى ${maximum} أخبار لمنصة نشمي الأردنية للشأن المدني والسياسي. اختر التطورات المهمة في القوانين والأنظمة وقرارات الحكومة والسياسة العامة والبرلمان والأحزاب والانتخابات والبلديات والقرارات التي تمس المواطنين. ارفض الرياضة والترفيه والجرائم والحوادث والضبط الروتيني والإعلانات والأخبار العامة غير المرتبطة بمهمة نشمي. لا تختر خبرا لمجرد أنه وقع في الأردن. لا تنشئ أخبارا ولا تعِد كتابة النصوص. أعد JSON فقط بالشكل {"selected":[{"index":2,"category":"government"}]}. استخدم الفئات: ${NEWS_CATEGORIES.join(", ")}. الأخبار مرتبة من الأحدث للأقدم: ${JSON.stringify(items.map((item, index) => ({ index, title: item.title, summary: item.summary.slice(0, 320) })))}`,
+    config: { responseMimeType: "application/json", maxOutputTokens: 1200, temperature: 0 }
+  });
+  return parseNewsSelection(JSON.parse(response.text || "{}"), items.length, maximum);
 }
 
 export async function discoverJordanNews(now = new Date()) {
-  const results = await Promise.allSettled(FEEDS.map(async (feed) => {
+  const config = getNewsConfig();
+  const feedLists = await Promise.all(FEEDS.map(async (feed) => {
     const xml = await fetchPublisherFeed(feed);
     if (xml.length > 250_000) throw new Error(`NEWS_FEED_${feed.id}_TOO_LARGE`);
-    return parseFeed(xml, now, feed);
+    const items = parseFeed(xml, now, feed);
+    console.info("feeds_fetched", { source: feed.id, count: items.length });
+    return items;
   }));
-  const sourceCounts = Object.fromEntries(FEEDS.map((feed, index) => [feed.id, results[index].status === "fulfilled" ? results[index].value.length : 0]));
-  const parsedItems = results.flatMap((result) => result.status === "fulfilled" ? result.value : [])
-    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
-  const config = getNewsConfig();
-  const items = parsedItems.filter((item) =>
-    Date.parse(item.publishedAt) >= now.getTime() - config.activeHours * 60 * 60_000 &&
-    prefilterCivicNews(item.title, item.summary) && !isPromotional(item)
-  ).slice(0, 20);
-  if (!items.length && results.every((result) => result.status === "rejected")) {
-    throw new Error(`NEWS_FEEDS_UNAVAILABLE: ${results.map((result) => result.status === "rejected" ? String(result.reason).slice(0, 80) : "ok").join("; ")}`);
+  const parsed = feedLists.flat().sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+  const nonObvious = parsed.filter((item) => !isObviousNonNashmiNews(item.title));
+  const items = dedupeExactFeedItems(nonObvious).slice(0, 40);
+  console.info("candidate_count", { parsed: parsed.length, candidates: items.length });
+
+  if (!items.length) {
+    console.info("selected_count", { count: 0, model: "none" });
+    return {
+    candidates: [] as DiscoveredCandidate[], model: "none", queryCount: FEEDS.length,
+    diagnostics: { parsed: parsed.length, sourceCounts: Object.fromEntries(FEEDS.map((feed, index) => [feed.id, feedLists[index].length])), candidates: 0, selected: 0, excluded: parsed.length }
+  };
   }
-  let decisions = items.length ? await classifyFeed(items, config.discoveryModel) : null;
+
+  let selected: Awaited<ReturnType<typeof selectFeedItems>>;
   let usedModel = config.discoveryModel;
-  if (!decisions && items.length && config.discoveryFallbackModel !== config.discoveryModel) {
-    decisions = await classifyFeed(items, config.discoveryFallbackModel);
+  try {
+    selected = await selectFeedItems(items, usedModel, config.maxNewItems);
+  } catch (primaryError) {
+    if (config.discoveryFallbackModel === usedModel) throw primaryError;
     usedModel = config.discoveryFallbackModel;
+    selected = await selectFeedItems(items, usedModel, config.maxNewItems);
   }
+  console.info("selected_count", { count: selected.length, model: usedModel });
+
   const candidates: DiscoveredCandidate[] = [];
-  let editorial = 0;
-  let noValidatedSource = 0;
-  for (const [index, item] of items.entries()) {
-    const decision = decisions ? decisions.get(index) : obviousCivicDecision(item.title, item.summary, index);
-    if (!isPublishableDecision(decision)) { editorial += 1; continue; }
-    try { await assertPublicNewsSourceUrl(item.url); } catch { noValidatedSource += 1; continue; }
+  for (const decision of selected) {
+    const item = items[decision.index];
+    await assertPublicNewsSourceUrl(item.url);
     candidates.push({
       titleAr: item.title,
       summaryAr: item.summary,
-      category: decision!.category,
+      category: decision.category,
       urgency: "normal",
       publishedAt: item.publishedAt,
-      legislativeStage: null,
-      jordanRelevance: 0.9,
-      confidence: decisions ? 0.85 : 0.75,
-      nashmiRelevant: true,
-      relevanceReason: `${decision!.reasonCode}: تطور في الشأن العام الأردني نشره ${item.publisher}.`,
-      civicImpact: decision!.civicImpact as "medium" | "high",
-      sources: [{ title: item.title, url: item.url, publisher: item.publisher, sourceClass: "reputable_media" }],
+      sources: [{ title: item.title, url: item.url, publisher: item.publisher, sourceClass: "reputable_media" }]
     });
-    if (candidates.length >= config.maxNewItems) break;
   }
   return {
     candidates,
-    model: decisions ? usedModel : "strict-deterministic-fallback",
+    model: usedModel,
     queryCount: FEEDS.length,
-    diagnostics: { parsed: parsedItems.length, sourceCounts, prefiltered: items.length, accepted: candidates.length, irrelevant: parsedItems.length - items.length, invalidTime: 0, belowThreshold: 0, editorial, noValidatedSource, missingOfficialSource: 0 },
+    diagnostics: { parsed: parsed.length, sourceCounts: Object.fromEntries(FEEDS.map((feed, index) => [feed.id, feedLists[index].length])), candidates: items.length, selected: candidates.length, excluded: parsed.length - items.length }
   };
 }

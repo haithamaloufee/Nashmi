@@ -5,6 +5,7 @@ import { connectToDatabase } from "@/lib/db";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import NewsItem from "@/models/NewsItem";
+import NewsRefreshState from "@/models/NewsRefreshState";
 
 const schema = z.object({ hidden: z.boolean() });
 
@@ -14,7 +15,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const { id } = await context.params;
     const input = await readJson(request, schema);
     await connectToDatabase();
-    const item = await NewsItem.findByIdAndUpdate(id, { $set: { status: input.hidden ? "hidden" : "published", isActive: !input.hidden } }, { new: true });
+    const [existing, state] = await Promise.all([NewsItem.findById(id), NewsRefreshState.findById("global").select("currentBatchId")]);
+    if (!existing) throw new Error("NOT_FOUND");
+    const item = await NewsItem.findByIdAndUpdate(id, { $set: {
+      status: input.hidden ? "hidden" : "published",
+      isActive: !input.hidden && Boolean(existing.batchId && existing.batchId === state?.currentBatchId)
+    } }, { new: true });
     if (!item) throw new Error("NOT_FOUND");
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: input.hidden ? "news.hidden" : "news.unhidden", targetType: "news_item", targetId: item._id, request });
     return ok({ item: serialize(item) });
