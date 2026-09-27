@@ -7,6 +7,7 @@ import { authorityLogoUpdateSchema } from "@/lib/validators";
 import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import { resolveOwnedReadyMediaId } from "@/lib/mediaReferences";
+import { stableMediaUrlForAsset } from "@/lib/mediaIdentity";
 import AuthorityProfile from "@/models/AuthorityProfile";
 import User from "@/models/User";
 
@@ -78,18 +79,22 @@ export async function PATCH(request: Request) {
     }
     const update: Record<string, unknown> = { ...input };
     if (changed(input.logoUrl, existing.logoUrl)) {
-      update.logoMediaId = input.logoUrl
-        ? (await resolveOwnedReadyMediaId({ url: input.logoUrl, ownerUserId: user.id, purposes: ["authority_logo"] })) || null
+      const mediaId = input.logoUrl
+        ? await resolveOwnedReadyMediaId({ url: input.logoUrl, ownerUserId: user.id, purposes: ["authority_logo"], requireMatch: true })
         : null;
+      update.logoMediaId = mediaId;
+      if (mediaId) update.logoUrl = stableMediaUrlForAsset(String(mediaId));
     }
     if (changed(input.coverUrl, existing.coverUrl)) {
-      update.coverMediaId = input.coverUrl
-        ? (await resolveOwnedReadyMediaId({ url: input.coverUrl, ownerUserId: user.id, purposes: ["authority_cover"] })) || null
+      const mediaId = input.coverUrl
+        ? await resolveOwnedReadyMediaId({ url: input.coverUrl, ownerUserId: user.id, purposes: ["authority_cover"], requireMatch: true })
         : null;
+      update.coverMediaId = mediaId;
+      if (mediaId) update.coverUrl = stableMediaUrlForAsset(String(mediaId));
     }
     const authority = await AuthorityProfile.findByIdAndUpdate(existing._id, { $set: update }, { new: true }).lean();
     if (changed(input.logoUrl, existing.logoUrl)) {
-      await User.updateOne({ _id: user.id }, { $set: { avatarUrl: input.logoUrl || null, avatarMediaId: update.logoMediaId || null } });
+      await User.updateOne({ _id: user.id }, { $set: { avatarUrl: update.logoUrl || null, avatarMediaId: update.logoMediaId || null } });
     }
     const revalidationFailures = revalidateAuthorityProfilePaths();
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "iec.profile_update", targetType: "authority", targetId: existing._id, request });

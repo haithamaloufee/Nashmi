@@ -1,12 +1,10 @@
 import { mkdir, open } from "fs/promises";
 import path from "path";
-import { put } from "@vercel/blob";
-import { hasBlobCredentials } from "@/lib/env";
 
 type StoredFile = {
   url: string;
   storageKey: string;
-  provider: "vercel_blob" | "local_dev";
+  provider: "local_dev";
 };
 
 function safeLocalPath(uploadDir: string, storageKey: string) {
@@ -20,21 +18,8 @@ function safeLocalPath(uploadDir: string, storageKey: string) {
 
 export async function storePublicFile(input: { buffer: Buffer; storageKey: string; contentType: string }): Promise<StoredFile> {
   const key = input.storageKey.replace(/^\/+/, "");
-  const hasBlobToken = hasBlobCredentials();
-
-  if (hasBlobToken) {
-    const blob = await put(key, input.buffer, {
-      access: "public",
-      contentType: input.contentType,
-      addRandomSuffix: false,
-      multipart: input.buffer.length >= 5 * 1024 * 1024,
-      cacheControlMaxAge: 60 * 60 * 24 * 365
-    });
-    return { url: blob.url, storageKey: key, provider: "vercel_blob" };
-  }
-
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    throw new Error("BLOB_STORAGE_NOT_CONFIGURED");
+    throw new Error("R2_DIRECT_UPLOAD_REQUIRED");
   }
 
   const uploadDir = path.join(process.cwd(), "public", "uploads");

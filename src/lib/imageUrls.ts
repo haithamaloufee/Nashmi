@@ -44,3 +44,9 @@ export function normalizeSafeImageUrl(value: unknown, options: NormalizeImageUrl
 export function isSafeImageUrl(value: unknown, options?: NormalizeImageUrlOptions) {
   return normalizeSafeImageUrl(value, options) !== null;
 }
+
+export function shouldUseNextImageForUrl(src: string) {
+  // External legacy hosts can be reachable in the browser while Vercel's
+  // optimizer cannot fetch them. Keep optimization for local assets only.
+  return src.startsWith("/");
+}

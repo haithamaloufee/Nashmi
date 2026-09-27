@@ -485,6 +485,8 @@ export function PartyProfileForm({ party }: { party: any }) {
   const api = useApiMessage();
   const [logoUrl, setLogoUrl] = useState(party.logoUrl || "");
   const [coverUrl, setCoverUrl] = useState(party.coverUrl || "");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   return (
     <form
@@ -519,8 +521,8 @@ export function PartyProfileForm({ party }: { party: any }) {
       className="card space-y-4 p-5"
     >
       <h2 className="text-xl font-bold">تعديل ملف الحزب</h2>
-      <MediaUploadField label="شعار الحزب" value={logoUrl} purpose="party_logo" fallbackText={party.name?.slice(0, 1) || "ح"} onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
-      <MediaUploadField label="غلاف الحزب" value={coverUrl} purpose="party_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
+      <MediaUploadField label="شعار الحزب" value={logoUrl} purpose="party_logo" fallbackText={party.name?.slice(0, 1) || "ح"} onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} onUploadingChange={setLogoUploading} />
+      <MediaUploadField label="غلاف الحزب" value={coverUrl} purpose="party_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} onUploadingChange={setCoverUploading} />
       <label className="block"><span>الوصف المختصر</span><textarea name="shortDescription" defaultValue={party.shortDescription} className="mt-1 w-full rounded border-line" rows={3} required /></label>
       <label className="block"><span>الوصف الكامل</span><textarea name="description" defaultValue={party.description} className="mt-1 w-full rounded border-line" rows={5} required /></label>
       <label className="block"><span>الرؤية</span><textarea name="vision" defaultValue={party.vision} className="mt-1 w-full rounded border-line" rows={3} required /></label>
@@ -538,7 +540,7 @@ export function PartyProfileForm({ party }: { party: any }) {
       <input name="youtube" defaultValue={party.socialLinks?.youtube} className="w-full rounded border-line" placeholder="يوتيوب" />
       <input name="headquarters" defaultValue={party.contact?.headquarters} className="w-full rounded border-line" placeholder="المقر الرئيسي" />
       <textarea name="branches" defaultValue={(party.contact?.branches || []).join("\n")} className="w-full rounded border-line" rows={3} placeholder="الفروع، كل فرع في سطر" />
-      <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ التغييرات</button>
+      <button type="submit" disabled={logoUploading || coverUploading} className="rounded bg-civic px-4 py-2 font-semibold text-white disabled:opacity-60">حفظ التغييرات</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
@@ -548,13 +550,15 @@ export function IecProfileForm({ authority }: { authority: any }) {
   const api = useApiMessage();
   const [logoUrl, setLogoUrl] = useState(authority.logoUrl || "");
   const [coverUrl, setCoverUrl] = useState(authority.coverUrl || "");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   return (
     <form action={(formData) => api.submit("/api/iec/profile", { logoUrl: formData.get("logoUrl") || logoUrl || null, coverUrl: formData.get("coverUrl") || coverUrl || null }, "PATCH")} className="card space-y-4 p-5">
       <h2 className="text-xl font-bold">ملف الهيئة</h2>
-      <MediaUploadField label="شعار الهيئة" value={logoUrl} purpose="authority_logo" fallbackText="هـ" onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} />
-      <MediaUploadField label="غلاف الهيئة" value={coverUrl} purpose="authority_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} />
-      <button type="submit" className="rounded bg-civic px-4 py-2 font-semibold text-white">حفظ</button>
+      <MediaUploadField label="شعار الهيئة" value={logoUrl} purpose="authority_logo" fallbackText="هـ" onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} onUploadingChange={setLogoUploading} />
+      <MediaUploadField label="غلاف الهيئة" value={coverUrl} purpose="authority_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} onUploadingChange={setCoverUploading} />
+      <button type="submit" disabled={logoUploading || coverUploading} className="rounded bg-civic px-4 py-2 font-semibold text-white disabled:opacity-60">حفظ</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );

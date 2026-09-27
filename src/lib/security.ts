@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import { isIP } from "node:net";
 
 const dangerousKeyPattern = /[$.]/;
 
@@ -37,12 +38,16 @@ export function hashSensitive(value: string | null | undefined) {
 export function getClientIp(request: Request) {
   const trustProxy = Boolean(process.env.VERCEL || process.env.TRUST_PROXY_HEADERS === "true" || process.env.NODE_ENV !== "production");
   if (!trustProxy) return "unknown";
-  return (
+  let value = (
     request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     "unknown"
   );
+  value = value.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  if (value.startsWith("::ffff:")) value = value.slice(7);
+  if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(value)) value = value.replace(/:\d+$/, "");
+  return isIP(value) ? value : "unknown";
 }
 
 export function getUserAgent(request: Request) {

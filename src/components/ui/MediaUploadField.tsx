@@ -56,10 +56,16 @@ function xhrPut(input: { uploadUrl: string; requiredHeaders: Record<string, stri
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) input.onProgress(Math.round((event.loaded / event.total) * 100));
     };
-    xhr.onerror = () => reject(new Error(input.failureMessage));
+    xhr.onerror = () => {
+      console.warn("media.upload", { stage: "r2_put", status: 0, code: "NETWORK_OR_CORS" });
+      reject(new Error("تعذر الاتصال بخدمة الصور. حاول مرة أخرى بعد قليل."));
+    };
     xhr.onabort = () => reject(new DOMException("Upload aborted", "AbortError"));
     xhr.onload = () => {
-      if (xhr.status < 200 || xhr.status >= 300) reject(new Error(input.failureMessage));
+      if (xhr.status < 200 || xhr.status >= 300) {
+        console.warn("media.upload", { stage: "r2_put", status: xhr.status, code: "PUT_REJECTED" });
+        reject(new Error(input.failureMessage));
+      }
       else resolve(xhr.getResponseHeader("ETag"));
     };
     input.abortSignal?.addEventListener("abort", () => xhr.abort(), { once: true });
@@ -119,6 +125,7 @@ export default function MediaUploadField({
     });
     const authorizationJson = await authorizationResponse.json().catch(() => ({}));
     if (!authorizationResponse.ok || !authorizationJson.ok) {
+      console.warn("media.upload", { stage: "authorize", status: authorizationResponse.status, code: authorizationJson?.error?.code || "UNKNOWN" });
       throw new Error(authorizationJson?.error?.message || t("media.upload.failed"));
     }
     const { assetId, authorization } = authorizationJson.data;
@@ -138,7 +145,10 @@ export default function MediaUploadField({
       signal: abortRef.current?.signal
     });
     const json = await response.json().catch(() => ({}));
-    if (!response.ok || !json.ok) throw new Error(t("media.upload.finalizeFailed"));
+    if (!response.ok || !json.ok) {
+      console.warn("media.upload", { stage: "finalize", status: response.status, code: json?.error?.code || "UNKNOWN" });
+      throw new Error(json?.error?.message || t("media.upload.finalizeFailed"));
+    }
     return json;
   }
 

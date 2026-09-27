@@ -96,24 +96,20 @@ function testDefaultPostMediaFiltering() {
   assert.deepEqual(media.map((item) => item.id), ["real-blob-upload", "real-local-upload"]);
 }
 
-async function testMissingBlobToken() {
+async function testLegacyWriterDisabled() {
   const previousNodeEnv = process.env.NODE_ENV;
   const previousVercel = process.env.VERCEL;
-  const previousBlob = process.env.BLOB_READ_WRITE_TOKEN;
   const env = process.env as Record<string, string | undefined>;
   env.NODE_ENV = "production";
   delete process.env.VERCEL;
-  delete process.env.BLOB_READ_WRITE_TOKEN;
   await assert.rejects(
     storePublicFile({ buffer: Buffer.from("x"), storageKey: "tests/file.txt", contentType: "text/plain" }),
-    /BLOB_STORAGE_NOT_CONFIGURED/
+    /R2_DIRECT_UPLOAD_REQUIRED/
   );
   if (previousNodeEnv === undefined) delete env.NODE_ENV;
   else env.NODE_ENV = previousNodeEnv;
   if (previousVercel === undefined) delete process.env.VERCEL;
   else process.env.VERCEL = previousVercel;
-  if (previousBlob === undefined) delete process.env.BLOB_READ_WRITE_TOKEN;
-  else process.env.BLOB_READ_WRITE_TOKEN = previousBlob;
 }
 
 async function testPublisherSnapshot() {
@@ -418,7 +414,7 @@ function testAuthEmailSecurity() {
 async function main() {
   await testPartyMatching();
   await testUploadValidation();
-  await testMissingBlobToken();
+  await testLegacyWriterDisabled();
   await testPublisherSnapshot();
   testLogoAssetReferences();
   testDateFormattingUsesApplicationTimeZone();

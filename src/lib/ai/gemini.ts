@@ -6,7 +6,7 @@ import { connectToDatabase } from "@/lib/db";
 import { normalizeArabic } from "@/lib/arabicSearch";
 import { getGeminiBoolean, getGeminiNumber, getOptionalEnv, getRequiredEnv } from "@/lib/env";
 import Law from "@/models/Law";
-import { buildBoundedConversation, classifyAiProviderError } from "@/lib/ai/resilience";
+import { buildBoundedConversation, classifyAiProviderError, ModelAttemptError, runWithModelFallback } from "@/lib/ai/resilience";
 import type { NewsContextSnapshot } from "@/lib/news/types";
 import { isExplicitCurrentNewsQuestion } from "@/lib/news/policy";
 
@@ -46,8 +46,10 @@ export type SharekAssistantResponse = {
 
 export class SharekAiError extends Error {
   constructor(
-    public readonly code: "missing_key" | "auth" | "rate_limit" | "model_unavailable" | "timeout" | "safety" | "unknown",
-    public readonly userMessage: string
+    public readonly code: "missing_key" | "auth" | "rate_limit" | "model_unavailable" | "provider_unavailable" | "invalid_request" | "timeout" | "safety" | "unknown",
+    public readonly userMessage: string,
+    public readonly model?: string,
+    public readonly stage?: "primary" | "fallback"
   ) {
     super(code);
     this.name = "SharekAiError";
@@ -485,24 +487,26 @@ function getTokenCount(response: GenerateContentResponse) {
   return response.usageMetadata?.totalTokenCount ?? null;
 }
 
-function toFriendlyError(error: unknown): SharekAiError {
-  if (error instanceof SharekAiError) return error;
+function toFriendlyError(error: unknown, model?: string, stage?: "primary" | "fallback"): SharekAiError {
+  if (error instanceof SharekAiError) return new SharekAiError(error.code, error.userMessage, model, stage);
   const classification = classifyAiProviderError(error);
   const userMessages = {
     missing_key: "المساعد غير متاح الآن. حاول مرة أخرى بعد قليل.",
     auth: "المساعد غير متاح الآن. حاول مرة أخرى بعد قليل.",
     rate_limit: "الضغط على خدمة الذكاء الاصطناعي مرتفع الآن، حاول مرة أخرى بعد قليل.",
     model_unavailable: "نموذج الذكاء الاصطناعي غير متاح الآن، حاول مرة أخرى بعد قليل.",
+    provider_unavailable: "المساعد غير متاح مؤقتًا. حاول مرة أخرى بعد قليل.",
+    invalid_request: "تعذر معالجة السؤال الآن. حاول مرة أخرى بعد قليل.",
     timeout: "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل.",
     safety: "تعذر تقديم رد مناسب لهذا السؤال ضمن قواعد السلامة.",
     unknown: "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل."
   } as const;
-  return new SharekAiError(classification.code, userMessages[classification.code]);
+  return new SharekAiError(classification.code, userMessages[classification.code], model, stage);
 }
 
 function shouldFallback(error: unknown) {
   const friendly = toFriendlyError(error);
-  return classifyAiProviderError(friendly).retryable || ["rate_limit", "model_unavailable", "timeout"].includes(friendly.code);
+  return ["rate_limit", "model_unavailable", "provider_unavailable", "timeout"].includes(friendly.code);
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -608,21 +612,22 @@ export async function generateSharekAssistantResponse(params: {
     maxOutputTokens: config.maxOutputTokens
   };
 
-  let response: GenerateContentResponse;
   const primaryModel = useGoogleSearch ? config.searchModel : config.model;
   const fallbackModel = useGoogleSearch ? primaryModel : config.fallbackModel;
-  let usedModel = primaryModel;
-
+  let response: GenerateContentResponse;
+  let usedModel: string;
   try {
-    response = await callGemini({ ...responseConfig, model: primaryModel });
+    const outcome = await runWithModelFallback(
+      primaryModel,
+      fallbackModel,
+      (model) => callGemini({ ...responseConfig, model }),
+      shouldFallback
+    );
+    response = outcome.result;
+    usedModel = outcome.model;
   } catch (error) {
-    if (!shouldFallback(error) || fallbackModel === primaryModel) throw toFriendlyError(error);
-    usedModel = fallbackModel;
-    try {
-      response = await callGemini({ ...responseConfig, model: fallbackModel });
-    } catch (fallbackError) {
-      throw toFriendlyError(fallbackError);
-    }
+    if (error instanceof ModelAttemptError) throw toFriendlyError(error.cause, error.model, error.stage);
+    throw error;
   }
 
   const content = response.text?.trim();

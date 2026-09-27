@@ -9,7 +9,7 @@ function main() {
   assert.equal(hasValidUploadMagic(Buffer.from("%PDF-1.7\n"), "application/pdf"), true);
   assert.equal(hasValidUploadMagic(Buffer.from("<script>"), "application/pdf"), false);
 
-  const provider = readFileSync("src/lib/storage/r2.ts", "utf8");
+  const provider = readFileSync("src/lib/storage/presign.ts", "utf8");
   assert.match(provider, /PutObjectCommand/);
   assert.match(provider, /expiresIn: input\.expiresInSeconds/);
   assert.match(provider, /ContentType: input\.contentType/);

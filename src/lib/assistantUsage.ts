@@ -8,6 +8,7 @@ import type { Language } from "@/lib/i18n";
 import { getCurrentUser, type SafeUser } from "@/lib/auth";
 import { canMutateStatus } from "@/lib/permissions";
 import AssistantUsage from "@/models/AssistantUsage";
+import { logServerError } from "@/lib/observability";
 
 export const ASSISTANT_LIMITS = {
   guest: 15,
@@ -128,6 +129,19 @@ export async function consumeAssistantUsage(request: Request, user: SafeUser | n
   }
 
   return { ok: true as const, usage: snapshot(subjectType, updated.count || 0, window.windowEnd) };
+}
+
+export async function refundAssistantUsage(request: Request, user: SafeUser | null, usage: AssistantUsageSnapshot) {
+  try {
+    const { subjectType, subjectKey } = subjectFor(request, user);
+    const dateKey = new Date(new Date(usage.resetAt).getTime() - 1).toISOString().slice(0, 10);
+    await AssistantUsage.updateOne(
+      { subjectType, subjectKey, dateKey, count: { $gt: 0 } },
+      { $inc: { count: -1 } }
+    );
+  } catch (error) {
+    logServerError(error, { request, category: "assistant.usage_refund_failed" });
+  }
 }
 
 export function assistantLimitMessage(subjectType: SubjectType, language: Language) {

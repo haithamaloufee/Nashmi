@@ -3,7 +3,6 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
-  PutObjectCommand,
   S3Client
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -15,6 +14,7 @@ import {
   getR2SecretAccessKey
 } from "@/lib/env";
 import type { ObjectMetadata, ObjectStorageProvider, UploadAuthorization } from "@/lib/storage/types";
+import { presignR2Upload } from "@/lib/storage/presign";
 
 let cachedClient: S3Client | null = null;
 let cachedFingerprint = "";
@@ -67,20 +67,13 @@ export class R2StorageProvider implements ObjectStorageProvider {
     sha256?: string | null;
   }): Promise<UploadAuthorization> {
     const storageKey = cleanStorageKey(input.storageKey);
-    const metadata: Record<string, string> = {
-      "nashmi-size": String(input.sizeBytes)
-    };
-    if (input.sha256 && /^[a-f0-9]{64}$/i.test(input.sha256)) metadata["nashmi-sha256"] = input.sha256.toLowerCase();
-    const command = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: storageKey,
-      ContentType: input.contentType,
-      ContentLength: input.sizeBytes,
-      Metadata: metadata
-    });
-    const uploadUrl = await getSignedUrl(getR2Client(), command, {
-      expiresIn: input.expiresInSeconds,
-      signableHeaders: new Set(["content-type"])
+    const uploadUrl = await presignR2Upload(getR2Client(), {
+      bucket: this.bucket,
+      storageKey,
+      contentType: input.contentType,
+      sizeBytes: input.sizeBytes,
+      expiresInSeconds: input.expiresInSeconds,
+      sha256: input.sha256
     });
     return {
       provider: "cloudflare_r2",

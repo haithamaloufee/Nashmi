@@ -6,6 +6,7 @@ import { requireActiveUser } from "@/lib/auth";
 import { partyProfileUpdateSchema } from "@/lib/validators";
 import { createSearchText } from "@/lib/arabicSearch";
 import { resolveOwnedReadyMediaId } from "@/lib/mediaReferences";
+import { stableMediaUrlForAsset } from "@/lib/mediaIdentity";
 import { readJson, requirePartyForUser, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import Party from "@/models/Party";
@@ -78,14 +79,18 @@ export async function PATCH(request: Request) {
     }
     const update: Record<string, unknown> = { ...input };
     if (changed(input.logoUrl, party.logoUrl)) {
-      update.logoMediaId = input.logoUrl
-        ? (await resolveOwnedReadyMediaId({ url: input.logoUrl, ownerUserId: user.id, purposes: ["party_logo"] })) || null
+      const mediaId = input.logoUrl
+        ? await resolveOwnedReadyMediaId({ url: input.logoUrl, ownerUserId: user.id, purposes: ["party_logo"], requireMatch: true })
         : null;
+      update.logoMediaId = mediaId;
+      if (mediaId) update.logoUrl = stableMediaUrlForAsset(String(mediaId));
     }
     if (changed(input.coverUrl, party.coverUrl)) {
-      update.coverMediaId = input.coverUrl
-        ? (await resolveOwnedReadyMediaId({ url: input.coverUrl, ownerUserId: user.id, purposes: ["party_cover"] })) || null
+      const mediaId = input.coverUrl
+        ? await resolveOwnedReadyMediaId({ url: input.coverUrl, ownerUserId: user.id, purposes: ["party_cover"], requireMatch: true })
         : null;
+      update.coverMediaId = mediaId;
+      if (mediaId) update.coverUrl = stableMediaUrlForAsset(String(mediaId));
     }
     update.searchNormalized = createSearchText([
       party.name,
@@ -96,7 +101,7 @@ export async function PATCH(request: Request) {
     ]);
     const updated = await Party.findByIdAndUpdate(party._id, { $set: update }, { new: true }).lean();
     if (changed(input.logoUrl, party.logoUrl)) {
-      await User.updateOne({ _id: user.id }, { $set: { avatarUrl: input.logoUrl || null, avatarMediaId: update.logoMediaId || null } });
+      await User.updateOne({ _id: user.id }, { $set: { avatarUrl: update.logoUrl || null, avatarMediaId: update.logoMediaId || null } });
     }
     const revalidationFailures = revalidatePartyProfilePaths(updated?.slug || party.slug);
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: "party.profile_update", targetType: "party", targetId: party._id, request });

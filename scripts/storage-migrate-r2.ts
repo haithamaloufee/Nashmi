@@ -161,9 +161,19 @@ async function main() {
     const prefix = process.env.R2_ENV_PREFIX?.trim().replace(/^\/+|\/+$/g, "") || "production";
       const manifest = await manifests.findOne({ sourceUrlHash });
     try {
-      if (manifest?.status === "db_updated") {
-        stats.skipped += 1;
-        return;
+      if (manifest?.status === "db_updated" && manifest.storageKey) {
+        try {
+          const existing = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: String(manifest.storageKey) }));
+          if (existing.ContentLength === Number(manifest.destinationSize) && contentType(existing.ContentType || null) === manifest.mimeType) {
+            stats.skipped += 1;
+            return;
+          }
+        } catch (error) {
+          const status = typeof error === "object" && error !== null && "$metadata" in error
+            ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+            : undefined;
+          if (status !== 404) throw error;
+        }
       }
       const head = await fetch(candidate.sourceUrl, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(20_000) });
       if (!head.ok) throw new Error(`SOURCE_HEAD_${head.status}`);

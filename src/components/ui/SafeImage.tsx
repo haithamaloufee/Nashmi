@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState, type ReactNode } from "react";
-import { normalizeSafeImageUrl } from "@/lib/imageUrls";
+import { normalizeSafeImageUrl, shouldUseNextImageForUrl } from "@/lib/imageUrls";
 
 type SafeImageProps = {
   src?: string | null;
@@ -14,23 +14,13 @@ type SafeImageProps = {
   priority?: boolean;
 };
 
-function canUseNextImage(src: string) {
-  if (src.startsWith("/")) return true;
-  try {
-    const url = new URL(src);
-    return url.hostname.endsWith(".public.blob.vercel-storage.com") || url.hostname === "media.nashmi.haitham.website" || (url.hostname === "parties.iec.jo" && url.pathname.startsWith("/storage/"));
-  } catch {
-    return false;
-  }
-}
-
 export default function SafeImage({ src, alt, className, fallback, localPrefixes, sizes = "(max-width: 768px) 100vw, 640px", priority = false }: SafeImageProps) {
   const safeSrc = useMemo(() => normalizeSafeImageUrl(src, { localPrefixes: localPrefixes || ["/images/", "/uploads/"] }), [src, localPrefixes]);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
   if (!safeSrc || failedSrc === safeSrc) return <>{fallback}</>;
 
-  if (canUseNextImage(safeSrc)) {
+  if (shouldUseNextImageForUrl(safeSrc)) {
     return (
       <Image
         src={safeSrc}

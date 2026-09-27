@@ -1,9 +1,9 @@
 import { fail, handleApiError, ok } from "@/lib/apiResponse";
 import { requireActiveUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { CHAT_ALLOWED_ROLES, getOwnedChatSession, handleChatMessage, logSafeChatError } from "@/lib/ai/chatSession";
+import { CHAT_ALLOWED_ROLES, getOwnedChatSession, handleChatMessage, chatProviderErrorResponse } from "@/lib/ai/chatSession";
 import { SharekAiError } from "@/lib/ai/gemini";
-import { assistantLimitResponse, ASSISTANT_BODY_MAX_BYTES, consumeAssistantUsage } from "@/lib/assistantUsage";
+import { assistantLimitResponse, ASSISTANT_BODY_MAX_BYTES, consumeAssistantUsage, refundAssistantUsage } from "@/lib/assistantUsage";
 import { isLanguage } from "@/lib/i18n";
 import { readJsonWithLimit, serialize } from "@/lib/routeUtils";
 import { chatMessageSchema } from "@/lib/validators";
@@ -25,6 +25,7 @@ export async function GET(_request: Request, context: Context) {
 }
 
 export async function POST(request: Request, context: Context) {
+  const startedAt = Date.now();
   try {
     const user = await requireActiveUser([...CHAT_ALLOWED_ROLES]);
     const { id } = await context.params;
@@ -35,13 +36,19 @@ export async function POST(request: Request, context: Context) {
     const usageResult = await consumeAssistantUsage(request, user);
     if (!usageResult.ok) return assistantLimitResponse(usageResult.usage, language);
 
-    const result = await handleChatMessage({
-      user,
-      sessionId: id,
-      message: input.message,
-      preferredLawId: input.lawId,
-      request
-    });
+    let result;
+    try {
+      result = await handleChatMessage({
+        user,
+        sessionId: id,
+        message: input.message,
+        preferredLawId: input.lawId,
+        request
+      });
+    } catch (error) {
+      await refundAssistantUsage(request, user, usageResult.usage);
+      throw error;
+    }
 
     return ok({
       session: serialize(result.session),
@@ -53,10 +60,9 @@ export async function POST(request: Request, context: Context) {
     });
   } catch (error) {
     if (error instanceof SharekAiError) {
-      logSafeChatError(error, { route: "/api/chat/sessions/[id]/messages" });
-      return fail(error.code === "rate_limit" ? "RATE_LIMITED" : "SERVER_ERROR", error.userMessage, error.code === "rate_limit" ? 429 : 500);
+      return chatProviderErrorResponse(error, request, "/api/chat/sessions/[id]/messages", startedAt);
     }
     if (error instanceof Error && error.message === "BAD_REQUEST") return fail("BAD_REQUEST", "الرسالة غير صالحة.", 400);
-    return handleApiError(error);
+    return handleApiError(error, request);
   }
 }

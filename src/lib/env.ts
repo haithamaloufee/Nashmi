@@ -242,15 +242,6 @@ export function hasR2Credentials() {
   );
 }
 
-export function hasBlobReadWriteToken() {
-  return Boolean(getOptionalEnv("BLOB_READ_WRITE_TOKEN"));
-}
-
-export function hasBlobCredentials() {
-  if (hasBlobReadWriteToken()) return true;
-  return Boolean(getOptionalEnv("BLOB_STORE_ID") && (getOptionalEnv("VERCEL_OIDC_TOKEN") || process.env.VERCEL));
-}
-
 export function getGeminiApiKey() {
   return getRequiredEnv("GEMINI_API_KEY");
 }
@@ -320,7 +311,10 @@ export function validateRuntimeEnv(options: { requireDatabase?: boolean; require
     check("R2_DAILY_UPLOAD_QUOTA_MB", getDailyUploadQuotaBytes);
   }
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    if (!hasR2Credentials() && !hasBlobCredentials()) missing.push("Cloudflare R2 credentials or transitional Vercel Blob credentials");
+    if (!hasR2Credentials()) missing.push("Cloudflare R2 credentials");
+    if (getOptionalEnv("STORAGE_PROVIDER") && getOptionalEnv("STORAGE_PROVIDER") !== "cloudflare_r2") {
+      invalid.push("STORAGE_PROVIDER must be cloudflare_r2 for new uploads");
+    }
   }
   check("GEMINI_ENABLE_GOOGLE_SEARCH", () => getGeminiBoolean("GEMINI_ENABLE_GOOGLE_SEARCH", false));
   check("GEMINI_MAX_HISTORY_MESSAGES", () => getGeminiNumber("GEMINI_MAX_HISTORY_MESSAGES", 30, 2, 80));

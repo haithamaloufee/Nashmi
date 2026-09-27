@@ -24,11 +24,11 @@ function revalidatePublisherAvatarPaths(role: string, userId: string, slug?: str
   for (const path of paths) revalidatePath(path);
 }
 
-async function syncPublisherProfileAvatar(user: { id: string; role: string }, avatarUrl: string | null) {
+async function syncPublisherProfileAvatar(user: { id: string; role: string }, avatarUrl: string | null, avatarMediaId: unknown) {
   if (user.role === "party") {
     const party = await Party.findOneAndUpdate(
       { accountUserId: user.id, status: { $ne: "disabled" } },
-      { $set: { logoUrl: avatarUrl } },
+      { $set: { logoUrl: avatarUrl, logoMediaId: avatarMediaId } },
       { new: true }
     ).select("slug").lean();
     revalidatePublisherAvatarPaths(user.role, user.id, party?.slug || null);
@@ -38,7 +38,7 @@ async function syncPublisherProfileAvatar(user: { id: string; role: string }, av
   if (user.role === "iec") {
     const authority = await AuthorityProfile.findOneAndUpdate(
       { slug: "independent-election-commission" },
-      { $set: { logoUrl: avatarUrl } },
+      { $set: { logoUrl: avatarUrl, logoMediaId: avatarMediaId } },
       { new: true }
     ).select("slug").lean();
     revalidatePublisherAvatarPaths(user.role, user.id);
@@ -72,7 +72,7 @@ export async function PATCH(request: Request) {
       { new: true }
     );
     if (!updated) throw new Error("NOT_FOUND");
-    await syncPublisherProfileAvatar(user, asset.url);
+    await syncPublisherProfileAvatar(user, asset.url, asset._id);
     if (previousUser?.avatarMediaId && String(previousUser.avatarMediaId) !== String(asset._id)) {
       const previousAsset = await MediaAsset.findOneAndUpdate(
         { _id: previousUser.avatarMediaId, ownerUserId: user.id, provider: "cloudflare_r2", status: { $in: ["ready", "active"] } },
@@ -125,7 +125,7 @@ export async function DELETE() {
     }
     const updated = await User.findByIdAndUpdate(user.id, { $set: { avatarUrl: null, avatarMediaId: null } }, { new: true });
     if (!updated) throw new Error("NOT_FOUND");
-    await syncPublisherProfileAvatar(user, null);
+    await syncPublisherProfileAvatar(user, null, null);
     return ok({ user: safeUser(updated) });
   } catch (error) {
     return handleApiError(error);
