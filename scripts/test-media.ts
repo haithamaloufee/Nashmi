@@ -4,7 +4,6 @@ import { stableMediaId, stableMediaUrlForAsset } from "../src/lib/mediaIdentity"
 import { normalizeSafeImageUrl, shouldUseNextImageForUrl } from "../src/lib/imageUrls";
 import { presignR2Upload } from "../src/lib/storage/presign";
 import { hasValidUploadMagic, validateUploadMetadata } from "../src/lib/uploadValidation";
-import { validatedLegacyBlobUrl } from "../src/lib/mediaLegacy";
 
 async function main() {
   const assetId = "507f1f77bcf86cd799439011";
@@ -14,11 +13,9 @@ async function main() {
   assert.equal(normalizeSafeImageUrl(stableUrl), stableUrl);
   assert.equal(shouldUseNextImageForUrl(stableUrl), true);
   assert.equal(shouldUseNextImageForUrl("https://parties.iec.jo/storage/legacy.jpg"), false);
-  assert.equal(shouldUseNextImageForUrl("https://example.public.blob.vercel-storage.com/legacy.jpg"), false);
+  assert.equal(shouldUseNextImageForUrl("https://example.test/legacy.jpg"), false);
   assert.throws(() => stableMediaId(`${stableUrl}/extra`), /BAD_REQUEST/);
-  assert.equal(stableMediaId("https://example.public.blob.vercel-storage.com/old.jpg"), undefined);
-  assert.equal(validatedLegacyBlobUrl("https://example.public.blob.vercel-storage.com/old.jpg").hostname, "example.public.blob.vercel-storage.com");
-  assert.throws(() => validatedLegacyBlobUrl("https://example.com/old.jpg"), /UNTRUSTED_REMOTE_URL/);
+  assert.equal(stableMediaId("https://example.test/old.jpg"), undefined);
 
   assert.equal(validateUploadMetadata({ fileName: "logo.png", mimeType: "image/png", size: 256, imagesOnly: true }), null);
   assert.equal(hasValidUploadMagic(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), "image/png"), true);

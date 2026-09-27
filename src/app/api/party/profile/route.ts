@@ -15,13 +15,7 @@ import User from "@/models/User";
 function isUploadedProfileImageUrl(value: unknown) {
   if (value === null || value === undefined || value === "") return true;
   if (typeof value !== "string") return false;
-  if (value.startsWith("/uploads/") || value.startsWith("/api/media/")) return true;
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && (url.hostname.endsWith(".public.blob.vercel-storage.com") || url.hostname === "media.nashmi.haitham.website");
-  } catch {
-    return false;
-  }
+  return value.startsWith("/api/media/");
 }
 
 function changed(value: unknown, existing: unknown) {

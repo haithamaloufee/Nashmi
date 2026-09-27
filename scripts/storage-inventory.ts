@@ -16,6 +16,7 @@ type AssetRow = {
   sizeBytes?: number;
   purpose?: string;
   provider?: string;
+  sourceProvider?: string;
   status?: string;
   createdAt?: Date;
 };
@@ -147,6 +148,7 @@ async function main() {
   }
 
   const blobAssets = assets.filter((asset) => asset.provider === "vercel_blob" || isVercelBlobUrl(asset.url));
+  const readyR2Assets = assets.filter((asset) => asset.provider === "cloudflare_r2" && ["ready", "active"].includes(asset.status || ""));
   const headChecks = await mapLimit(blobAssets, HEAD_CONCURRENCY, async (asset) => {
     if (!asset.url || !isVercelBlobUrl(asset.url)) return { status: "invalid-url", size: null, contentType: null };
     try {
@@ -191,6 +193,12 @@ async function main() {
     database: {
       mediaAssetCount: assets.length,
       blobAssetCount: blobAssets.length,
+      blobAssetsByStatus: countBy(blobAssets, (asset) => asset.status || "missing"),
+      blobReferencedCount: blobAssets.filter((asset) => referencedIds.has(String(asset._id))).length,
+      blobReferencedMissingSourceCount: blobAssets.filter((asset, index) =>
+        referencedIds.has(String(asset._id)) && headChecks[index]?.status === "http-404").length,
+      readyR2AssetCount: readyR2Assets.length,
+      readyR2AssetsFromBlobCount: readyR2Assets.filter((asset) => asset.sourceProvider === "vercel_blob").length,
       referencedAssetCount: referencedIds.size,
       unreferencedAssetCount: assets.filter((asset) => !referencedIds.has(String(asset._id))).length,
       referenceCounts,
@@ -204,7 +212,7 @@ async function main() {
       embeddedUrlCounts
     },
     sourceInventory: {
-      referencedUniqueUrlCount: sourceUrls.length,
+      legacySourceUrlCount: sourceUrls.length,
       reachableObjectCount: sourceChecks.filter((item) => item.status === "ok").length,
       missingObjectCount: sourceChecks.filter((item) => item.status === "http-404").length,
       errorCount: sourceChecks.filter((item) => item.status !== "ok" && item.status !== "http-404").length,

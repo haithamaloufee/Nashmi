@@ -1,9 +1,4 @@
-import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-
-const VERCEL_BLOB_SUFFIX = ".public.blob.vercel-storage.com";
-const MAGIC_BYTES_LIMIT = 64;
-const FETCH_TIMEOUT_MS = 5_000;
 
 function parseIpv4(address: string) {
   const parts = address.split(".").map(Number);
@@ -49,76 +44,4 @@ export function isBlockedNetworkAddress(address: string): boolean {
   }
 
   return true;
-}
-
-export function validateVercelBlobUrl(value: string, expectedStorageKey: string) {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new Error("UNTRUSTED_REMOTE_URL");
-  }
-
-  const hostname = url.hostname.toLowerCase();
-  let decodedPath = "";
-  try {
-    decodedPath = decodeURIComponent(url.pathname.replace(/^\/+/, ""));
-  } catch {
-    throw new Error("UNTRUSTED_REMOTE_URL");
-  }
-  if (
-    url.protocol !== "https:" ||
-    url.username ||
-    url.password ||
-    url.port ||
-    url.search ||
-    url.hash ||
-    !hostname.endsWith(VERCEL_BLOB_SUFFIX) ||
-    hostname.length <= VERCEL_BLOB_SUFFIX.length ||
-    decodedPath !== expectedStorageKey
-  ) {
-    throw new Error("UNTRUSTED_REMOTE_URL");
-  }
-  return url;
-}
-
-async function assertPublicDns(hostname: string) {
-  const records = await lookup(hostname, { all: true, verbatim: true });
-  if (!records.length || records.some((record) => isBlockedNetworkAddress(record.address))) {
-    throw new Error("UNTRUSTED_REMOTE_URL");
-  }
-}
-
-export async function readTrustedBlobMagic(value: string, expectedStorageKey: string, expectedContentType: string) {
-  const url = validateVercelBlobUrl(value, expectedStorageKey);
-  await assertPublicDns(url.hostname);
-
-  const response = await fetch(url, {
-    cache: "no-store",
-    redirect: "manual",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { Range: `bytes=0-${MAGIC_BYTES_LIMIT - 1}` }
-  });
-  if (response.status < 200 || response.status >= 300) return null;
-  const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
-  if (contentType && contentType !== expectedContentType.toLowerCase()) return null;
-
-  const advertisedLength = Number(response.headers.get("content-length") || "0");
-  if (advertisedLength > MAGIC_BYTES_LIMIT) return null;
-  const reader = response.body?.getReader();
-  if (!reader) return null;
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  try {
-    while (true) {
-      const { done, value: chunk } = await reader.read();
-      if (done) break;
-      size += chunk.byteLength;
-      if (size > MAGIC_BYTES_LIMIT) return null;
-      chunks.push(chunk);
-    }
-  } finally {
-    await reader.cancel().catch(() => undefined);
-  }
-  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), size);
 }

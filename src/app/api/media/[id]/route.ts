@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { handleApiError } from "@/lib/apiResponse";
 import { connectToDatabase } from "@/lib/db";
-import { getR2DownloadExpirySeconds, hasR2Credentials } from "@/lib/env";
+import { getR2DownloadExpirySeconds } from "@/lib/env";
 import { getCurrentUser } from "@/lib/auth";
 import { getObjectStorage } from "@/lib/storage/index";
-import { validatedLegacyBlobUrl } from "@/lib/mediaLegacy";
-import { logServerError } from "@/lib/observability";
 import { requireRateLimit } from "@/lib/rateLimit";
 import MediaAsset from "@/models/MediaAsset";
 
@@ -31,26 +29,11 @@ export async function GET(request: Request, context: Context) {
 
     const rateLimitKey = user ? `media-read:${user.id}` : `media-public:${id}`;
     await requireRateLimit(rateLimitKey, user ? 240 : 600, 60 * 60 * 1000);
-    if (asset.provider === "vercel_blob") {
-      return NextResponse.redirect(validatedLegacyBlobUrl(asset.url), 307);
-    }
     if (asset.provider === "local_dev") {
       if (!asset.url.startsWith("/uploads/") || asset.url.includes("..")) return new NextResponse("Not found", { status: 404 });
       return NextResponse.redirect(new URL(asset.url, request.url), 307);
     }
-    const legacySource = asset.visibility !== "protected" && asset.sourceProvider === "vercel_blob" && asset.sourceUrl
-      ? validatedLegacyBlobUrl(asset.sourceUrl)
-      : null;
-    if (legacySource) {
-      if (!hasR2Credentials()) return NextResponse.redirect(legacySource, 307);
-      try {
-        const metadata = await getObjectStorage().getObjectMetadata(asset.storageKey);
-        if (!metadata.exists) return NextResponse.redirect(legacySource, 307);
-      } catch (error) {
-        logServerError(error, { request, route: "/api/media/[id]", category: "media.r2_read_failure" });
-        return NextResponse.redirect(legacySource, 307);
-      }
-    }
+    if (asset.provider !== "cloudflare_r2") return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
     const downloadName = asset.visibility === "protected" ? asset.originalFileName || "download" : null;
     const signedUrl = await getObjectStorage().createDownloadUrl(asset.storageKey, getR2DownloadExpirySeconds(), downloadName);
     return NextResponse.redirect(signedUrl, {

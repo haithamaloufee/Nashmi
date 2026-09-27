@@ -65,7 +65,7 @@ Relevant environment variable names: `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `
 - Update all dependent environments, verify Preview, then Production, then revoke the old credential.
 - Never print secret values or copy them into documentation.
 - Cloudflare R2 credentials must be bucket-scoped Object Read & Write credentials, stored only in trusted Vercel environments. Never expose them with `NEXT_PUBLIC_`.
-- Vercel Blob remains a temporary read/rollback source only during migration. Remove its package, environment connection, and source objects only after reconciliation is clean and the rollback window has elapsed.
+- Legacy source objects are retained for historical audit. Runtime media reads and writes use R2 only. Remove any obsolete Vercel environment secret only after the R2-only deployment is verified.
 - A password reset increments `sessionVersion`; older cookies stop authenticating at the server/data layer.
 
 ## Incident checklist
@@ -90,14 +90,11 @@ Operational commands are safe by default:
 
 ```text
 npm run storage:inventory
-npm run storage:migrate-r2
-npm run storage:migrate-r2 -- --pilot --execute
-npm run storage:migrate-r2 -- --execute
 npm run storage:reconcile-r2
 npm run storage:cleanup-pending
 ```
 
-Migration and pending cleanup are dry-run unless `--execute` is present. Migration streams each trusted source, verifies source/destination sizes and independent SHA-256 hashes, conditionally updates only storage/reference fields, and preserves the original provider URL/key for rollback. Reconciliation is always read-only. Never delete ambiguous Vercel orphans or any source Blob based only on a prefix.
+Pending cleanup is dry-run unless `--execute` is present. Reconciliation is always read-only. Historical source objects must not be deleted based only on a prefix.
 
 If R2 fails before confirmation, the pending row is not public. If a delete fails, the asset is marked failed and the object is retained for reconciliation. Provider durability does not replace a product backup or recovery policy; accidental deletion is distinct from provider loss.
 

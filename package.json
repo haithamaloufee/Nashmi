@@ -18,7 +18,6 @@
     "posts:seed-media:disabled": "tsx scripts/seed-post-media.ts",
     "posts:cleanup-seeded-media": "tsx scripts/cleanup-seeded-media.ts",
     "storage:inventory": "tsx scripts/storage-inventory.ts",
-    "storage:migrate-r2": "tsx scripts/storage-migrate-r2.ts",
     "storage:reconcile-r2": "tsx scripts/storage-reconcile-r2.ts",
     "storage:cleanup-pending": "tsx scripts/storage-cleanup-pending.ts",
     "test:storage": "tsx scripts/test-storage.ts",
