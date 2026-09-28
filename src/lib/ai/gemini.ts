@@ -365,7 +365,8 @@ function hasWebSearchIntent(message: string) {
 
 function shouldUseGoogleSearch(message: string, lawContext: LawContextItem[], enabled: boolean) {
   if (!enabled) return false;
-  return hasWebSearchIntent(message) || isLocalMatchWeak(lawContext);
+  // A greeting has no local law match, but it does not need a web search.
+  return hasWebSearchIntent(message) || (tokenize(message).length >= 3 && isLocalMatchWeak(lawContext));
 }
 
 function buildNewsContextBlock(news: NewsContextSnapshot) {
@@ -590,18 +591,21 @@ export async function generateSharekAssistantResponse(params: {
   // provider configuration once a request actually needs the provider.
   const config = getSharekAssistantConfig();
 
-  if (isExplicitCurrentNewsQuestion(params.message) && !config.enableGoogleSearch && !params.newsContext) {
-    return {
-      content: "ما بقدر أؤكد آخر الأخبار الآن لأن التحقق المباشر من المصادر غير متاح. جرّب بعد قليل حتى أعطيك مستجدات حديثة وموثقة بدل معلومات قديمة أو غير مؤكدة.",
-      model: "local-freshness-rule",
-      sourceLawIds: [],
-      groundingSources: [],
-      safetyFlags: ["current_news_requires_search"],
-      tokensUsed: null
-    };
+  const currentNewsQuestion = isExplicitCurrentNewsQuestion(params.message);
+  const freshnessUnavailableResponse = (): SharekAssistantResponse => ({
+    content: "ما بقدر أؤكد آخر الأخبار الآن لأن التحقق المباشر من المصادر غير متاح. جرّب بعد قليل حتى أعطيك مستجدات حديثة وموثقة بدل معلومات قديمة أو غير مؤكدة.",
+    model: "local-freshness-rule",
+    sourceLawIds: [],
+    groundingSources: [],
+    safetyFlags: ["current_news_requires_search"],
+    tokensUsed: null
+  });
+
+  if (currentNewsQuestion && !config.enableGoogleSearch && !params.newsContext) {
+    return freshnessUnavailableResponse();
   }
 
-  const useGoogleSearch = params.newsContext
+  let useGoogleSearch = params.newsContext
     ? config.enableGoogleSearch && isExplicitCurrentNewsQuestion(params.message)
     : shouldUseGoogleSearch(params.message, params.lawContext, config.enableGoogleSearch);
   const responseConfig = {
@@ -612,19 +616,47 @@ export async function generateSharekAssistantResponse(params: {
     maxOutputTokens: config.maxOutputTokens
   };
 
-  const primaryModel = useGoogleSearch ? config.searchModel : config.model;
-  const fallbackModel = useGoogleSearch ? primaryModel : config.fallbackModel;
   let response: GenerateContentResponse;
   let usedModel: string;
+  let searchUnavailable = false;
   try {
-    const outcome = await runWithModelFallback(
-      primaryModel,
-      fallbackModel,
-      (model) => callGemini({ ...responseConfig, model }),
-      shouldFallback
-    );
-    response = outcome.result;
-    usedModel = outcome.model;
+    if (useGoogleSearch) {
+      try {
+        response = await callGemini({ ...responseConfig, model: config.searchModel });
+        usedModel = config.searchModel;
+      } catch (searchError) {
+        const classification = classifyAiProviderError(searchError);
+        if (!classification.retryable && classification.code !== "invalid_request") {
+          throw new ModelAttemptError(searchError, config.searchModel, "primary");
+        }
+        console.warn({ event: "ai.search_fallback", code: classification.code, model: config.searchModel });
+        if (currentNewsQuestion) return freshnessUnavailableResponse();
+        useGoogleSearch = false;
+        searchUnavailable = true;
+        const outcome = await runWithModelFallback(
+          config.model,
+          config.fallbackModel,
+          (model) => callGemini({
+            ...responseConfig,
+            model,
+            useGoogleSearch: false,
+            systemInstruction: buildSystemInstruction(params.lawContext, false, params.newsContext)
+          }),
+          shouldFallback
+        );
+        response = outcome.result;
+        usedModel = outcome.model;
+      }
+    } else {
+      const outcome = await runWithModelFallback(
+        config.model,
+        config.fallbackModel,
+        (model) => callGemini({ ...responseConfig, model }),
+        shouldFallback
+      );
+      response = outcome.result;
+      usedModel = outcome.model;
+    }
   } catch (error) {
     if (error instanceof ModelAttemptError) throw toFriendlyError(error.cause, error.model, error.stage);
     throw error;
@@ -652,6 +684,7 @@ export async function generateSharekAssistantResponse(params: {
     groundingSources: [...newsSources, ...lawSources, ...webSources],
     safetyFlags: [
       ...(useGoogleSearch ? ["google_search_enabled"] : []),
+      ...(searchUnavailable ? ["google_search_unavailable"] : []),
       ...(useGoogleSearch && webSources.length === 0 ? ["google_search_no_sources"] : []),
       ...(isLocalMatchWeak(params.lawContext) ? ["weak_local_law_match"] : [])
     ],
