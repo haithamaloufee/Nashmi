@@ -8,13 +8,31 @@ async function main() {
   const uri = database.getUri("nashmi_signup_test");
   process.env.JWT_SECRET = "signup-runtime-test-only-secret";
   (process.env as Record<string, string | undefined>).NODE_ENV = "test";
-  const [{ default: mongoose }, { default: RateLimitBucket }] = await Promise.all([
+  const [{ default: mongoose }, { default: RateLimitBucket }, { default: User }] = await Promise.all([
     import("mongoose"),
-    import("../src/models/RateLimitBucket")
+    import("../src/models/RateLimitBucket"),
+    import("../src/models/User")
   ]);
 
   try {
     await mongoose.connect(uri);
+    await User.init();
+    const testUser = (suffix: string) => ({
+      name: `Citizen ${suffix}`,
+      email: `${suffix}@nashmi.test`,
+      emailNormalized: `${suffix}@nashmi.test`,
+      passwordHash: "test-only-hash",
+      role: "citizen" as const,
+      provider: "credentials" as const,
+      status: "active" as const,
+      language: "ar" as const
+    });
+    await User.create(testUser("first"), testUser("second"));
+    await User.create({ ...testUser("token"), passwordSetupTokenHash: "unique-setup-token" });
+    await assert.rejects(
+      User.create({ ...testUser("duplicate"), passwordSetupTokenHash: "unique-setup-token" }),
+      /E11000/
+    );
     const consumeRateLimit = (key: string, limit: number, windowMs: number) =>
       consumeRateLimitBucket(RateLimitBucket, key, limit, windowMs);
     const first = new Request("https://nashmi.test/api/auth/signup", { headers: { "x-vercel-forwarded-for": "192.0.2.1" } });
