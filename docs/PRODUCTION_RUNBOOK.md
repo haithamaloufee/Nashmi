@@ -76,6 +76,8 @@ Relevant environment variable names: `NEXT_PUBLIC_SITE_URL`, `RESEND_API_KEY`, `
 4. If data access is involved, prefer read-only diagnosis and projections. Never dump user documents.
 5. Reproduce in Preview/local, add a regression test, deploy through `master`, then run the production smoke test.
 
+Before deploying the user token index change, run `npm run indexes:hardening` against the intended database with its environment guard enabled. It creates unique indexes limited to string token values, then removes the legacy unique sparse indexes that reject a second user with an explicit `null` token. Verify the three `*_string_unique` indexes and absence of the old `*_1` token indexes. Run this on Preview first; Production requires a separately authorized maintenance step.
+
 ## Cloudflare R2 storage operations
 
 The production bucket is `nashmi-media`, Standard storage class, private by default. New objects use immutable environment-prefixed keys and never trust the original filename. The browser calls `/api/uploads/authorize`, uploads directly to the one-object presigned R2 PUT URL, then confirms through `/api/uploads` (or the avatar completion endpoint). Confirmation verifies HEAD metadata and magic bytes before the `MediaAsset` becomes `ready`.
