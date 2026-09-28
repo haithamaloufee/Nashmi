@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+import { NextResponse } from "next/server";
 import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import { getSharekAssistantConfig, generateSharekAssistantResponse, retrieveRelevantLawContext, SharekAiError } from "@/lib/ai/gemini";
@@ -8,7 +10,7 @@ import type { SafeUser } from "@/lib/auth";
 import ChatMessage from "@/models/ChatMessage";
 import ChatSession from "@/models/ChatSession";
 import Law from "@/models/Law";
-import { logServerError } from "@/lib/observability";
+import { logServerError, requestIdFrom } from "@/lib/observability";
 import { getNewsSnapshot } from "@/lib/news/service";
 import type { NewsContextSnapshot } from "@/lib/news/types";
 import { buildOwnedChatSessionQuery } from "@/lib/ai/chatOwnership";
@@ -20,9 +22,34 @@ export function makeChatTitle(message: string) {
   return clean ? clean.slice(0, 40) : "محادثة جديدة";
 }
 
-export function logSafeChatError(error: unknown, metadata: Record<string, unknown> = {}) {
-  const route = typeof metadata.route === "string" ? metadata.route : undefined;
-  logServerError(error instanceof SharekAiError ? new Error(error.code) : error, { route, category: "ai.provider_error" });
+export function logSafeChatError(error: unknown, metadata: { route?: string; request?: Request; startedAt?: number; stage?: string } = {}) {
+  const requestId = requestIdFrom(metadata.request) || randomUUID();
+  if (error instanceof SharekAiError) {
+    console.error({
+      level: "error",
+      event: "ai.provider_error",
+      requestId,
+      route: metadata.route,
+      code: error.code,
+      providerCategory: error.code,
+      model: error.model && /^gemini-[a-z0-9.-]{1,64}$/.test(error.model) ? error.model : undefined,
+      stage: error.stage,
+      durationMs: metadata.startedAt === undefined ? undefined : Date.now() - metadata.startedAt
+    });
+  } else {
+    logServerError(error, { request: metadata.request, route: metadata.route, category: "ai.provider_error" });
+  }
+  return requestId;
+}
+
+export function chatProviderErrorResponse(error: SharekAiError, request: Request, route: string, startedAt: number) {
+  const requestId = logSafeChatError(error, { request, route, startedAt });
+  const status = error.code === "rate_limit" ? 429 : error.code === "safety" ? 422 : 503;
+  const code = error.code === "rate_limit" ? "RATE_LIMITED" : error.code === "safety" ? "VALIDATION_ERROR" : "AI_UNAVAILABLE";
+  return NextResponse.json(
+    { ok: false, error: { code, message: error.userMessage } },
+    { status, headers: { "X-Request-ID": requestId, "Cache-Control": "no-store" } }
+  );
 }
 
 export async function getOwnedChatSession(sessionId: string, userId: string) {

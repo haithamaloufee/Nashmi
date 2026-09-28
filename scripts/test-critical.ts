@@ -11,7 +11,7 @@ import { buildSurveyResultSummary, canRespondToSurvey, canViewSurveyResults, get
 import { formatDate } from "../src/lib/localization";
 import { canManageUser, canModerateUser } from "../src/lib/permissions";
 import { counterUpdatePipeline, reactionCounterDelta } from "../src/lib/reactions";
-import { isBlockedNetworkAddress, validateVercelBlobUrl } from "../src/lib/remoteFetch";
+import { isBlockedNetworkAddress } from "../src/lib/remoteFetch";
 import { safeMarkdownHref } from "../src/lib/markdown";
 import { getGeminiApiKey, getMongoUri } from "../src/lib/env";
 import { readJsonWithLimit } from "../src/lib/routeUtils";
@@ -77,11 +77,11 @@ function testDefaultPostMediaFiltering() {
       status: "active"
     },
     {
-      _id: "real-blob-upload",
-      url: "https://example.public.blob.vercel-storage.com/media/direct/file.jpg",
+      _id: "real-r2-upload",
+      url: "/api/media/507f1f77bcf86cd799439011",
       storageKey: "media/direct/file.jpg",
       purpose: "post",
-      provider: "vercel_blob",
+      provider: "cloudflare_r2",
       status: "active"
     },
     {
@@ -93,27 +93,23 @@ function testDefaultPostMediaFiltering() {
       status: "active"
     }
   ]);
-  assert.deepEqual(media.map((item) => item.id), ["real-blob-upload", "real-local-upload"]);
+  assert.deepEqual(media.map((item) => item.id), ["real-r2-upload", "real-local-upload"]);
 }
 
-async function testMissingBlobToken() {
+async function testLegacyWriterDisabled() {
   const previousNodeEnv = process.env.NODE_ENV;
   const previousVercel = process.env.VERCEL;
-  const previousBlob = process.env.BLOB_READ_WRITE_TOKEN;
   const env = process.env as Record<string, string | undefined>;
   env.NODE_ENV = "production";
   delete process.env.VERCEL;
-  delete process.env.BLOB_READ_WRITE_TOKEN;
   await assert.rejects(
     storePublicFile({ buffer: Buffer.from("x"), storageKey: "tests/file.txt", contentType: "text/plain" }),
-    /BLOB_STORAGE_NOT_CONFIGURED/
+    /R2_DIRECT_UPLOAD_REQUIRED/
   );
   if (previousNodeEnv === undefined) delete env.NODE_ENV;
   else env.NODE_ENV = previousNodeEnv;
   if (previousVercel === undefined) delete process.env.VERCEL;
   else process.env.VERCEL = previousVercel;
-  if (previousBlob === undefined) delete process.env.BLOB_READ_WRITE_TOKEN;
-  else process.env.BLOB_READ_WRITE_TOKEN = previousBlob;
 }
 
 async function testPublisherSnapshot() {
@@ -264,15 +260,6 @@ function testSecurityRegressionRules() {
     assert.equal(isBlockedNetworkAddress(address), true, `${address} must be blocked`);
   }
   assert.equal(isBlockedNetworkAddress("8.8.8.8"), false);
-  assert.equal(validateVercelBlobUrl("https://store.public.blob.vercel-storage.com/media/direct/file.jpg", "media/direct/file.jpg").hostname, "store.public.blob.vercel-storage.com");
-  for (const value of [
-    "http://store.public.blob.vercel-storage.com/media/direct/file.jpg",
-    "https://localhost/media/direct/file.jpg",
-    "https://evil-public.blob.vercel-storage.com.attacker.test/media/direct/file.jpg",
-    "https://store.public.blob.vercel-storage.com/media/direct/other.jpg",
-    "https://store.public.blob.vercel-storage.com/media/direct/file.jpg?redirect=http://127.0.0.1"
-  ]) assert.throws(() => validateVercelBlobUrl(value, "media/direct/file.jpg"));
-
   assert.equal(safeMarkdownHref("javascript:alert(1)"), undefined);
   assert.equal(safeMarkdownHref("data:text/html,test"), undefined);
   assert.equal(safeMarkdownHref("/laws/election"), "/laws/election");
@@ -418,7 +405,7 @@ function testAuthEmailSecurity() {
 async function main() {
   await testPartyMatching();
   await testUploadValidation();
-  await testMissingBlobToken();
+  await testLegacyWriterDisabled();
   await testPublisherSnapshot();
   testLogoAssetReferences();
   testDateFormattingUsesApplicationTimeZone();

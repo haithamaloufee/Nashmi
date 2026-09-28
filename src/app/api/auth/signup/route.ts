@@ -2,9 +2,9 @@ import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { signupSchema } from "@/lib/validators";
-import { normalizeEmail, getClientIp } from "@/lib/security";
+import { normalizeEmail, getClientIp, hashSensitive } from "@/lib/security";
 import { requireRateLimit } from "@/lib/rateLimit";
-import { readJson, isDuplicateKeyError } from "@/lib/routeUtils";
+import { readJsonWithLimit, isDuplicateKeyError } from "@/lib/routeUtils";
 import { safeUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
 import User from "@/models/User";
@@ -15,11 +15,17 @@ import { sendTransactionalEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
-    await requireRateLimit(`signup:${getClientIp(request)}`, 3, 60 * 60 * 1000);
-    const input = await readJson(request, signupSchema);
+    const input = await readJsonWithLimit(request, signupSchema, 16 * 1024);
+    const emailNormalized = normalizeEmail(input.email);
+    const clientIp = getClientIp(request);
+    // Never put a raw address in the MongoDB rate-limit key. A missing proxy
+    // address must not collapse every signup into one global bucket.
+    if (clientIp !== "unknown") {
+      await requireRateLimit(`signup:ip:${hashSensitive(clientIp)}`, 30, 60 * 60 * 1000);
+    }
+    await requireRateLimit(`signup:email:${hashSensitive(emailNormalized)}`, 4, 60 * 60 * 1000);
     await connectToDatabase();
 
-    const emailNormalized = normalizeEmail(input.email);
     const passwordHash = await bcrypt.hash(input.password, 12);
     const verification = createEmailVerificationToken();
 

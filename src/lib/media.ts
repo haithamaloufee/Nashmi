@@ -46,16 +46,7 @@ function resolveMediaSource(purpose: unknown, provider: unknown): PublicMediaSou
   return provider === "local_dev" ? "fallback" : "user-upload";
 }
 
-function isVercelBlobUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com");
-  } catch {
-    return false;
-  }
-}
-
-function isLocalUploadUrl(value: string) {
+function isNashmiUploadUrl(value: string) {
   return value.startsWith("/uploads/") || value.startsWith("/api/media/");
 }
 
@@ -69,7 +60,7 @@ function isGeneratedDefaultPostMedia(mediaAsset: UnknownMediaAsset, url: string)
 function isDisplayablePostMedia(mediaAsset: UnknownMediaAsset, url: string) {
   if (mediaAsset.purpose !== "post") return true;
   if (isGeneratedDefaultPostMedia(mediaAsset, url)) return false;
-  return isVercelBlobUrl(url) || isLocalUploadUrl(url);
+  return isNashmiUploadUrl(url);
 }
 
 export function normalizeMediaAsset(asset: unknown): PublicMediaAsset | null {

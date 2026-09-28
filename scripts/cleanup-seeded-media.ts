@@ -16,17 +16,8 @@ type CandidateAsset = {
 
 const defaultPostMediaPrefix = "default-post-media/";
 
-function isBlobUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com");
-  } catch {
-    return false;
-  }
-}
-
-function isRealLocalUpload(value: string) {
-  return value.startsWith("/uploads/");
+function isNashmiUpload(value: string) {
+  return value.startsWith("/api/media/") || value.startsWith("/uploads/");
 }
 
 function cleanupReason(asset: CandidateAsset) {
@@ -35,7 +26,7 @@ function cleanupReason(asset: CandidateAsset) {
   if (storageKey.startsWith(defaultPostMediaPrefix)) return "default-post-media-storage-key";
   if (url.startsWith("https://parties.iec.jo/")) return "parties-iec-post-body-url";
   if (url.startsWith("/related/")) return "related-default-post-body-url";
-  if (asset.purpose === "post" && !isBlobUrl(url) && !isRealLocalUpload(url)) return "non-upload-post-body-url";
+  if (asset.purpose === "post" && !isNashmiUpload(url)) return "non-upload-post-body-url";
   return null;
 }
 
@@ -77,7 +68,7 @@ async function main() {
     candidateAssets: candidates.length,
     affectedPosts: affectedPosts.length,
     reasonCounts,
-    preservedRule: "Vercel Blob URLs and /uploads/ local development uploads are not cleanup candidates.",
+    preservedRule: "Stable /api/media/ URLs and /uploads/ local development uploads are not cleanup candidates.",
     sampleAssets: candidates.slice(0, 12).map(({ asset, reason }) => ({
       id: String(asset._id),
       reason,

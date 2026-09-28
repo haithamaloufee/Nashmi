@@ -11,6 +11,7 @@ import {
   getUserMediaQuotaBytes
 } from "@/lib/env";
 import { getObjectStorage } from "@/lib/storage/index";
+import { stableMediaUrlForAsset } from "@/lib/mediaIdentity";
 import {
   assetTypeForMimeType,
   extensionForMimeType,
@@ -56,9 +57,10 @@ export function parseMediaPurpose(value: unknown): MediaPurpose | null {
   return typeof value === "string" && mediaPurposes.includes(value as MediaPurpose) ? value as MediaPurpose : null;
 }
 
-export function stableMediaUrl(assetId: string, storageKey: string, visibility: "public" | "protected") {
-  const direct = visibility === "public" ? getObjectStorage().getPublicUrl(storageKey) : null;
-  return direct || `/api/media/${assetId}`;
+export function stableMediaUrl(assetId: string) {
+  // References in MongoDB must stay independent of the public R2 hostname and
+  // must retain the asset id used by profile and post ownership checks.
+  return stableMediaUrlForAsset(assetId);
 }
 
 async function enforceQuota(user: UploadingUser, requestedBytes: number) {
@@ -178,7 +180,7 @@ export async function confirmMediaUpload(input: { user: UploadingUser; assetId: 
     throw new Error("MEDIA_MAGIC_MISMATCH");
   }
 
-  const url = stableMediaUrl(String(asset._id), asset.storageKey, asset.visibility === "protected" ? "protected" : "public");
+  const url = stableMediaUrl(String(asset._id));
   const updated = await MediaAsset.findOneAndUpdate(
     { _id: asset._id, ownerUserId: input.user.id, status: "pending" },
     {

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { InvalidEnvError, MissingEnvError } from "./env";
 import { logServerError } from "./observability";
+import { RateLimitError } from "./rateLimit";
+import { retryAfterSeconds } from "./rateLimitCore";
 
 export type ApiErrorCode =
   | "BAD_REQUEST"
@@ -42,6 +44,13 @@ export function fail(code: ApiErrorCode, message?: string, status = 400) {
 }
 
 export function handleApiError(error: unknown, request?: Request) {
+  if (error instanceof RateLimitError) {
+    const retryAfter = retryAfterSeconds(error.resetAt);
+    return NextResponse.json(
+      { ok: false, error: { code: "RATE_LIMITED", message: `تم تجاوز حد المحاولات. حاول بعد ${Math.ceil(retryAfter / 60)} دقيقة.` } },
+      { status: 429, headers: { "Retry-After": String(retryAfter), "Cache-Control": "no-store" } }
+    );
+  }
   if (error instanceof ZodError) {
     const first = error.issues[0];
     const path = first?.path?.map(String).join('.') || '';
@@ -75,13 +84,10 @@ export function handleApiError(error: unknown, request?: Request) {
     return fail("BAD_REQUEST", "تعذر التحقق من الملف المرفوع. أعد اختياره وحاول مجددًا.", 400);
   }
   if (error instanceof Error && error.message === "R2_STORAGE_NOT_CONFIGURED") {
+    logServerError(error, { request, category: "api.storage_configuration" });
     return fail("SERVER_ERROR", "تخزين الملفات الدائم غير مفعّل.", 503);
   }
   if (error instanceof Error && error.message === "PAYLOAD_TOO_LARGE") return fail("PAYLOAD_TOO_LARGE", messages.PAYLOAD_TOO_LARGE, 413);
-  if (error instanceof Error && error.message === "BLOB_STORAGE_NOT_CONFIGURED") {
-    logServerError(error, { request, category: "api.storage_configuration" });
-    return fail("SERVER_ERROR", "تعذر الوصول إلى خدمة الملفات الآن. حاول مرة أخرى لاحقًا.", 503);
-  }
   if (error instanceof MissingEnvError || error instanceof InvalidEnvError) {
     logServerError(error, { request, category: "api.environment_configuration" });
     return fail("SERVER_ERROR", "الخدمة غير متاحة مؤقتًا. حاول مرة أخرى لاحقًا.", 503);

@@ -69,7 +69,6 @@ npm run sync-indexes
 npm run recalculate-counters
 npm run email:preview
 npm run storage:inventory
-npm run storage:migrate-r2
 npm run storage:reconcile-r2
 ```
 

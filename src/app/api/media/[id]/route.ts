@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { handleApiError } from "@/lib/apiResponse";
 import { connectToDatabase } from "@/lib/db";
-import { getR2DownloadExpirySeconds, hasR2Credentials } from "@/lib/env";
+import { getR2DownloadExpirySeconds } from "@/lib/env";
 import { getCurrentUser } from "@/lib/auth";
 import { getObjectStorage } from "@/lib/storage/index";
-import { validateVercelBlobUrl } from "@/lib/remoteFetch";
 import { requireRateLimit } from "@/lib/rateLimit";
 import MediaAsset from "@/models/MediaAsset";
 
@@ -30,15 +29,11 @@ export async function GET(request: Request, context: Context) {
 
     const rateLimitKey = user ? `media-read:${user.id}` : `media-public:${id}`;
     await requireRateLimit(rateLimitKey, user ? 240 : 600, 60 * 60 * 1000);
-    if (asset.provider === "vercel_blob" || asset.provider === "local_dev") {
-      return NextResponse.redirect(new URL(asset.url, "https://nashmi.haitham.website"), 307);
+    if (asset.provider === "local_dev") {
+      if (!asset.url.startsWith("/uploads/") || asset.url.includes("..")) return new NextResponse("Not found", { status: 404 });
+      return NextResponse.redirect(new URL(asset.url, request.url), 307);
     }
-    if (!hasR2Credentials() && asset.visibility !== "protected" && asset.sourceProvider === "vercel_blob" && asset.sourceUrl) {
-      const parsedSource = new URL(asset.sourceUrl);
-      const expectedStorageKey = decodeURIComponent(parsedSource.pathname.replace(/^\/+/, ""));
-      const trustedSource = validateVercelBlobUrl(asset.sourceUrl, expectedStorageKey);
-      return NextResponse.redirect(trustedSource, 307);
-    }
+    if (asset.provider !== "cloudflare_r2") return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
     const downloadName = asset.visibility === "protected" ? asset.originalFileName || "download" : null;
     const signedUrl = await getObjectStorage().createDownloadUrl(asset.storageKey, getR2DownloadExpirySeconds(), downloadName);
     return NextResponse.redirect(signedUrl, {

@@ -16,6 +16,7 @@ type AssetRow = {
   sizeBytes?: number;
   purpose?: string;
   provider?: string;
+  sourceProvider?: string;
   status?: string;
   createdAt?: Date;
 };
@@ -69,17 +70,25 @@ async function main() {
 
   const assets = await db.collection<AssetRow>("mediaassets").find({}).toArray();
   const assetIds = new Set(assets.map((asset) => String(asset._id)));
+  const assetsById = new Map(assets.map((asset) => [String(asset._id), asset]));
+  const assetIdsByUrl = new Map(assets.filter((asset) => asset.url).map((asset) => [asset.url, String(asset._id)]));
   const referencedIds = new Set<string>();
 
   const referenceCollections = [
     { name: "posts", fields: ["mediaIds"] },
     { name: "parties", fields: ["logoMediaId", "coverMediaId"] },
-    { name: "authorityprofiles", fields: ["logoMediaId", "coverMediaId"] }
+    { name: "authorityprofiles", fields: ["logoMediaId", "coverMediaId"] },
+    { name: "users", fields: ["avatarMediaId"] },
+    { name: "laws", fields: ["thumbnailMediaId"] }
   ];
   const referenceCounts: Record<string, number> = {};
+  const brokenReferenceCounts: Record<string, number> = {};
+  const unreadyReferenceCounts: Record<string, number> = {};
   for (const collection of referenceCollections) {
     const documents = await db.collection(collection.name).find({}, { projection: Object.fromEntries(collection.fields.map((field) => [field, 1])) }).toArray();
     let count = 0;
+    let broken = 0;
+    let unready = 0;
     for (const document of documents) {
       for (const field of collection.fields) {
         const raw = document[field];
@@ -89,11 +98,14 @@ async function main() {
           if (assetIds.has(id)) {
             referencedIds.add(id);
             count += 1;
-          }
+            if (!["ready", "active"].includes(assetsById.get(id)?.status || "")) unready += 1;
+          } else broken += 1;
         }
       }
     }
     referenceCounts[collection.name] = count;
+    brokenReferenceCounts[collection.name] = broken;
+    unreadyReferenceCounts[collection.name] = unready;
   }
 
   const urlFields = [
@@ -106,6 +118,9 @@ async function main() {
   ];
   const embeddedUrlCounts: Record<string, number> = {};
   const embeddedBlobUrls = new Set<string>();
+  const legacyExternalUrls = new Set<string>();
+  let brokenStableUrlCount = 0;
+  let localDevelopmentUrlCount = 0;
   for (const entry of urlFields) {
     const projection = Object.fromEntries(entry.fields.map((field) => [field, 1]));
     const documents = await db.collection(entry.collection).find({}, { projection }).toArray();
@@ -120,12 +135,20 @@ async function main() {
           embeddedBlobUrls.add(value);
           count += 1;
         }
+        if (typeof value === "string") {
+          const linkedId = assetIdsByUrl.get(value) || (value.startsWith("/api/media/") ? value.slice("/api/media/".length) : null);
+          if (linkedId && assetIds.has(linkedId)) referencedIds.add(linkedId);
+          else if (value.startsWith("/api/media/")) brokenStableUrlCount += 1;
+          if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(value) || value.startsWith("/uploads/")) localDevelopmentUrlCount += 1;
+          else if (/^https?:\/\//i.test(value) && !isVercelBlobUrl(value)) legacyExternalUrls.add(value);
+        }
       }
     }
     embeddedUrlCounts[entry.collection] = count;
   }
 
   const blobAssets = assets.filter((asset) => asset.provider === "vercel_blob" || isVercelBlobUrl(asset.url));
+  const readyR2Assets = assets.filter((asset) => asset.provider === "cloudflare_r2" && ["ready", "active"].includes(asset.status || ""));
   const headChecks = await mapLimit(blobAssets, HEAD_CONCURRENCY, async (asset) => {
     if (!asset.url || !isVercelBlobUrl(asset.url)) return { status: "invalid-url", size: null, contentType: null };
     try {
@@ -170,15 +193,26 @@ async function main() {
     database: {
       mediaAssetCount: assets.length,
       blobAssetCount: blobAssets.length,
+      blobAssetsByStatus: countBy(blobAssets, (asset) => asset.status || "missing"),
+      blobReferencedCount: blobAssets.filter((asset) => referencedIds.has(String(asset._id))).length,
+      blobReferencedMissingSourceCount: blobAssets.filter((asset, index) =>
+        referencedIds.has(String(asset._id)) && headChecks[index]?.status === "http-404").length,
+      readyR2AssetCount: readyR2Assets.length,
+      readyR2AssetsFromBlobCount: readyR2Assets.filter((asset) => asset.sourceProvider === "vercel_blob").length,
       referencedAssetCount: referencedIds.size,
       unreferencedAssetCount: assets.filter((asset) => !referencedIds.has(String(asset._id))).length,
       referenceCounts,
+      brokenReferenceCounts,
+      unreadyReferenceCounts,
+      brokenStableUrlCount,
+      legacyExternalUrlCount: legacyExternalUrls.size,
+      localDevelopmentUrlCount,
       embeddedVercelBlobUrls: embeddedBlobUrls.size,
       embeddedVercelBlobUrlsWithoutMediaAsset: [...embeddedBlobUrls].filter((url) => !assetUrls.has(url)).length,
       embeddedUrlCounts
     },
     sourceInventory: {
-      referencedUniqueUrlCount: sourceUrls.length,
+      legacySourceUrlCount: sourceUrls.length,
       reachableObjectCount: sourceChecks.filter((item) => item.status === "ok").length,
       missingObjectCount: sourceChecks.filter((item) => item.status === "http-404").length,
       errorCount: sourceChecks.filter((item) => item.status !== "ok" && item.status !== "http-404").length,

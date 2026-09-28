@@ -75,6 +75,7 @@ function fallbackError(json: unknown, fallback: string, tFunc: (k: any) => strin
     if (error.code === "PAYLOAD_TOO_LARGE") return tFunc("chat.errors.payloadTooLarge");
     // Rate limit responses include a messageKey from assistantUsage, prefer that
     if (error.code === "RATE_LIMITED" && (error as any).messageKey) return tFunc((error as any).messageKey);
+    if (typeof error.message === "string" && error.message.trim()) return error.message;
   }
   return fallback;
 }

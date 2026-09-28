@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { fail, handleApiError, ok } from "@/lib/apiResponse";
-import { assistantLimitResponse, ASSISTANT_BODY_MAX_BYTES, consumeAssistantUsage, getAssistantUser } from "@/lib/assistantUsage";
+import { handleApiError, ok } from "@/lib/apiResponse";
+import { assistantLimitResponse, ASSISTANT_BODY_MAX_BYTES, consumeAssistantUsage, getAssistantUser, refundAssistantUsage } from "@/lib/assistantUsage";
 import { connectToDatabase } from "@/lib/db";
-import { handleChatMessage, handleGuestChatMessage, logSafeChatError } from "@/lib/ai/chatSession";
+import { handleChatMessage, handleGuestChatMessage, chatProviderErrorResponse } from "@/lib/ai/chatSession";
 import { SharekAiError } from "@/lib/ai/gemini";
 import { isLanguage } from "@/lib/i18n";
 import { readJsonWithLimit, serialize } from "@/lib/routeUtils";
@@ -21,6 +21,7 @@ const schema = z.object({
 });
 
 export async function POST(request: Request, context: Context) {
+  const startedAt = Date.now();
   try {
     const user = await getAssistantUser();
     const { lawId } = await context.params;
@@ -35,8 +36,10 @@ export async function POST(request: Request, context: Context) {
     if (!usageResult.ok) return assistantLimitResponse(usageResult.usage, language);
 
     const message = input.message || `اشرح "${law.title}" بلغة مبسطة ومحايدة`;
-    const result = user
-      ? await handleChatMessage({
+    let result;
+    try {
+      result = user
+        ? await handleChatMessage({
           user,
           sessionId: input.sessionId,
           message,
@@ -48,6 +51,10 @@ export async function POST(request: Request, context: Context) {
           preferredLawId: lawId,
           history: input.history
         });
+    } catch (error) {
+      await refundAssistantUsage(request, user, usageResult.usage);
+      throw error;
+    }
 
     return ok({
       session: serialize(result.session),
@@ -59,9 +66,8 @@ export async function POST(request: Request, context: Context) {
     });
   } catch (error) {
     if (error instanceof SharekAiError) {
-      logSafeChatError(error, { route: "/api/chat/law/[lawId]" });
-      return fail(error.code === "rate_limit" ? "RATE_LIMITED" : "SERVER_ERROR", error.userMessage, error.code === "rate_limit" ? 429 : 500);
+      return chatProviderErrorResponse(error, request, "/api/chat/law/[lawId]", startedAt);
     }
-    return handleApiError(error);
+    return handleApiError(error, request);
   }
 }

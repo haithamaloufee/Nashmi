@@ -6,7 +6,7 @@ import { connectToDatabase } from "@/lib/db";
 import { normalizeArabic } from "@/lib/arabicSearch";
 import { getGeminiBoolean, getGeminiNumber, getOptionalEnv, getRequiredEnv } from "@/lib/env";
 import Law from "@/models/Law";
-import { buildBoundedConversation, classifyAiProviderError } from "@/lib/ai/resilience";
+import { buildBoundedConversation, classifyAiProviderError, ModelAttemptError, runWithModelFallback } from "@/lib/ai/resilience";
 import type { NewsContextSnapshot } from "@/lib/news/types";
 import { isExplicitCurrentNewsQuestion } from "@/lib/news/policy";
 
@@ -46,8 +46,10 @@ export type SharekAssistantResponse = {
 
 export class SharekAiError extends Error {
   constructor(
-    public readonly code: "missing_key" | "auth" | "rate_limit" | "model_unavailable" | "timeout" | "safety" | "unknown",
-    public readonly userMessage: string
+    public readonly code: "missing_key" | "auth" | "rate_limit" | "model_unavailable" | "provider_unavailable" | "invalid_request" | "timeout" | "safety" | "unknown",
+    public readonly userMessage: string,
+    public readonly model?: string,
+    public readonly stage?: "primary" | "fallback"
   ) {
     super(code);
     this.name = "SharekAiError";
@@ -363,7 +365,8 @@ function hasWebSearchIntent(message: string) {
 
 function shouldUseGoogleSearch(message: string, lawContext: LawContextItem[], enabled: boolean) {
   if (!enabled) return false;
-  return hasWebSearchIntent(message) || isLocalMatchWeak(lawContext);
+  // A greeting has no local law match, but it does not need a web search.
+  return hasWebSearchIntent(message) || (tokenize(message).length >= 3 && isLocalMatchWeak(lawContext));
 }
 
 function buildNewsContextBlock(news: NewsContextSnapshot) {
@@ -485,24 +488,26 @@ function getTokenCount(response: GenerateContentResponse) {
   return response.usageMetadata?.totalTokenCount ?? null;
 }
 
-function toFriendlyError(error: unknown): SharekAiError {
-  if (error instanceof SharekAiError) return error;
+function toFriendlyError(error: unknown, model?: string, stage?: "primary" | "fallback"): SharekAiError {
+  if (error instanceof SharekAiError) return new SharekAiError(error.code, error.userMessage, model, stage);
   const classification = classifyAiProviderError(error);
   const userMessages = {
     missing_key: "المساعد غير متاح الآن. حاول مرة أخرى بعد قليل.",
     auth: "المساعد غير متاح الآن. حاول مرة أخرى بعد قليل.",
     rate_limit: "الضغط على خدمة الذكاء الاصطناعي مرتفع الآن، حاول مرة أخرى بعد قليل.",
     model_unavailable: "نموذج الذكاء الاصطناعي غير متاح الآن، حاول مرة أخرى بعد قليل.",
+    provider_unavailable: "المساعد غير متاح مؤقتًا. حاول مرة أخرى بعد قليل.",
+    invalid_request: "تعذر معالجة السؤال الآن. حاول مرة أخرى بعد قليل.",
     timeout: "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل.",
     safety: "تعذر تقديم رد مناسب لهذا السؤال ضمن قواعد السلامة.",
     unknown: "تعذر الحصول على رد الآن، حاول مرة أخرى بعد قليل."
   } as const;
-  return new SharekAiError(classification.code, userMessages[classification.code]);
+  return new SharekAiError(classification.code, userMessages[classification.code], model, stage);
 }
 
 function shouldFallback(error: unknown) {
   const friendly = toFriendlyError(error);
-  return classifyAiProviderError(friendly).retryable || ["rate_limit", "model_unavailable", "timeout"].includes(friendly.code);
+  return ["rate_limit", "model_unavailable", "provider_unavailable", "timeout"].includes(friendly.code);
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -586,18 +591,21 @@ export async function generateSharekAssistantResponse(params: {
   // provider configuration once a request actually needs the provider.
   const config = getSharekAssistantConfig();
 
-  if (isExplicitCurrentNewsQuestion(params.message) && !config.enableGoogleSearch && !params.newsContext) {
-    return {
-      content: "ما بقدر أؤكد آخر الأخبار الآن لأن التحقق المباشر من المصادر غير متاح. جرّب بعد قليل حتى أعطيك مستجدات حديثة وموثقة بدل معلومات قديمة أو غير مؤكدة.",
-      model: "local-freshness-rule",
-      sourceLawIds: [],
-      groundingSources: [],
-      safetyFlags: ["current_news_requires_search"],
-      tokensUsed: null
-    };
+  const currentNewsQuestion = isExplicitCurrentNewsQuestion(params.message);
+  const freshnessUnavailableResponse = (): SharekAssistantResponse => ({
+    content: "ما بقدر أؤكد آخر الأخبار الآن لأن التحقق المباشر من المصادر غير متاح. جرّب بعد قليل حتى أعطيك مستجدات حديثة وموثقة بدل معلومات قديمة أو غير مؤكدة.",
+    model: "local-freshness-rule",
+    sourceLawIds: [],
+    groundingSources: [],
+    safetyFlags: ["current_news_requires_search"],
+    tokensUsed: null
+  });
+
+  if (currentNewsQuestion && !config.enableGoogleSearch && !params.newsContext) {
+    return freshnessUnavailableResponse();
   }
 
-  const useGoogleSearch = params.newsContext
+  let useGoogleSearch = params.newsContext
     ? config.enableGoogleSearch && isExplicitCurrentNewsQuestion(params.message)
     : shouldUseGoogleSearch(params.message, params.lawContext, config.enableGoogleSearch);
   const responseConfig = {
@@ -609,20 +617,49 @@ export async function generateSharekAssistantResponse(params: {
   };
 
   let response: GenerateContentResponse;
-  const primaryModel = useGoogleSearch ? config.searchModel : config.model;
-  const fallbackModel = useGoogleSearch ? primaryModel : config.fallbackModel;
-  let usedModel = primaryModel;
-
+  let usedModel: string;
+  let searchUnavailable = false;
   try {
-    response = await callGemini({ ...responseConfig, model: primaryModel });
-  } catch (error) {
-    if (!shouldFallback(error) || fallbackModel === primaryModel) throw toFriendlyError(error);
-    usedModel = fallbackModel;
-    try {
-      response = await callGemini({ ...responseConfig, model: fallbackModel });
-    } catch (fallbackError) {
-      throw toFriendlyError(fallbackError);
+    if (useGoogleSearch) {
+      try {
+        response = await callGemini({ ...responseConfig, model: config.searchModel });
+        usedModel = config.searchModel;
+      } catch (searchError) {
+        const classification = classifyAiProviderError(searchError);
+        if (!classification.retryable && classification.code !== "invalid_request") {
+          throw new ModelAttemptError(searchError, config.searchModel, "primary");
+        }
+        console.warn({ event: "ai.search_fallback", code: classification.code, model: config.searchModel });
+        if (currentNewsQuestion) return freshnessUnavailableResponse();
+        useGoogleSearch = false;
+        searchUnavailable = true;
+        const outcome = await runWithModelFallback(
+          config.model,
+          config.fallbackModel,
+          (model) => callGemini({
+            ...responseConfig,
+            model,
+            useGoogleSearch: false,
+            systemInstruction: buildSystemInstruction(params.lawContext, false, params.newsContext)
+          }),
+          shouldFallback
+        );
+        response = outcome.result;
+        usedModel = outcome.model;
+      }
+    } else {
+      const outcome = await runWithModelFallback(
+        config.model,
+        config.fallbackModel,
+        (model) => callGemini({ ...responseConfig, model }),
+        shouldFallback
+      );
+      response = outcome.result;
+      usedModel = outcome.model;
     }
+  } catch (error) {
+    if (error instanceof ModelAttemptError) throw toFriendlyError(error.cause, error.model, error.stage);
+    throw error;
   }
 
   const content = response.text?.trim();
@@ -647,6 +684,7 @@ export async function generateSharekAssistantResponse(params: {
     groundingSources: [...newsSources, ...lawSources, ...webSources],
     safetyFlags: [
       ...(useGoogleSearch ? ["google_search_enabled"] : []),
+      ...(searchUnavailable ? ["google_search_unavailable"] : []),
       ...(useGoogleSearch && webSources.length === 0 ? ["google_search_no_sources"] : []),
       ...(isLocalMatchWeak(params.lawContext) ? ["weak_local_law_match"] : [])
     ],

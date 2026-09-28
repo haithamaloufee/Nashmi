@@ -38,9 +38,9 @@ UserSchema.index({ googleId: 1 }, { unique: true, partialFilterExpression: { goo
 UserSchema.index({ role: 1, status: 1 });
 UserSchema.index({ status: 1, createdAt: -1 });
 UserSchema.index({ passwordSetupExpiresAt: 1 }, { sparse: true });
-UserSchema.index({ passwordSetupTokenHash: 1 }, { unique: true, sparse: true });
-UserSchema.index({ emailVerificationTokenHash: 1 }, { unique: true, sparse: true });
-UserSchema.index({ passwordResetTokenHash: 1 }, { unique: true, sparse: true });
+UserSchema.index({ passwordSetupTokenHash: 1 }, { name: "passwordSetupTokenHash_string_unique", unique: true, partialFilterExpression: { passwordSetupTokenHash: { $type: "string" } } });
+UserSchema.index({ emailVerificationTokenHash: 1 }, { name: "emailVerificationTokenHash_string_unique", unique: true, partialFilterExpression: { emailVerificationTokenHash: { $type: "string" } } });
+UserSchema.index({ passwordResetTokenHash: 1 }, { name: "passwordResetTokenHash_string_unique", unique: true, partialFilterExpression: { passwordResetTokenHash: { $type: "string" } } });
 UserSchema.index({ emailVerificationExpiresAt: 1 }, { sparse: true });
 UserSchema.index({ passwordResetExpiresAt: 1 }, { sparse: true });
 
