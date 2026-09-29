@@ -11,6 +11,8 @@ export const allowedUploads: Record<string, AllowedUpload> = {
   "image/png": { extensions: ["png"], kind: "image" },
   "image/webp": { extensions: ["webp"], kind: "image" },
   "image/gif": { extensions: ["gif"], kind: "image" },
+  "image/avif": { extensions: ["avif"], kind: "image" },
+  "image/bmp": { extensions: ["bmp"], kind: "image" },
   "video/mp4": { extensions: ["mp4"], kind: "video" },
   "video/webm": { extensions: ["webm"], kind: "video" },
   "application/pdf": { extensions: ["pdf"], kind: "document" }
@@ -54,6 +56,16 @@ export function hasValidUploadMagic(buffer: Buffer, mimeType: string) {
   if (mimeType === "image/png") return buffer.subarray(0, 8).toString("hex") === "89504e470d0a1a0a";
   if (mimeType === "image/webp") return buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
   if (mimeType === "image/gif") return ["GIF87a", "GIF89a"].includes(buffer.subarray(0, 6).toString("ascii"));
+  if (mimeType === "image/avif") return hasFtypBrand(buffer, ["avif", "avis"]);
+  if (mimeType === "image/bmp") {
+    if (buffer.length < 26 || buffer.subarray(0, 2).toString("ascii") !== "BM") return false;
+    const fileSize = buffer.readUInt32LE(2);
+    const pixelOffset = buffer.readUInt32LE(10);
+    const headerSize = buffer.readUInt32LE(14);
+    return [12, 40, 52, 56, 64, 108, 124].includes(headerSize)
+      && pixelOffset >= 14 + headerSize
+      && fileSize >= pixelOffset;
+  }
   if (mimeType === "video/mp4") return hasFtypBrand(buffer, ["isom", "iso2", "mp41", "mp42", "avc1", "M4V"]);
   if (mimeType === "video/webm") return buffer.subarray(0, 4).toString("hex") === "1a45dfa3";
   if (mimeType === "application/pdf") return buffer.subarray(0, 5).toString("ascii") === "%PDF-";
@@ -80,7 +92,7 @@ export function validateUploadMetadata(input: { fileName: string; mimeType: stri
   const allowed = allowedUploads[mimeType];
   if (!allowed || (input.imagesOnly && allowed.kind !== "image")) {
     return input.imagesOnly
-      ? "نوع الصورة غير مدعوم. جرّب صورة JPG أو PNG أو WebP."
+      ? "نوع الصورة غير مدعوم. الصيغ المقبولة: JPG وPNG وWebP وGIF وAVIF وBMP."
       : "نوع الملف غير مدعوم. جرّب صورة أو فيديو شائعًا أو ملف PDF.";
   }
 
