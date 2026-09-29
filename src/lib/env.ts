@@ -108,8 +108,8 @@ export function getMaxUploadSizeBytes() {
   return maxMb * 1024 * 1024;
 }
 
-function getUploadSizeBytes(name: string, defaultMb: number, maxAllowedMb: number) {
-  const raw = getOptionalEnv(name) || getOptionalEnv("MAX_UPLOAD_SIZE_MB") || String(defaultMb);
+function getUploadSizeBytes(name: string, defaultMb: number, maxAllowedMb: number, allowGenericFallback = true) {
+  const raw = getOptionalEnv(name) || (allowGenericFallback ? getOptionalEnv("MAX_UPLOAD_SIZE_MB") : undefined) || String(defaultMb);
   const maxMb = Number(raw);
   if (!Number.isFinite(maxMb) || maxMb <= 0 || maxMb > maxAllowedMb) {
     throw new InvalidEnvError(name, `must be a number between 1 and ${maxAllowedMb}`);
@@ -118,7 +118,7 @@ function getUploadSizeBytes(name: string, defaultMb: number, maxAllowedMb: numbe
 }
 
 export function getMaxImageUploadSizeBytes() {
-  return getUploadSizeBytes("MAX_IMAGE_UPLOAD_SIZE_MB", 5, 25);
+  return getUploadSizeBytes("MAX_IMAGE_UPLOAD_SIZE_MB", 10, 25, false);
 }
 
 export function getMaxVideoUploadSizeBytes() {

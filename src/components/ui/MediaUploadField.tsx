@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ImagePlus, Loader2, Trash2, Upload, X } from "lucide-react";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import SafeImage from "@/components/ui/SafeImage";
 import { useToast } from "@/components/ui/ToastProvider";
+import { parseUploadLimits, uploadLimitForMimeType, type UploadLimits } from "@/lib/clientUploadLimits";
 
 type UploadedAsset = {
   _id: string;
@@ -29,21 +30,17 @@ type MediaUploadFieldProps = {
   onUploadingChange?: (uploading: boolean) => void;
 };
 
-const imageAccept = "image/jpeg,image/png,image/webp,image/gif";
+const imageAccept = "image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp";
 const mediaAccept = `${imageAccept},video/mp4,video/webm,application/pdf`;
 const allowedImages = new Set(imageAccept.split(","));
 const allowedMedia = new Set(mediaAccept.split(","));
-const imageLimit = 5 * 1024 * 1024;
-const videoLimit = 100 * 1024 * 1024;
-const documentLimit = 20 * 1024 * 1024;
-
-function validateClientFile(file: File, imagesOnly: boolean, t: ReturnType<typeof useTranslation>["t"]) {
+function validateClientFile(file: File, imagesOnly: boolean, limits: UploadLimits, t: ReturnType<typeof useTranslation>["t"]) {
   const allowed = imagesOnly ? allowedImages : allowedMedia;
   if (!allowed.has(file.type)) {
     return imagesOnly ? t("media.upload.invalidImages") : t("media.upload.invalidMedia");
   }
   if (file.size <= 0) return t("media.upload.emptyFile");
-  const max = file.type.startsWith("video/") ? videoLimit : file.type === "application/pdf" ? documentLimit : imageLimit;
+  const max = uploadLimitForMimeType(file.type, limits);
   if (file.size > max) return `${t("media.upload.tooLarge")} ${Math.floor(max / 1024 / 1024)} ${t("media.upload.megabytes")}.`;
   return null;
 }
@@ -96,6 +93,33 @@ export default function MediaUploadField({
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [uploadLimits, setUploadLimits] = useState<UploadLimits | null>(null);
+  const limitsRequest = useRef<Promise<UploadLimits> | null>(null);
+
+  const loadUploadLimits = useCallback(() => {
+    if (!limitsRequest.current) {
+      limitsRequest.current = fetch("/api/uploads", { cache: "no-store" })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("UPLOAD_LIMITS_UNAVAILABLE");
+          const limits = parseUploadLimits(await response.json());
+          if (!limits) throw new Error("UPLOAD_LIMITS_UNAVAILABLE");
+          return limits;
+        })
+        .catch((error) => {
+          limitsRequest.current = null;
+          throw error;
+        });
+    }
+    return limitsRequest.current;
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    void loadUploadLimits().then((limits) => {
+      if (mounted) setUploadLimits(limits);
+    }).catch(() => undefined);
+    return () => { mounted = false; };
+  }, [loadUploadLimits]);
 
   const displayUrl = previewUrl || value || "";
   const imageClass = useMemo(
@@ -154,7 +178,15 @@ export default function MediaUploadField({
 
   async function upload(file: File | null | undefined) {
     if (!file || uploading) return;
-    const validationError = validateClientFile(file, imagesOnly, t);
+    let limits: UploadLimits;
+    try {
+      limits = uploadLimits || await loadUploadLimits();
+      setUploadLimits(limits);
+    } catch {
+      showToast(t("media.upload.limitsUnavailable"), "error");
+      return;
+    }
+    const validationError = validateClientFile(file, imagesOnly, limits, t);
     if (validationError) {
       showToast(validationError, "error");
       return;
@@ -200,7 +232,11 @@ export default function MediaUploadField({
     showToast(t("media.upload.removed"), "success");
   }
 
-  const helperText = helper || (imagesOnly ? t("media.upload.defaultImageHelper") : t("media.upload.defaultMediaHelper"));
+  const helperText = helper || (imagesOnly
+    ? uploadLimits
+      ? `${t("media.upload.imageSizeHelper")} ${Math.floor(uploadLimits.image / 1024 / 1024)} ${t("media.upload.megabytes")}.`
+      : t("media.upload.loadingLimits")
+    : t("media.upload.defaultMediaHelper"));
 
   return (
     <div className="grid gap-2">

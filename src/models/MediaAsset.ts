@@ -24,7 +24,8 @@ const MediaAssetSchema = new Schema(
     deletedAt: { type: Date, default: null },
     failureReason: { type: String, default: null },
     sourceProvider: { type: String, default: null },
-    sourceUrl: { type: String, default: null },
+    // Sparse unique indexes still index explicit null. Never write null for new assets.
+    sourceUrl: { type: String, set: (value: string | null | undefined) => value == null ? undefined : value },
     sourceStorageKey: { type: String, default: null }
   },
   { timestamps: { createdAt: true, updatedAt: false } }
