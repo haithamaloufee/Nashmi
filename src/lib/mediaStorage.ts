@@ -34,6 +34,7 @@ export const mediaPurposes = [
 export type MediaPurpose = (typeof mediaPurposes)[number];
 
 type UploadingUser = { id: string; role: string };
+export type UploadAuthorizationStage = "metadata_validation" | "mongo_connection" | "quota_check" | "storage_config" | "asset_create" | "presign";
 
 const imagesOnlyPurposes = new Set<MediaPurpose>([
   "avatar",
@@ -94,6 +95,7 @@ export async function createMediaUploadAuthorization(input: {
   mimeType: string;
   sizeBytes: number;
   purpose: MediaPurpose;
+  onStage?: (stage: UploadAuthorizationStage) => void;
 }) {
   const allowedByPurpose: Record<MediaPurpose, string[]> = {
     avatar: ["citizen", "party", "iec", "admin", "super_admin"],
@@ -106,6 +108,7 @@ export async function createMediaUploadAuthorization(input: {
     misc: ["citizen", "party", "iec", "admin", "super_admin"]
   };
   if (!allowedByPurpose[input.purpose].includes(input.user.role)) throw new Error("FORBIDDEN");
+  input.onStage?.("metadata_validation");
   const mimeType = input.mimeType.toLowerCase();
   const validationError = validateUploadMetadata({
     fileName: input.fileName,
@@ -115,11 +118,15 @@ export async function createMediaUploadAuthorization(input: {
   });
   if (validationError) throw new Error(`UPLOAD_VALIDATION:${validationError}`);
 
+  input.onStage?.("mongo_connection");
   await connectToDatabase();
+  input.onStage?.("quota_check");
   await enforceQuota(input.user, input.sizeBytes);
+  input.onStage?.("storage_config");
   const config = purposeConfig(input.purpose);
   const storageKey = `${getR2EnvironmentPrefix()}/${config.category}/${input.user.id}/${randomUUID()}.${extensionForMimeType(mimeType)}`;
   const expiresInSeconds = getR2UploadExpirySeconds();
+  input.onStage?.("asset_create");
   const asset = await MediaAsset.create({
     ownerUserId: input.user.id,
     url: "pending",
@@ -138,6 +145,7 @@ export async function createMediaUploadAuthorization(input: {
   });
 
   try {
+    input.onStage?.("presign");
     const authorization = await getObjectStorage().createUploadAuthorization({
       storageKey,
       contentType: mimeType,
