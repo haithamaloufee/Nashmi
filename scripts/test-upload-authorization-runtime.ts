@@ -22,14 +22,17 @@ async function main() {
       ...(sourceUrl !== undefined ? { sourceUrl } : {})
     });
 
-    // Existing assets may already contain an explicit null in the sparse index.
-    await MediaAsset.create(asset("production/avatars/legacy.png", null));
+    // Existing database records may already contain an explicit null.
+    await MediaAsset.collection.insertOne(asset("production/avatars/legacy.png", null));
     const first = await MediaAsset.create(asset("preview/avatars/first.png"));
     const second = await MediaAsset.create(asset("preview/avatars/second.png"));
+    const explicitNull = await MediaAsset.create(asset("preview/avatars/explicit-null.png", null));
     assert.equal(first.status, "pending");
     assert.equal(second.status, "pending");
     assert.equal(first.toObject().sourceUrl, undefined);
     assert.equal(second.toObject().sourceUrl, undefined);
+    assert.equal(explicitNull.toObject().sourceUrl, undefined);
+    assert.equal(await MediaAsset.collection.countDocuments({ sourceUrl: { $type: 10 } }), 1);
 
     await MediaAsset.create(asset("preview/avatars/migrated.png", "https://example.test/original.png"));
     await assert.rejects(

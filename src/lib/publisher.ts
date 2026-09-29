@@ -1,5 +1,6 @@
 import AuthorityProfile from "@/models/AuthorityProfile";
 import Party from "@/models/Party";
+import "@/models/MediaAsset";
 
 type LeanObject = Record<string, any>;
 

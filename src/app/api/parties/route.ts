@@ -4,6 +4,7 @@ import { normalizeArabic, searchRegex } from "@/lib/arabicSearch";
 import { parseLimit } from "@/lib/pagination";
 import { serialize } from "@/lib/routeUtils";
 import Party from "@/models/Party";
+import "@/models/MediaAsset";
 
 function seededScore(seed: string, slug: string) {
   const input = `${seed}:${slug}`;
