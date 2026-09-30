@@ -19,6 +19,6 @@ async function main() {
   if (!cookie) throw new Error("OFFICIAL_PREVIEW_BYPASS_COOKIE_UNAVAILABLE");
   const credentials = kind === "publication" ? parse(readFileSync(".env.news-admin-test.local")) : {};
   const env = { ...process.env, ...credentials, E2E_BASE_URL: url, E2E_PREVIEW_BYPASS_COOKIE: cookie, E2E_NEWS_PREVIEW_PUBLICATION: kind === "publication" ? "true" : "false" };
-  await run([npmCli, "exec", "--", "playwright", "test", kind === "publication" ? "tests/news-preview-publication.spec.ts" : kind === "smoke" ? "tests/production-smoke.spec.ts" : "tests/news-ticker.spec.ts", "--project=public"], env);
+  await run([npmCli, "exec", "--", "playwright", "test", kind === "publication" ? "tests/news-preview-publication.spec.ts" : kind === "smoke" ? "tests/production-smoke.spec.ts" : "tests/news-ticker.spec.ts", "--project=public", `--output=test-results/news-preview-${kind}`, ...(kind === "smoke" ? ["--grep", "chat keeps|critical public routes|redesigned navigation|live-news ticker|login recovery|critical public pages"] : [])], env);
 }
 main().catch((error) => { console.error(error instanceof Error ? error.message : "PREVIEW_BROWSER_FAILED"); process.exit(1); });

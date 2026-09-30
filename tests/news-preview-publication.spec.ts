@@ -7,7 +7,9 @@ test("published Preview batch links to the correct chat and respects admin hide"
   expect(new URL(origin).hostname).toMatch(/^nashmi-.+\.vercel\.app$/);
   const login = await page.request.post("/api/auth/login", { data: { email: process.env.E2E_ADMIN_EMAIL, password: process.env.E2E_ADMIN_PASSWORD }, headers: { Origin: origin } });
   expect(login.ok()).toBe(true);
-  const live = await (await page.request.get("/api/news/live")).json();
+  const liveResponse = await page.request.get("/api/news/live");
+  expect(liveResponse.headers()["cache-control"]).toContain("no-store");
+  const live = await liveResponse.json();
   expect(live.ok).toBe(true);
   const items = live.data.items;
   expect(items.length).toBeGreaterThan(0);
@@ -18,9 +20,13 @@ test("published Preview batch links to the correct chat and respects admin hide"
   const original = page.locator(`[data-original="true"][href*="news=${item.id}"]`);
   await expect(original).toHaveCount(1);
   await page.emulateMedia({ reducedMotion: "reduce" });
+  const createdSession = page.waitForResponse((response) => response.url().endsWith("/api/chat/sessions") && response.request().method() === "POST", { timeout: 60_000 });
   await original.click();
   await expect(page).toHaveURL(new RegExp(`news=${item.id}`));
   await expect(page.getByText(item.titleAr, { exact: false }).first()).toBeVisible();
+  const creation = await createdSession;
+  expect(creation.status()).toBe(201);
+  await expect(page.locator("#chat-composer input")).toBeEnabled();
   const sessions = await (await page.request.get("/api/chat/sessions")).json();
   const session = sessions.data.sessions.find((row: any) => row.newsContext?.newsId === item.id);
   expect(session).toBeTruthy();
