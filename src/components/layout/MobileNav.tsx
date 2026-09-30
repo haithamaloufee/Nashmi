@@ -19,8 +19,10 @@ export default function MobileNav({ links, dashboardHref, authenticated = false 
   const pathname = usePathname();
   const { language, t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [clientReady, setClientReady] = useState(false);
   const toggleRef = useRef<HTMLButtonElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => setClientReady(true), []);
 
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function MobileNav({ links, dashboardHref, authenticated = false 
       <button
         ref={toggleRef}
         type="button"
+        disabled={!clientReady}
         onClick={() => setOpen((value) => !value)}
         className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.16] bg-white/[0.08] text-white hover:border-emerald-200/[0.45] hover:bg-white/[0.14]"
         aria-label={open ? t("nav.menuClose") : t("nav.menuOpen")}

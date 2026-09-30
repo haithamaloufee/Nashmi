@@ -116,6 +116,7 @@ export default function ChatClient({
   const [loading, setLoading] = useState(false);
   const [sessionsLoading, setSessionsLoading] = useState(authenticated);
   const [newsSessionLoading, setNewsSessionLoading] = useState(Boolean(authenticated && newsId));
+  const [clientReady, setClientReady] = useState(false);
   const [currentNewsContext, setCurrentNewsContext] = useState<ClientNewsContext | null>(initialNewsContext);
   const [error, setError] = useState<string | null>(null);
   const [showLoginCta, setShowLoginCta] = useState(false);
@@ -141,6 +142,7 @@ export default function ChatClient({
   useEffect(() => {
     let cancelled = false;
     async function loadUsage() {
+      setClientReady(true);
       const response = await fetch("/api/chat", { cache: "no-store", headers: { "x-nashmi-language": language } });
       const json = await response.json().catch(() => ({}));
       if (!cancelled && response.ok && json.ok) setUsage(json.data.usage);
@@ -352,7 +354,7 @@ export default function ChatClient({
 
   async function sendMessage(text: string) {
     const clean = text.trim();
-    if (!clean || loading || newsSessionLoading) return;
+    if (!clean || loading || newsSessionLoading || !clientReady) return;
 
     setError(null);
     setShowLoginCta(false);
@@ -608,12 +610,12 @@ export default function ChatClient({
             className="min-w-0 flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
             maxLength={1500}
             placeholder={t("chat.placeholder")}
-            disabled={newsSessionLoading}
+            disabled={newsSessionLoading || !clientReady}
             aria-label={t("chat.inputLabel")}
           />
           <button
             type="submit"
-            disabled={loading || newsSessionLoading || !message.trim()}
+            disabled={loading || newsSessionLoading || !clientReady || !message.trim()}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-civic text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
             aria-label={t("chat.send")}
           >

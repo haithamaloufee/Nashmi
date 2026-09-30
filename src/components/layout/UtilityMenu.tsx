@@ -10,8 +10,10 @@ import { useTranslation } from "@/components/i18n/LanguageProvider";
 export default function UtilityMenu() {
   const { language } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [clientReady, setClientReady] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => setClientReady(true), []);
 
   useEffect(() => {
     if (!open) return;
@@ -37,6 +39,7 @@ export default function UtilityMenu() {
       <button
         ref={triggerRef}
         type="button"
+        disabled={!clientReady}
         onClick={() => setOpen((value) => !value)}
         className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.16] bg-white/[0.08] text-white/[0.88] hover:border-emerald-200/[0.45] hover:bg-white/[0.14] hover:text-white"
         aria-label={language === "ar" ? "إعدادات العرض واللغة" : "Display and language settings"}

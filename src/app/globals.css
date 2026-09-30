@@ -535,7 +535,7 @@ html[dir="ltr"] .home-hero-overlay {
 .news-ticker-shell:hover .news-ticker-track,
 .news-ticker-shell:focus-within .news-ticker-track { animation-play-state: paused; }
 
-.news-ticker-set { display: flex; min-width: 50%; align-items: center; }
+.news-ticker-set { display: flex; flex: 0 0 auto; align-items: center; }
 
 .news-ticker-item {
   display: inline-flex;
@@ -595,6 +595,7 @@ html[dir="ltr"] .home-hero-overlay {
   .news-ticker-window { overflow-x: auto; }
   .news-ticker-track { min-width: max-content; animation: none !important; transform: none; }
   .news-ticker-set[aria-hidden="true"] { display: none; }
+  .news-ticker-item[aria-hidden="true"] { display: none; }
 }
 
 @media (max-width: 414px) {

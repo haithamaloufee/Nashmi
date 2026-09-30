@@ -41,6 +41,10 @@ export type NewsContextSnapshot = {
   urgency: NewsUrgency;
   publishedAt: Date;
   legislativeStage?: LegislativeStage | null;
+  eventKind?: string | null;
+  eventStatus?: string | null;
+  scheduledAt?: string | null;
+  attributedTo?: string | null;
   sources: NewsSource[];
 };
 

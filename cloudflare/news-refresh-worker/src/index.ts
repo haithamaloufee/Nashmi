@@ -1,6 +1,7 @@
 interface Env {
   NASHMI_REFRESH_URL: string;
   NEWS_REFRESH_SECRET: string;
+  NEWS_DISCOVERY_SECRET: string;
 }
 
 interface ScheduledEventController { cron: string; scheduledTime: number; }
@@ -31,31 +32,36 @@ function hex(bytes: ArrayBuffer) {
   return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function signature(timestamp: string, secret: string) {
+async function signature(timestamp: string, secret: string, path: string) {
   const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return hex(await crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}\nPOST\n/api/internal/news/refresh`)));
+  return hex(await crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}\nPOST\n${path}`)));
 }
 
-async function refresh(env: Env) {
-  if (!env.NEWS_REFRESH_SECRET || env.NEWS_REFRESH_SECRET.length < 32) throw new Error("NEWS_REFRESH_SECRET is not configured");
+async function runJob(env: Env, kind: "refresh" | "discover") {
+  const secret = kind === "refresh" ? env.NEWS_REFRESH_SECRET : env.NEWS_DISCOVERY_SECRET;
+  if (!secret || secret.length < 32) throw new Error(`NEWS_${kind.toUpperCase()}_SECRET is not configured`);
+  const path = `/api/internal/news/${kind}`;
+  const url = new URL(env.NASHMI_REFRESH_URL);
+  url.pathname = path;
   const timestamp = String(Date.now());
-  const response = await fetch(env.NASHMI_REFRESH_URL, {
+  const response = await fetch(url.toString(), {
     method: "POST",
     headers: {
       "x-nashmi-news-timestamp": timestamp,
-      "x-nashmi-news-signature": await signature(timestamp, env.NEWS_REFRESH_SECRET),
+      "x-nashmi-news-signature": await signature(timestamp, secret, path),
       "user-agent": "Nashmi-Cloudflare-Cron/1.0"
     }
   });
   const body = await response.text();
-  if (!response.ok) throw new Error(`Nashmi refresh failed (${response.status}): ${body.slice(0, 300)}`);
-  console.log(`Nashmi refresh success: ${body.slice(0, 300)}`);
+  if (!response.ok) throw new Error(`Nashmi ${kind} failed (${response.status})`);
+  console.log(`Nashmi ${kind} success: ${body.slice(0, 300)}`);
   return body;
 }
 
 const worker = {
-  async scheduled(_controller: ScheduledEventController, env: Env, ctx: WorkerExecutionContext) {
-    ctx.waitUntil(refresh(env));
+  async scheduled(controller: ScheduledEventController, env: Env, ctx: WorkerExecutionContext) {
+    if (controller.cron === "30 * * * *") ctx.waitUntil(runJob(env, "discover"));
+    else if (controller.cron === "0 3 * * *") ctx.waitUntil(runJob(env, "refresh"));
   },
   async fetch(request: Request) {
     const url = new URL(request.url);

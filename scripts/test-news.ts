@@ -24,6 +24,13 @@ function testSecurity() {
   const signature = signNewsRefreshWithSecret(timestamp, process.env.NEWS_REFRESH_SECRET!);
   const request = new Request("https://nashmi.haitham.website/api/internal/news/refresh", { method: "POST", headers: { "x-nashmi-news-timestamp": timestamp, "x-nashmi-news-signature": signature } });
   assert.equal(verifyNewsRefreshSignatureWithSecret(request, process.env.NEWS_REFRESH_SECRET!, now).timestamp, timestamp);
+  const inspectionPath = "/api/internal/news/preview-check";
+  const inspectionSignature = signNewsRefreshWithSecret(timestamp, process.env.NEWS_REFRESH_SECRET!, inspectionPath, "GET");
+  const inspectionHeaders = { "x-nashmi-news-timestamp": timestamp, "x-nashmi-news-signature": inspectionSignature };
+  const inspection = new Request(`https://preview.example${inspectionPath}`, { headers: inspectionHeaders });
+  assert.equal(verifyNewsRefreshSignatureWithSecret(inspection, process.env.NEWS_REFRESH_SECRET!, now, inspectionPath, "GET").timestamp, timestamp);
+  assert.throws(() => verifyNewsRefreshSignatureWithSecret(new Request(inspection.url, { method: "POST", headers: inspectionHeaders }), process.env.NEWS_REFRESH_SECRET!, now, inspectionPath, "GET"), /INVALID/);
+  assert.throws(() => verifyNewsRefreshSignatureWithSecret(new Request("https://preview.example/api/internal/news/discover", { method: "POST", headers: inspectionHeaders }), process.env.NEWS_REFRESH_SECRET!, now, "/api/internal/news/discover"), /INVALID/);
   assert.throws(() => verifyNewsRefreshSignatureWithSecret(request, process.env.NEWS_REFRESH_SECRET!, now + 6 * 60 * 1000), /EXPIRED/);
   for (const unsafe of ["http://pm.gov.jo/news", "https://127.0.0.1/x", "https://localhost/x", "https://user:pass@example.com/x"]) assert.throws(() => validateNewsSourceUrlSyntax(unsafe));
   assert.equal(classifyNewsSource("https://almamlakatv.com/news/123456-"), "reputable_media");

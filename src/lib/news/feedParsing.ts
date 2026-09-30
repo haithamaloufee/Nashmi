@@ -29,7 +29,7 @@ function feedField(item: string, name: string) {
   return item.match(new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)<\\/${name}>`, "i"))?.[1]?.trim() || "";
 }
 
-export function parseFeedWithStats(xml: string, now: Date, feed: typeof FEEDS[number]) {
+export function parseFeedWithStats(xml: string, now: Date, feed: typeof FEEDS[number], options: { keepArchive?: boolean } = {}) {
   const items: FeedItem[] = [];
   let rawFeedItems = 0;
   let afterAgeWindow = 0;
@@ -39,14 +39,14 @@ export function parseFeedWithStats(xml: string, now: Date, feed: typeof FEEDS[nu
     const title = cleanText(feedField(raw, "title"));
     const summary = cleanText(feed.format === "atom" ? feedField(raw, "summary") || feedField(raw, "content") : feedField(raw, "description"));
     const url = feed.format === "atom" ? raw.match(/<link\b[^>]*rel="alternate"[^>]*href="([^"]+)"/i)?.[1] || "" : feedField(raw, "link");
-    const timestamp = Date.parse(feedField(raw, feed.format === "atom" ? "updated" : "pubDate"));
+    const timestamp = Date.parse(feed.format === "atom" ? feedField(raw, "published") || feedField(raw, "updated") : feedField(raw, "pubDate"));
     if (!Number.isFinite(timestamp)) continue;
-    if (timestamp > now.getTime() + 10 * 60_000 || timestamp < now.getTime() - 7 * 24 * 60 * 60_000) continue;
+    if (!options.keepArchive && (timestamp > now.getTime() + 10 * 60_000 || timestamp < now.getTime() - 7 * 24 * 60 * 60_000)) continue;
     afterAgeWindow++;
     if (title.length < 12 || summary.length < 20) continue;
     try {
       const parsedUrl = new URL(url);
-      if (![feed.host, `www.${feed.host}`].includes(parsedUrl.hostname) || !/^\/news\/\d+-?$/.test(parsedUrl.pathname)) continue;
+      if (![feed.host, `www.${feed.host}`].includes(parsedUrl.hostname) || !/^\/news\/\d+(?:-[^/?#]*)?$/.test(parsedUrl.pathname)) continue;
       if (classifyNewsSource(url) !== "reputable_media") continue;
     } catch { continue; }
     items.push({ title: title.slice(0, 180), summary: summary.slice(0, 900), url, publishedAt: new Date(timestamp).toISOString(), publisher: feed.publisher, sourceId: feed.id });

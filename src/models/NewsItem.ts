@@ -1,5 +1,6 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 import { LEGISLATIVE_STAGES, NEWS_CATEGORIES } from "@/lib/news/types";
+import { NEWS_EVENT_KINDS, NEWS_EVENT_STATUSES } from "@/lib/news/activityClassification";
 
 const NewsSourceSchema = new Schema(
   {
@@ -18,6 +19,10 @@ const NewsItemSchema = new Schema(
     category: { type: String, enum: NEWS_CATEGORIES, required: true },
     urgency: { type: String, enum: ["normal", "breaking"], default: "normal" },
     publishedAt: { type: Date, required: true },
+    eventKind: { type: String, enum: NEWS_EVENT_KINDS },
+    eventStatus: { type: String, enum: NEWS_EVENT_STATUSES },
+    scheduledAt: { type: Date, default: null },
+    attributedTo: { type: String, maxlength: 160, default: null },
     legislativeStage: { type: String, enum: [...LEGISLATIVE_STAGES, null], default: null },
     sources: { type: [NewsSourceSchema], required: true, validate: [(value: unknown[]) => value.length > 0 && value.length <= 6, "sources required"] },
     batchId: { type: String, default: null },
@@ -28,7 +33,8 @@ const NewsItemSchema = new Schema(
     discoveredAt: { type: Date, default: Date.now },
     lastSeenAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true },
-    discoveryRunId: { type: String, required: true, maxlength: 80 }
+    discoveryRunId: { type: String, required: true, maxlength: 80 },
+    eventId: { type: Schema.Types.ObjectId, ref: "NewsEvent", default: null }
   },
   { timestamps: true }
 );
@@ -36,6 +42,7 @@ const NewsItemSchema = new Schema(
 NewsItemSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 NewsItemSchema.index({ status: 1, isActive: 1, publishedAt: -1 });
 NewsItemSchema.index({ batchId: 1, status: 1, isActive: 1, publishedAt: -1 });
+NewsItemSchema.index({ eventId: 1 }, { unique: true, partialFilterExpression: { eventId: { $type: "objectId" } } });
 
 export type NewsItemDocument = InferSchemaType<typeof NewsItemSchema>;
 export default (models.NewsItem as Model<NewsItemDocument>) || model<NewsItemDocument>("NewsItem", NewsItemSchema);

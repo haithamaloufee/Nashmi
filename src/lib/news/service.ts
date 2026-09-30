@@ -15,6 +15,8 @@ function asSnapshot(item: any): NewsContextSnapshot {
     newsId: String(item._id), titleAr: item.titleAr, summaryAr: item.summaryAr,
     category: item.category, urgency: item.urgency, publishedAt: new Date(item.publishedAt),
     legislativeStage: item.legislativeStage || null,
+    eventKind: item.eventKind || null, eventStatus: item.eventStatus || null,
+    scheduledAt: item.scheduledAt ? new Date(item.scheduledAt).toISOString() : null, attributedTo: item.attributedTo || null,
     sources: item.sources.map((source: any) => ({
       title: source.title, url: source.url, publisher: source.publisher, sourceClass: source.sourceClass
     }))
@@ -26,12 +28,12 @@ export function serializePublicNews(item: any): PublicNewsItem {
   return { ...snapshot, id: snapshot.newsId, publishedAt: snapshot.publishedAt.toISOString() };
 }
 
-export async function getActiveNewsItems(limit = 10) {
+export async function getActiveNewsItems(limit = 20) {
   await connectToDatabase();
   const state = await NewsRefreshState.findById("global").select("currentBatchId").lean();
   // Before the first daily swap, keep eligible legacy news visible on refresh failure.
   const items = await NewsItem.find(buildActiveNewsQuery(new Date(), state?.currentBatchId || null))
-    .sort({ publishedAt: -1 }).limit(Math.min(Math.max(limit, 1), 10)).lean();
+    .sort({ publishedAt: -1 }).limit(Math.min(Math.max(limit, 1), 20)).lean();
   return items.map(serializePublicNews);
 }
 

@@ -34,6 +34,7 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     baseURL: externalBaseUrl || "http://127.0.0.1:3006",
+    ...(process.env.E2E_PREVIEW_BYPASS_COOKIE && externalBaseUrl ? { storageState: { cookies: [{ name: "_vercel_jwt", value: process.env.E2E_PREVIEW_BYPASS_COOKIE, domain: new URL(externalBaseUrl).hostname, path: "/", expires: -1, httpOnly: true, secure: true, sameSite: "Lax" as const }], origins: [] } } : {}),
     trace: "retain-on-failure"
   },
   webServer: externalBaseUrl
@@ -51,7 +52,7 @@ export default defineConfig({
   projects: [
     {
       name: "public",
-      testMatch: /(production-smoke|api-contracts)\.spec\.ts/,
+      testMatch: /(production-smoke|api-contracts|news-ticker|news-preview-publication)\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] }
     },
     ...authProjects

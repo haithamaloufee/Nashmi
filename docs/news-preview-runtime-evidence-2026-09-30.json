@@ -1,0 +1,100 @@
+{
+  "isolation": {
+    "database": "nashmi_preview",
+    "roles": [
+      {
+        "role": "readWrite",
+        "db": "nashmi_preview"
+      }
+    ],
+    "productionWriteGranted": false
+  },
+  "inspectedAt": "2026-09-30T10:10:50.657Z",
+  "candidates": 57,
+  "events": 69,
+  "reasonCounts": {
+    "no_verified_action": 32,
+    "unrelated_topic": 1,
+    "eligible": 1,
+    "older_than_48_hours": 31,
+    "outside_civic_scope": 4
+  },
+  "stageCounts": {
+    "unclear": 35,
+    "enforcement_action": 3,
+    "directive": 9,
+    "media_reported": 3,
+    "decision_adopted": 16,
+    "cabinet_approved_reasons": 3
+  },
+  "eligibleNow": 1,
+  "invalidEvidence": 0,
+  "publicItems": 0,
+  "currentBatchId": null,
+  "discovery": {
+    "runId": "76f13df4-2e04-424e-9f8c-1b3643041d29",
+    "startedAt": "2026-09-30T10:08:09.039Z",
+    "completedAt": "2026-09-30T10:08:23.140Z",
+    "sources": {
+      "prime_ministry": {
+        "found": 10,
+        "created": 0,
+        "duplicates": 10,
+        "eligible": 0,
+        "excluded": 0,
+        "errors": 0
+      },
+      "ministry_of_labour": {
+        "found": 10,
+        "created": 0,
+        "duplicates": 10,
+        "eligible": 0,
+        "excluded": 0,
+        "errors": 0
+      },
+      "mamlaka": {
+        "found": 0,
+        "created": 0,
+        "duplicates": 0,
+        "eligible": 0,
+        "excluded": 0,
+        "errors": 1,
+        "failure": "NEWS_SOURCE_HTTP_403"
+      },
+      "roya": {
+        "found": 25,
+        "created": 1,
+        "duplicates": 24,
+        "eligible": 0,
+        "excluded": 1,
+        "errors": 0
+      }
+    },
+    "found": 45,
+    "created": 1,
+    "duplicates": 44,
+    "eligible": 0,
+    "excluded": 1,
+    "errors": 1
+  },
+  "editorial": {
+    "runId": "b3292810-a587-4b93-83bf-2da653f0113b",
+    "at": "2026-09-30T10:05:42.157Z",
+    "eligible": 1,
+    "selected": 1,
+    "selectedEventIds": [
+      "6abcdc83188f4fe656ec4199"
+    ],
+    "published": 0,
+    "model": "gemini-3.1-flash-lite",
+    "mode": "shadow"
+  },
+  "eligibleExamples": [
+    {
+      "title": "وزارة العمل تضبط 60 عاملاً وعاملة منزل مسجلة بحقهم بلاغات هروب",
+      "stage": "enforcement_action",
+      "publishedAt": "2026-09-28T21:00:00.000Z",
+      "url": "https://www.mol.gov.jo/Ar/NewsDetails/%D9%88%D8%B2%D8%A7%D8%B1%D8%A9_%D8%A7%D9%84%D8%B9%D9%85%D9%84_%D8%AA%D8%B6%D8%A8%D8%B7_60_%D8%B9%D8%A7%D9%85%D9%84%D8%A7%D9%8B_%D9%88%D8%B9%D8%A7%D9%85%D9%84%D8%A9_%D9%85%D9%86%D8%B2%D9%84_%D9%85%D8%B3%D8%AC%D9%84%D8%A9_%D8%A8%D8%AD%D9%82%D9%87%D9%85_%D8%A8%D9%84%D8%A7%D8%BA%D8%A7%D8%AA_%D9%87%D8%B1%D9%88%D8%A8"
+    }
+  ]
+}
