@@ -28,7 +28,8 @@ const NewsItemSchema = new Schema(
     discoveredAt: { type: Date, default: Date.now },
     lastSeenAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true },
-    discoveryRunId: { type: String, required: true, maxlength: 80 }
+    discoveryRunId: { type: String, required: true, maxlength: 80 },
+    eventId: { type: Schema.Types.ObjectId, ref: "NewsEvent", default: null }
   },
   { timestamps: true }
 );
@@ -36,6 +37,7 @@ const NewsItemSchema = new Schema(
 NewsItemSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 NewsItemSchema.index({ status: 1, isActive: 1, publishedAt: -1 });
 NewsItemSchema.index({ batchId: 1, status: 1, isActive: 1, publishedAt: -1 });
+NewsItemSchema.index({ eventId: 1 }, { unique: true, partialFilterExpression: { eventId: { $type: "objectId" } } });
 
 export type NewsItemDocument = InferSchemaType<typeof NewsItemSchema>;
 export default (models.NewsItem as Model<NewsItemDocument>) || model<NewsItemDocument>("NewsItem", NewsItemSchema);

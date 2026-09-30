@@ -46,7 +46,7 @@ export function parseFeedWithStats(xml: string, now: Date, feed: typeof FEEDS[nu
     if (title.length < 12 || summary.length < 20) continue;
     try {
       const parsedUrl = new URL(url);
-      if (![feed.host, `www.${feed.host}`].includes(parsedUrl.hostname) || !/^\/news\/\d+-?$/.test(parsedUrl.pathname)) continue;
+      if (![feed.host, `www.${feed.host}`].includes(parsedUrl.hostname) || !/^\/news\/\d+(?:-[^/?#]*)?$/.test(parsedUrl.pathname)) continue;
       if (classifyNewsSource(url) !== "reputable_media") continue;
     } catch { continue; }
     items.push({ title: title.slice(0, 180), summary: summary.slice(0, 900), url, publishedAt: new Date(timestamp).toISOString(), publisher: feed.publisher, sourceId: feed.id });

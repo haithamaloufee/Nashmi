@@ -49,6 +49,9 @@ const TOPIC_SIGNALS: Record<NewsTopic, Signal[]> = {
 
 const ACTION_SIGNALS: Signal[] = [
   { phrase: "يقر", weight: 3 }, { phrase: "اقر", weight: 3 },
+  { phrase: "وافق", weight: 3 }, { phrase: "الموافقة", weight: 3 },
+  { phrase: "قرر", weight: 3 }, { phrase: "قرارات", weight: 3 },
+  { phrase: "أصدر", weight: 3 }, { phrase: "صدرت", weight: 3 },
   { phrase: "يعتمد", weight: 3 }, { phrase: "اقرار", weight: 3 },
   { phrase: "يعدل", weight: 3 }, { phrase: "تعدل", weight: 3 }, { phrase: "تعديل", weight: 3 },
   { phrase: "تعديلات", weight: 3 }, { phrase: "يناقش", weight: 2 },

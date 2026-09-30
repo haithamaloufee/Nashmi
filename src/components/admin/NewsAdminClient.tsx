@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExternalLink, Eye, EyeOff, RefreshCw } from "lucide-react";
 
 type AdminNews = {
@@ -19,7 +19,17 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
   const [state, setState] = useState(initialState);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [candidateQuery, setCandidateQuery] = useState("");
   const funnel = state?.lastStats?.rejectionReasons;
+
+  async function loadDiagnostics(q = "") {
+    const response = await fetch(`/api/admin/news/diagnostics?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+    const json = await response.json().catch(() => null);
+    if (response.ok && json?.ok) setDiagnostics(json.data);
+  }
+
+  useEffect(() => { void loadDiagnostics(); }, []);
 
   async function toggle(item: AdminNews) {
     setBusy(item._id);
@@ -38,6 +48,7 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
     setBusy(null);
     if (!response.ok || !json.ok) return setMessage(json.error?.message || "تعذر تحديث الأخبار.");
     setState({ ...(state || {}), lastStatus: json.data.stats.dryRun ? "dry_run" : "success", lastStats: json.data.stats, lastDryRunCandidates: json.data.preview });
+    void loadDiagnostics(candidateQuery);
     setMessage(json.data.stats.dryRun ? `اكتملت المعاينة الآمنة: ${json.data.stats.selected} خبر مختار، بدون نشر.` : `اكتمل التحديث: ${json.data.stats.created} خبر في الدفعة الجديدة.`);
   }
 
@@ -69,6 +80,32 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
           </div>
         ) : null}
         {message ? <p className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm font-bold text-civic">{message}</p> : null}
+      </section>
+
+      <section className="card p-5">
+        <h2 className="text-lg font-black">تشخيص الرصد الجديد</h2>
+        <p className="mt-1 text-sm text-ink/60">المواد المرصودة لا تظهر في الشريط حتى تُختار وتُنشر في دفعة معتمدة.</p>
+        <div className="mt-3 flex gap-2">
+          <input className="input flex-1" value={candidateQuery} onChange={(event) => setCandidateQuery(event.target.value)} placeholder="ابحث بالرابط أو عنوان الناشر" aria-label="البحث عن خبر مرصود" />
+          <button type="button" className="btn-primary" onClick={() => void loadDiagnostics(candidateQuery)}>بحث</button>
+        </div>
+        {diagnostics ? <>
+          <div className="mt-4 flex flex-wrap gap-3 text-sm">
+            {diagnostics.candidateCounts?.map((entry: any) => <span key={`candidate-${entry._id}`} className="rounded-lg bg-slate-50 p-2">مواد {entry._id}: {entry.count}</span>)}
+            {diagnostics.eventCounts?.map((entry: any) => <span key={`event-${entry._id}`} className="rounded-lg bg-slate-50 p-2">أحداث {entry._id}: {entry.count}</span>)}
+          </div>
+          <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+            {Object.entries(diagnostics.state?.pipelineSourceHealth || {}).map(([id, health]: [string, any]) => <div key={id} className="rounded-lg border border-line p-3"><b>{id}</b><p>{health.ok ? "سليم" : `تعذر الفحص: ${health.failure || "غير معروف"}`}</p><p>آخر فحص: {health.lastCheckedAt ? new Date(health.lastCheckedAt).toLocaleString("ar-JO") : "—"}</p><p>{health.found || 0} مرصود / {health.created || 0} جديد / {health.duplicates || 0} مكرر / {health.eligible || 0} مؤهل</p></div>)}
+          </div>
+          <p className="mt-3 text-sm">آخر اختيار تجريبي: {diagnostics.state?.pipelineLastEditorialStats?.selected ?? "—"} مختار؛ المنشور فعليًا: {diagnostics.state?.pipelineLastEditorialStats?.published ?? "—"}</p>
+          <div className="mt-3 max-h-96 space-y-2 overflow-auto">
+            {diagnostics.candidates?.map((candidate: any) => <div key={candidate._id} className="rounded-lg border border-line p-3 text-sm"><a href={candidate.originalUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-civic hover:underline">{candidate.originalTitle}</a><p>{candidate.sourceId} · {candidate.status} · {new Date(candidate.publishedAt).toLocaleString("ar-JO")}</p>{candidate.reason ? <p>السبب: {candidate.reason}</p> : null}<p>الأحداث المرتبطة: {candidate.eventIds?.length || 0}</p></div>)}
+          </div>
+          <h3 className="mt-5 font-bold">الأحداث المستخرجة وأدلتها</h3>
+          <div className="mt-2 max-h-96 space-y-2 overflow-auto">
+            {diagnostics.events?.map((event: any) => <div key={event._id} className="rounded-lg border border-line p-3 text-sm"><p className="font-bold">{event.titleAr}</p><p>{diagnostics.state?.pipelineLastEditorialStats?.selectedEventIds?.includes(event._id) && event.status === "eligible" ? "مختار في المعاينة · " : ""}{event.status} · {event.actionStage} · {event.verification}</p>{event.reason ? <p>السبب: {event.reason}</p> : null}<p>الأدلة: {event.evidence?.length || 0}</p></div>)}
+          </div>
+        </> : <p className="mt-3 text-sm text-ink/60">لا تتوفر بيانات تشخيص بعد.</p>}
       </section>
 
       <div className="space-y-3">

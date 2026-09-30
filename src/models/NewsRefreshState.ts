@@ -15,7 +15,17 @@ const NewsRefreshStateSchema = new Schema(
     currentBatchId: { type: String, default: null },
     currentBatchCreatedAt: { type: Date, default: null },
     currentBatchWindowStart: { type: Date, default: null },
-    currentBatchWindowEnd: { type: Date, default: null }
+    currentBatchWindowEnd: { type: Date, default: null },
+    pipelineDiscoveryLockToken: { type: String, default: null },
+    pipelineDiscoveryLockUntil: { type: Date, default: null },
+    pipelineEditorialLockToken: { type: String, default: null },
+    pipelineEditorialLockUntil: { type: Date, default: null },
+    pipelineLastDiscoveryAt: { type: Date, default: null },
+    pipelineLastEditorialAt: { type: Date, default: null },
+    pipelineLastPublishedAt: { type: Date, default: null },
+    pipelineLastDiscoveryStats: { type: Schema.Types.Mixed, default: null },
+    pipelineLastEditorialStats: { type: Schema.Types.Mixed, default: null },
+    pipelineSourceHealth: { type: Schema.Types.Mixed, default: {} }
   },
   { timestamps: true }
 );

@@ -1,12 +1,13 @@
-# Nashmi daily news refresh worker
+# Nashmi news scheduling (proposed, not deployed)
 
-The Worker invokes the production-only internal refresh endpoint once a day at `0 3 * * *` UTC, corresponding to approximately 06:00 Asia/Amman (UTC+3). Store the shared secret with `wrangler secret put NEWS_REFRESH_SECRET`; never place it in `wrangler.toml` or source control. The same value must exist as `NEWS_REFRESH_SECRET` in Vercel Production.
+The checked-in Worker configuration prepares hourly discovery at `30 * * * *` UTC and the existing editorial refresh at `0 3 * * *` UTC (06:00 Asia/Amman). The live Cloudflare Cron remains unchanged until explicit approval. Discovery and refresh use separate HMAC secrets (`NEWS_DISCOVERY_SECRET`, `NEWS_REFRESH_SECRET`) and different paths. Both requests require the corresponding secret in Vercel. The new route returns 409 while `NEWS_PIPELINE_MODE=legacy`.
 
-Deployment:
+After approval to activate, deployment steps are:
 
 ```text
 npx wrangler deploy
 npx wrangler secret put NEWS_REFRESH_SECRET
+npx wrangler secret put NEWS_DISCOVERY_SECRET
 ```
 
-Keep `NEWS_AUTO_PUBLISH=true` in Production. Preview refreshes are dry-runs even if they share the database. The `/health` route does not trigger discovery. After deployment, confirm Cloudflare has exactly one Production cron trigger and no remaining hourly trigger.
+Keep `NEWS_PIPELINE_MODE=legacy` in Production until Preview isolation, historic/live replays and editorial review are accepted. Preview and shadow editorial runs never publish the new pipeline. The `/health` route does not trigger discovery. Confirm Cloudflare triggers and secrets before any future Worker deployment.

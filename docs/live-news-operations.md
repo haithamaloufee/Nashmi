@@ -1,5 +1,15 @@
 # Nashmi daily news batch
 
+## Proposed discovery pipeline (inactive in Production)
+
+`NEWS_PIPELINE_MODE=legacy` is the default and current Production setting. In `shadow`, `/api/internal/news/discover` ingests official archive entries and the two existing media feeds into `NewsCandidate` and `NewsEvent`, while `/api/internal/news/refresh` makes one daily editorial selection without public publication. In `new`, public publication is additionally allowed only when `VERCEL_ENV=production`; switching modes and changing Cloudflare Cron require separate approval. Source discovery never updates `currentBatchId` or public `NewsItem` records. The `/api/news/live` response and ticker-to-assistant link retain their existing shape.
+
+The source registry, limits and exclusions are recorded in [the 30 September source audit](news-source-audit-2026-09-30.md). A candidate keeps the original publisher date and URL. Events hold one or more source passages and action stages. Unselected eligible events remain available until 48 hours after the original publication date; older material stays in the 180-day archive but cannot enter a new batch. Identical URLs are idempotent, and a unique event-to-item index plus a transaction prevents double publication. An empty editorial selection leaves the existing public batch intact. Admin diagnostics shows source health, candidates, events, reasons, and the last selection.
+
+Before any Preview write, verify the deployed branch's `MONGODB_URI` resolves to database `nashmi_preview` and that its authenticated roles are restricted to that database. `assertPipelineWriteIsolation()` rejects a Preview connection with another database or broader roles; it does no writes during this check. The configured Preview environment and branch deployment must also be checked outside the repository before a Preview replay. A local `news:live-replay` writes only to a disposable in-memory replica set and never contacts Production MongoDB. Production must remain read-only during validation.
+
+For the proposed Worker, see its README. The checked-in Cron change is preparation only; do not deploy it while Production remains on `legacy`. The additional secret is `NEWS_DISCOVERY_SECRET` (32+ characters). Keep it out of source control.
+
 ## One daily run
 
 Cloudflare Cron `0 3 * * *` runs at 03:00 UTC, approximately 06:00 Asia/Amman (UTC+3). Its HMAC-signed request reaches `POST /api/internal/news/refresh`. There should be exactly one Production trigger; the former hourly `0 * * * *` trigger must not remain.

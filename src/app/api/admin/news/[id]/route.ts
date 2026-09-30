@@ -6,6 +6,7 @@ import { readJson, serialize } from "@/lib/routeUtils";
 import { writeAuditLog } from "@/lib/audit";
 import NewsItem from "@/models/NewsItem";
 import NewsRefreshState from "@/models/NewsRefreshState";
+import NewsEvent from "@/models/NewsEvent";
 
 const schema = z.object({ hidden: z.boolean() });
 
@@ -22,6 +23,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       isActive: !input.hidden && Boolean(existing.batchId && existing.batchId === state?.currentBatchId)
     } }, { new: true });
     if (!item) throw new Error("NOT_FOUND");
+    if (item.eventId) await NewsEvent.updateOne({ _id: item.eventId }, { $set: { status: input.hidden ? "hidden" : "published" } });
     await writeAuditLog({ actorUserId: user.id, actorRole: user.role, action: input.hidden ? "news.hidden" : "news.unhidden", targetType: "news_item", targetId: item._id, request });
     return ok({ item: serialize(item) });
   } catch (error) {

@@ -23,4 +23,6 @@ export { default as AssistantUsage } from "./AssistantUsage";
 export { default as RateLimitBucket } from "./RateLimitBucket";
 export { default as NewsItem } from "./NewsItem";
 export { default as NewsRefreshState } from "./NewsRefreshState";
+export { default as NewsCandidate } from "./NewsCandidate";
+export { default as NewsEvent } from "./NewsEvent";
 export { default as NewsRefreshReplay } from "./NewsRefreshReplay";

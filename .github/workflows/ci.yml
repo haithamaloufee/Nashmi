@@ -36,6 +36,7 @@ jobs:
       - run: npm run test:security
       - run: npm run test:moderation
       - run: npm run test:news
+      - run: npm run test:news:pipeline
       - run: npm run test:concurrency
       - run: npm run test:storage
       - run: npm run test:upload-authorization-runtime
