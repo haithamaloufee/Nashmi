@@ -39,6 +39,7 @@
     "news:dry-run": "tsx scripts/news-source-dry-run.ts",
     "news:live-replay": "tsx scripts/news-live-replay.ts",
     "news:historical-replay": "tsx scripts/news-historical-replay.ts",
+    "news:gemini-check": "tsx scripts/news-gemini-selection-check.ts",
     "test:concurrency": "tsx scripts/test-reaction-concurrency.ts",
     "audit:legacy-credentials": "tsx scripts/audit-legacy-credentials.ts",
     "test:e2e": "playwright test",

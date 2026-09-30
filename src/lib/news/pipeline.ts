@@ -10,7 +10,7 @@ import { sha256, sourceUrlHash } from "@/lib/news/dedupe";
 import { eventDraftsFromMaterial, NEWS_FRESHNESS_MS, sameNewsEvent, type EventDraft } from "@/lib/news/pipelineCore";
 import { mayPublishNewPipeline } from "@/lib/news/pipelineMode";
 import { fetchSourceText } from "@/lib/news/sourceFetch";
-import { NEWS_SOURCES, parseGovernmentArchive, parseGovernmentDetail, parseRegisteredFeed, type SourceDefinition, type SourceMaterial } from "@/lib/news/sourceRegistry";
+import { NEWS_SOURCES, parseGovernmentArchive, parseGovernmentDetail, parseGovernmentDetailHeadline, parseRegisteredFeed, type SourceDefinition, type SourceMaterial } from "@/lib/news/sourceRegistry";
 import NewsCandidate from "@/models/NewsCandidate";
 import NewsEvent from "@/models/NewsEvent";
 import NewsItem from "@/models/NewsItem";
@@ -87,9 +87,12 @@ async function ingestMaterial(material: SourceMaterial, source: SourceDefinition
   }
 
   let paragraphs = material.paragraphs;
+  let detailHeadline: string | undefined;
   if (source.access === "public_archive") {
     try {
-      paragraphs = parseGovernmentDetail(await read(material.url, source, 500_000));
+      const detailHtml = await read(material.url, source, 500_000);
+      paragraphs = parseGovernmentDetail(detailHtml);
+      detailHeadline = parseGovernmentDetailHeadline(detailHtml) || undefined;
     } catch (error) {
       await NewsCandidate.updateOne({ sourceId: source.id, urlHash }, { $set: {
         publisher: material.publisher, sourceClass: material.sourceClass, originalUrl: material.url,
@@ -112,7 +115,7 @@ async function ingestMaterial(material: SourceMaterial, source: SourceDefinition
   );
   if (!candidate) throw new Error("NEWS_CANDIDATE_WRITE_FAILED");
 
-  const drafts = eventDraftsFromMaterial({ ...material, paragraphs }, now);
+  const drafts = eventDraftsFromMaterial({ ...material, detailHeadline, paragraphs }, now);
   const eventIds: mongoose.Types.ObjectId[] = [];
   let eligible = 0;
   for (const draft of drafts) {
@@ -200,7 +203,7 @@ export type { DiscoveryStats };
 
 const EditorialResponse = z.object({ selected: z.array(z.string()).max(10) });
 
-async function selectEventIds(events: Array<{ _id: mongoose.Types.ObjectId; titleAr: string; summaryAr: string; actionStage: string; authority: string; verification: string }>, maximum: number) {
+export async function selectEventIds(events: Array<{ _id: mongoose.Types.ObjectId; titleAr: string; summaryAr: string; actionStage: string; authority: string; verification: string }>, maximum: number) {
   const ai = new GoogleGenAI({ apiKey: getRequiredEnv("GEMINI_API_KEY") });
   const config = getNewsConfig();
   const input = events.map((event) => ({ id: String(event._id), title: event.titleAr, evidence: event.summaryAr.slice(0, 360), stage: event.actionStage, authority: event.authority, verification: event.verification }));

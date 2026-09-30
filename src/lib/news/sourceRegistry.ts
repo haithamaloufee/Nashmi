@@ -26,6 +26,7 @@ export type SourceMaterial = {
   publisher: string;
   sourceClass: NewsSource["sourceClass"];
   title: string;
+  detailHeadline?: string;
   summary: string;
   url: string;
   publishedAt: Date;
@@ -83,7 +84,14 @@ export function parseGovernmentDetail(html: string) {
   const $ = load(html);
   const section = $('div[id$="_NewsSection"]').first();
   if (!section.length) throw new Error("NEWS_SOURCE_DETAIL_LAYOUT_CHANGED");
-  return section.find("p, li").toArray().map((element) => clean($(element).text())).filter((value) => value.length >= 20).slice(0, 40);
+  return section.find("p, li").toArray().map((element) => clean($(element).text())).filter((value) => value.length >= 20).slice(0, 80);
+}
+
+export function parseGovernmentDetailHeadline(html: string) {
+  const $ = load(html);
+  if (!$('div[id$="_NewsSection"]').length) throw new Error("NEWS_SOURCE_DETAIL_LAYOUT_CHANGED");
+  const headline = clean($('[id$="_Devbanner"] h2').first().text());
+  return headline.length >= 12 && headline.length <= 180 ? headline : null;
 }
 
 export function parseRegisteredFeed(xml: string, source: SourceDefinition, now: Date): SourceMaterial[] {

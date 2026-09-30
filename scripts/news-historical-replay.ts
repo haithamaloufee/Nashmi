@@ -1,5 +1,5 @@
 import { eventDraftsFromMaterial } from "../src/lib/news/pipelineCore";
-import { NEWS_SOURCES, parseGovernmentDetail, type SourceMaterial } from "../src/lib/news/sourceRegistry";
+import { NEWS_SOURCES, parseGovernmentDetail, parseGovernmentDetailHeadline, type SourceMaterial } from "../src/lib/news/sourceRegistry";
 import { load } from "cheerio";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import mongoose from "mongoose";
@@ -34,7 +34,7 @@ async function main() {
       const $ = load(html);
       const title = $("h1").first().text().replace(/\s+/g, " ").trim() || $("title").text().replace(/\s+/g, " ").trim();
       const paragraphs = parseGovernmentDetail($.html());
-      const material: SourceMaterial = { sourceId: source.id, publisher: source.publisher, sourceClass: source.sourceClass, title, summary: paragraphs[0] || title, url: item.url, publishedAt: new Date(`${item.day}T00:00:00+03:00`), datePrecision: "day", paragraphs };
+      const material: SourceMaterial = { sourceId: source.id, publisher: source.publisher, sourceClass: source.sourceClass, title, detailHeadline: parseGovernmentDetailHeadline(html) || undefined, summary: paragraphs[0] || title, url: item.url, publishedAt: new Date(`${item.day}T00:00:00+03:00`), datePrecision: "day", paragraphs };
       const now = new Date(material.publishedAt.getTime() + 24 * 60 * 60_000);
       const drafts = eventDraftsFromMaterial(material, now);
       rows.push({ sourceId: item.sourceId, day: item.day, expected: item.expected, url: item.url, title, paragraphs: paragraphs.length, drafts: drafts.map((draft) => ({ title: draft.titleAr, stage: draft.actionStage, eligible: draft.eligible, reason: draft.reason })) });

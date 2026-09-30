@@ -4,7 +4,7 @@ import { NEWS_CATEGORIES } from "@/lib/news/types";
 export const NEWS_ACTION_STAGES = [
   "proposal", "cabinet_approved_reasons", "cabinet_approved_draft", "referred_to_parliament", "parliament_approved",
   "gazette_published", "effective", "decision_adopted", "instruction_issued",
-  "directive", "media_reported", "unclear"
+  "directive", "enforcement_action", "media_reported", "unclear"
 ] as const;
 
 const EventEvidenceSchema = new Schema({

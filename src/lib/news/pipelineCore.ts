@@ -34,8 +34,11 @@ function stageFor(text: string, official: boolean): ActionStage {
   if (/مجلس النواب.{0,45}(اقر|وافق)|مجلس الاعيان.{0,45}(اقر|وافق)|اقر.{0,40}مجلس الامه/.test(value)) return "parliament_approved";
   if (/احال.{0,45}مجلس النواب|احيل.{0,45}مجلس النواب|ارسال.{0,45}مجلس النواب/.test(value)) return "referred_to_parliament";
   if (/(وافق|اقر|اعتمد|الموافقه).{0,70}مشروع (قانون|نظام)/.test(value)) return "cabinet_approved_draft";
+  if (official && /^الموافقه علي/.test(value)) return "decision_adopted";
   if (/مشروع (قانون|نظام)|مقترح|قيد الدراسه|مسوده/.test(value) && !/(اقر|وافق|اعتمد)/.test(value)) return "proposal";
   if (/تعليمات.{0,35}(جديده|معدله)|اصدر.{0,30}تعليمات|تعميم/.test(value)) return "instruction_issued";
+  if (/ضبطت?.{0,100}(عامل|عمال)|فرق التفتيش.{0,120}ضبط|نفذت.{0,60}حمله تفتيشيه/.test(value)) return "enforcement_action";
+  if (official && /^حل مجلس اداره غرف التجاره/.test(value)) return "decision_adopted";
   if (/وجه|توجيه|دعا الي/.test(value) && !/(قرر|اقر|اعتمد)/.test(value)) return "directive";
   if (/(قرر|يقرر|اقر|اعتمد|وافق|عدل|تعديل|اطلق|بدء تطبيق|فتح باب|اغلق باب|الغاء)/.test(value)) return official ? "decision_adopted" : "media_reported";
   return "unclear";
@@ -63,10 +66,22 @@ function categoryFor(topics: ReturnType<typeof scoreNewsTopic>["matchedTopics"])
 }
 
 function exactHeadline(value: string) {
-  const text = compact(value);
+  const text = compact(value).replace(/^على صعيد آخر[،,]\s*/, "");
   if (text.length >= 12 && text.length <= 180) return text;
-  const sentence = text.split(/[.!؟]/)[0]?.trim();
-  return sentence && sentence.length >= 12 && sentence.length <= 180 ? sentence : null;
+  const sentence = text.split(/[؛.!؟]/)[0]?.trim();
+  if (sentence && sentence.length >= 12 && sentence.length <= 180) return sentence;
+  // Government bullet headings often continue with background after the
+  // operative clause. Use a verbatim clause only when it names the action.
+  const clause = text.split(/[،,:]|\s+بهدف\s+|\s+في إطار\s+|\s+وزيادة\s+|\s+تمهيد[اأً]*\s+|\s+وتكليف\s+/)[0]?.trim().replace(/\s+وهم$/, "");
+  return clause && clause.length >= 30 && clause.length <= 180 && stageFor(clause, true) !== "unclear" ? clause : null;
+}
+
+function splitMixedDecisions(paragraph: string) {
+  const marker = /والموافقة على الأسباب الموجبة/.exec(paragraph);
+  if (!marker || !/إقرار|أقر/.test(paragraph.slice(0, marker.index))) return [paragraph];
+  const first = paragraph.slice(0, marker.index).trim().replace(/[،؛]$/, "");
+  const second = paragraph.slice(marker.index + 1).trim();
+  return first.length >= 30 && second.length >= 30 ? [first, second] : [paragraph];
 }
 
 function isRoutineTitle(value: string) {
@@ -83,21 +98,30 @@ function samePassageDecision(left: string, right: string) {
 
 export function eventDraftsFromMaterial(material: SourceMaterial, now: Date): EventDraft[] {
   const official = material.sourceClass === "official";
+  const sourceHeadline = material.detailHeadline || material.title;
   const paragraphs = official && material.paragraphs.length ? material.paragraphs : [material.summary];
   const actionParagraphs = paragraphs.filter((paragraph) => stageFor(paragraph, official) !== "unclear");
-  const multipleDecisions = material.sourceId === "prime_ministry" && /مجلس الوزراء/.test(material.title) && /قرارات|مشروعات|يتخذ|يُقر|يقر/.test(material.title) && actionParagraphs.length > 1;
-  const passages = multipleDecisions ? actionParagraphs.filter((paragraph, index) => !actionParagraphs.slice(0, index).some((earlier) => samePassageDecision(earlier, paragraph))) : [material.paragraphs.find((paragraph) => stageFor(paragraph, official) !== "unclear") || material.summary];
+  const multipleDecisions = material.sourceId === "prime_ministry" && /مجلس الوزراء/.test(sourceHeadline) && /قرارات|مشروعات|يتخذ|يُقر|يقر/.test(sourceHeadline) && actionParagraphs.length > 1;
+  const datelineIndex = paragraphs.findIndex((paragraph) => /^(عمان|معان|اربد|الزرقاء)\s+\d{1,2}\s/.test(normalizeArabic(paragraph)));
+  const bulletinHeadings = datelineIndex >= 2 ? paragraphs.slice(0, datelineIndex) : actionParagraphs;
+  const splitHeadings = bulletinHeadings.flatMap(splitMixedDecisions).filter((paragraph) => stageFor(paragraph, official) !== "unclear");
+  const additionalBodyDecisions = datelineIndex >= 2 ? paragraphs.slice(datelineIndex + 1).filter((paragraph) =>
+    /^علي صعيد اخر\s+قرر مجلس الوزراء/.test(normalizeArabic(paragraph)) && stageFor(paragraph, official) !== "unclear" && !splitHeadings.some((heading) => samePassageDecision(heading, paragraph))
+  ) : [];
+  const allPassages = [...splitHeadings, ...additionalBodyDecisions];
+  const passages = multipleDecisions ? allPassages.filter((paragraph, index) => !allPassages.slice(0, index).some((earlier) => samePassageDecision(earlier, paragraph))) : [material.paragraphs.find((paragraph) => stageFor(paragraph, official) !== "unclear") || material.summary];
   const drafts: EventDraft[] = [];
   for (const passage of passages.slice(0, 12)) {
     const stage = stageFor(passage, official);
-    const headline = multipleDecisions ? exactHeadline(passage) : exactHeadline(material.title) || exactHeadline(passage);
+    const headline = multipleDecisions ? exactHeadline(passage) : exactHeadline(sourceHeadline) || exactHeadline(passage);
     if (!headline) continue; // A long bulletin needs review, not a fabricated title.
     const topic = scoreNewsTopic(headline, `${passage} ${official ? "الأردن" : ""}`);
     const stale = now.getTime() - material.publishedAt.getTime() > NEWS_FRESHNESS_MS;
     const future = material.publishedAt.getTime() > now.getTime() + 10 * 60_000;
-    const hardExcluded = !official && isObviousNonNashmiNews(material.title);
-    const officialDecision = official && !isRoutineTitle(material.title) && ["cabinet_approved_reasons", "cabinet_approved_draft", "decision_adopted", "instruction_issued", "directive"].includes(stage) && /مجلس الوزراء|رئيس الوزراء|الوزاره|وزاره|العمل/.test(normalizeArabic(`${material.title} ${passage}`));
-    const relevant = topic.score >= 6 || (officialDecision && (multipleDecisions || /يوجه|توضح اليه|تضبط|قرار|قرارات|اصدر|اعلن/.test(normalizeArabic(material.title))));
+    const hardExcluded = !official && isObviousNonNashmiNews(sourceHeadline);
+    const normalizedEvidence = normalizeArabic(`${sourceHeadline} ${passage}`);
+    const officialDecision = official && !isRoutineTitle(sourceHeadline) && ["cabinet_approved_reasons", "cabinet_approved_draft", "decision_adopted", "instruction_issued", "directive", "enforcement_action"].includes(stage) && (/مجلس الوزراء|الوزاره|وزاره|العمل/.test(normalizedEvidence) || normalizedEvidence.includes(normalizeArabic("رئيس الوزراء")));
+    const relevant = topic.score >= 6 || (officialDecision && (multipleDecisions || /يوجه|توضح اليه|تضبط|قرار|قرارات|اصدر|اعلن/.test(normalizeArabic(sourceHeadline))));
     const eligible = !stale && !future && !hardExcluded && stage !== "unclear" && stage !== "proposal" && relevant;
     const reason = stale ? "older_than_48_hours" : future ? "future_publication_date" : hardExcluded ? "unrelated_topic" : stage === "proposal" ? "proposal_without_decision" : stage === "unclear" ? "no_verified_action" : !relevant ? "outside_civic_scope" : null;
     const summaryAr = compact(passage).slice(0, 900);
