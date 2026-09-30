@@ -42,6 +42,8 @@
     "news:gemini-check": "tsx scripts/news-gemini-selection-check.ts",
     "news:preview-check": "tsx scripts/news-preview-readonly-check.ts",
     "news:preview-request": "tsx scripts/news-preview-request.ts",
+    "news:preview-inspect": "tsx scripts/news-preview-inspect.ts",
+    "news:preview-replay": "tsx scripts/news-preview-replay.ts",
     "test:concurrency": "tsx scripts/test-reaction-concurrency.ts",
     "audit:legacy-credentials": "tsx scripts/audit-legacy-credentials.ts",
     "test:e2e": "playwright test",

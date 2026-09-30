@@ -12,12 +12,13 @@ async function request(path: string, method: "GET" | "POST", secret: string) {
   if (!secret || secret.length < 32) throw new Error("PREVIEW_REQUEST_SECRET_REQUIRED");
   const timestamp = String(Date.now());
   const signature = signNewsRefreshWithSecret(timestamp, secret, path, method);
-  const args = ["--yes", "vercel@latest", "curl", path, "--deployment", deployment, "--", "--silent", "--show-error", "--fail-with-body", "--request", method,
+  const npmCli = process.env.npm_execpath;
+  if (!npmCli) throw new Error("PREVIEW_REQUEST_RUN_WITH_NPM_REQUIRED");
+  const args = [npmCli, "exec", "--yes", "--package=vercel@latest", "--", "vercel", "curl", path, "--deployment", deployment, "--", "--silent", "--show-error", "--fail-with-body", "--request", method,
     "--header", `x-nashmi-news-timestamp:${timestamp}`, "--header", `x-nashmi-news-signature:${signature}`];
-  // Values interpolated into the Windows shell are fixed paths, a validated
-  // deployment ID, a numeric timestamp, and a hexadecimal signature.
+  // Run npm's JavaScript entry point directly; no shell concatenation on Windows.
   const output = await new Promise<string>((resolve, reject) => {
-    const child = spawn("npx", args, { shell: process.platform === "win32", stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(process.execPath, args, { shell: false, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     child.stdout.on("data", (chunk) => { stdout += String(chunk); });
     child.stderr.on("data", () => { /* CLI logs are intentionally not emitted. */ });
