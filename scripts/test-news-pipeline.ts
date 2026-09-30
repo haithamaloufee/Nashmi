@@ -182,6 +182,13 @@ async function testIngestionAndPublishing() {
     assert.equal(await NewsEvent.countDocuments({}), 2);
     const savedEvents = await NewsEvent.find({});
     assert.ok(savedEvents.every((item) => item.evidence.length === 1 && item.evidence[0].passage.length >= 30));
+    await NewsEvent.updateOne({ _id: savedEvents[0]._id }, { $set: { authority: "تصنيف قديم", attributedTo: "جهة قديمة", category: "parties", eventKind: "party_activity" } });
+    await NewsCandidate.updateMany({}, { $set: { extractionVersion: 1 } });
+    await runNewsDiscovery(now, { sources: [source], read });
+    const upgraded = await NewsEvent.findById(savedEvents[0]._id);
+    assert.equal(upgraded?.authority, source.publisher, "an exact event key updates classifier metadata without duplicate upsert");
+    assert.equal(upgraded?.eventKind, "legislation");
+    assert.equal(await NewsEvent.countDocuments({}), 2);
     const failedSource = NEWS_SOURCES[1];
     const partial = await runNewsDiscovery(now, { sources: [source, failedSource], read: async (url, definition) => {
       if (definition.id === failedSource.id) throw new Error("SIMULATED_SOURCE_FAILURE");

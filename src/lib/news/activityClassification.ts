@@ -27,12 +27,12 @@ export function classifyPublicActivity(title: string, passage: string, publisher
     const internalElection = /(?:انتخاب|ينتخب|انتخب).{0,35}(قياد|امين|الامين|مكتب|المكتب|شوري|الشوري)|الانتخابات الداخليه/.test(heading) || (/امين|امينا/.test(heading) && /انتخب|انتخاب/.test(text));
     kind = internalElection ? "party_internal_election" : /حل حزب|تسجيل حزب|اندماج|قياده|امين عام|امينا عاما|تنظيمي/.test(heading) ? "party_organizational_update" : /[:：]|بيان|قال|صرح|اكد|دعا|يدعو|يطالب|موقف/.test(title + " " + heading) ? "party_statement" : "party_activity";
   } else {
-    kind = /جلسه|جدول اعمال|موعد|اجتماع مجلس (النواب|الاعيان|الامه)/.test(heading) ? (status === "announced" || status === "postponed" || status === "cancelled" ? "parliamentary_schedule" : "parliamentary_session") : /مشروع قانون|قانون معدل/.test(heading) ? "legislation" : /استجواب|سؤال نيابي|اسئله|رقاب/.test(heading) ? "parliamentary_oversight" : /كتله حزب|كتله.*النيابيه/.test(text) || /انتخاب|مكتب المجلس|رئاسه المجلس|كتله/.test(heading) ? "parliamentary_institutional_update" : /لجنه|النيابيه|النيابي/.test(heading) ? "parliamentary_committee" : "parliamentary_statement";
+    kind = /جلسه|جدول اعمال|موعد|اجتماع مجلس (النواب|الاعيان|الامه)/.test(heading) ? (status === "announced" || status === "postponed" || status === "cancelled" ? "parliamentary_schedule" : "parliamentary_session") : /مشروع قانون|قانون معدل/.test(heading) ? "legislation" : /استجواب|سؤال نيابي|اسئله|رقاب/.test(heading) ? "parliamentary_oversight" : /كتله حزب|كتله.*النيابيه/.test(text) || /انتخاب|مكتب المجلس|رئاسه المجلس|كتله/.test(heading) ? "parliamentary_institutional_update" : /لجنه|النيابيه|النيابي/.test(heading) || (heldEvidence && !/[:：]|قال|اكد|بيان/.test(heading) && /لجنه.{0,60}مجلس الاعيان|لجنه.{0,60}مجلس النواب/.test(lead)) ? "parliamentary_committee" : status === "held" ? "parliamentary_institutional_update" : "parliamentary_statement";
   }
   // An attribution is part of identity. Different speakers' statements must not merge.
   const partyName = /حزب\s+["«“]([^"»”]+)["»”]/.exec(`${title} ${passage}`)?.[1] || /حزب\s+(.+?)(?=\s+(?:يعقد|عقد|يدعو|دعا|ينظم|انتخب|ينتخب|يعلن|أعلن|اصدر|أصدر|يطالب|لامتناعه|خلفا|السيد|برئاسة|النيابية)|[،:؛.]|$)/.exec(`${title} ${passage}`)?.[1]?.trim();
   const actor = partyName ? `حزب ${partyName}`.slice(0, 160) : undefined;
-  const attributedTo = /^(.*?)[:：]/.exec(title)?.[1]?.trim().slice(0, 160) || actor || (parliament ? (/اعيان/.test(text) ? "مجلس الأعيان" : "مجلس النواب") : publisher);
+  const attributedTo = /^(.*?)[:：]/.exec(title)?.[1]?.trim().slice(0, 160) || actor || (parliament ? (/مجلس الامه/.test(text) ? "مجلس الأمة" : /اعيان/.test(text) ? "مجلس الأعيان" : "مجلس النواب") : publisher);
   const explicitDate = /(?:موعد|جلسة|تنعقد|ستعقد|يعقد|تعقد)[^\n]{0,100}?(\d{4})[-/](\d{1,2})[-/](\d{1,2})/.exec(`${title} ${passage}`);
   let scheduledAt: Date | undefined;
   if (explicitDate && ["announced", "postponed", "cancelled"].includes(status)) {

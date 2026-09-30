@@ -21,7 +21,7 @@ import NewsRefreshReplay from "@/models/NewsRefreshReplay";
 
 const ARCHIVE_MS = 180 * 24 * 60 * 60_000;
 const LOCK_MS = 15 * 60_000;
-const EXTRACTION_VERSION = 4;
+const EXTRACTION_VERSION = 5;
 const indexReadiness = new Map<string, Promise<unknown>>();
 
 type SourceStats = { found: number; created: number; duplicates: number; eligible: number; excluded: number; errors: number; failure?: string; metrics?: SourceFetchMetrics & { durationMs: number } };
@@ -153,7 +153,7 @@ async function ingestMaterial(material: SourceMaterial, source: SourceDefinition
   const eventIds: mongoose.Types.ObjectId[] = [];
   let eligible = 0;
   for (const draft of drafts) {
-    const matching = await findMatchingEvent(draft);
+    const matching = await NewsEvent.findOne({ eventKey: draft.eventKey }) || await findMatchingEvent(draft);
     const evidence = { candidateId: candidate._id, url: material.url, publisher: material.publisher, sourceTitle: material.title, sourceClass: material.sourceClass, passage: draft.passage, aiInputAllowed: material.aiInputAllowed !== false };
     let event;
     if (matching) {
@@ -168,6 +168,8 @@ async function ingestMaterial(material: SourceMaterial, source: SourceDefinition
           matching.titleAr = draft.titleAr;
           matching.summaryAr = draft.summaryAr;
           matching.aiInputAllowed = true;
+          matching.authority = draft.authority;
+          matching.category = draft.category;
         }
         if (!draft.eligible && matching.evidence.every((item) => String(item.candidateId) === String(candidate._id)) && !["published", "hidden"].includes(matching.status)) {
           matching.status = "excluded";
