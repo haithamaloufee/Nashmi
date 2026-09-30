@@ -20,7 +20,7 @@ export function classifyPublicActivity(title: string, passage: string, publisher
   const announcement = /سيعقد|ستعقد|موعد|جدول اعمال|يدعو.{0,30}جلسه/.test(heading) || /سيعقد|ستعقد|يعقد.{0,60}(غدا|القادم|يوم)/.test(lead) || (!heldEvidence && /يعقد|تعقد/.test(heading) && /جلسه|اجتماع|مؤتمر/.test(heading));
   const status: EventStatus = /تاجيل|اجل|مؤجله|ارجاء/.test(heading) ? "postponed" : /الغاء|الغي|ملغاه/.test(heading) ? "cancelled" : announcement || /دعوته للانعقاد|دعوه.{0,30}للانعقاد/.test(heading) ? "announced" : /توصيه|توصيات|اوصت|اوصي/.test(heading) ? "recommended" : /ناقش|يناقش|مناقشه/.test(heading) ? "discussed" : heldEvidence ? "held" : "reported";
   let kind: EventKind;
-  const electoralAuthority = /الهيئه المستقله للانتخاب/.test(text) && /حل حزب|تسجيل حزب|عدد الاحزاب|الاحزاب السياسيه|انتخاب/.test(heading);
+  const electoralAuthority = /الهييه المستقله للانتخاب/.test(text) && /حل حزب|تسجيل حزب|عدد الاحزاب|الاحزاب السياسيه|انتخاب/.test(heading);
   if (electoralAuthority) {
     kind = "electoral_institutional_update";
   } else if (party && (/حزب/.test(heading) || /[:：]/.test(title)) && !/مجلس النواب|مجلس الاعيان|النيابيه/.test(heading)) {

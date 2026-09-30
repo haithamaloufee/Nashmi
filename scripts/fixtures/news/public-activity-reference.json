@@ -2,6 +2,26 @@
   "description": "Real published articles, article-level manual labels; original excerpts. Virtual replay at original publication +24h. Party leadership example is 2024; not claimed as a September 2026 sample.",
   "rows": [
     {
+      "sourceId": "mamlaka",
+      "url": "https://almamlakatv.com/news/211398-",
+      "publishedAt": "2026-09-30T13:18:23+03:00",
+      "title": "تراجع عدد الأحزاب السياسية في الأردن إلى 30 حزبا",
+      "passage": "تراجع عدد الأحزاب السياسية القائمة في الأردن إلى 30 حزبا، بعد صدور قرار محكمة التمييز بحل حزب الغد الأردني الأربعاء. وكان أمين سجل الأحزاب في الهيئة المستقلة للانتخاب أحمد أبو زيد قال في تصريح سابق للمملكة إن عدد الأحزاب السياسية في الأردن تراجع من 38 حزبا إلى 31.",
+      "expected": true,
+      "expectedKind": "electoral_institutional_update"
+    },
+    {
+      "sourceId": "mamlaka",
+      "url": "https://almamlakatv.com/news/211406-",
+      "publishedAt": "2026-09-30T14:18:13+03:00",
+      "title": "إرادتان ملكيتان بإرجاء اجتماع مجلس الأمة ودعوته للانعقاد في 2 تشرين الثاني المقبل",
+      "passage": "صدرت الإرادة الملكية السامية بإرجاء اجتماع مجلس الأمة في دورته العادية حتى تاريخ 2/11/2026. كما صدرت الإرادة الملكية السامية بدعوة مجلس الأمة للاجتماع في دورته العادية اعتبارا من يوم الاثنين الموافق الثاني من شهر تشرين الثاني سنة 2026.",
+      "expected": true,
+      "expectedKind": "parliamentary_schedule",
+      "expectedStatus": "postponed",
+      "expectedScheduledAt": "2026-11-01T21:00:00.000Z"
+    },
+    {
       "sourceId": "roya",
       "url": "https://royanews.tv/news/388489",
       "publishedAt": "2026-07-12T11:39:00+03:00",

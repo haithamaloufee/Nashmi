@@ -15,6 +15,8 @@ const rows = reference.rows.map((row: any) => {
   assert.equal(found, row.expected, `${row.url}: eligibility`);
   assert.equal(events.some((event) => event.eligible), row.expected && source.aiInputAllowed !== false, `${row.url}: publication rights gate`);
   if (row.expectedKind) assert.equal(events[0]?.eventKind, row.expectedKind, `${row.url}: event kind`);
+  if (row.expectedStatus) assert.equal(events[0]?.eventStatus, row.expectedStatus, `${row.url}: event status`);
+  if (row.expectedScheduledAt) assert.equal(events[0]?.scheduledAt?.toISOString(), row.expectedScheduledAt, `${row.url}: future appointment`);
   assert.ok(eventDraftsFromMaterial(material, new Date(now.getTime() + 49 * 60 * 60_000)).every((event) => !event.eligible), "original dates remain authoritative");
   if (events[0]) assert.equal(sameNewsEvent(events[0], { ...events[0] }), true);
   return { url: row.url, publishedAt: row.publishedAt, expected: row.expected, events: events.map((event) => ({ title: event.titleAr, kind: event.eventKind, stage: event.actionStage, status: event.eventStatus, eligible: event.eligible, reason: event.reason, attributedTo: event.attributedTo })) };

@@ -55,7 +55,7 @@ function authorityFor(material: SourceMaterial, passage: string) {
   if (material.sourceClass === "official") return material.publisher;
   const normalized = normalizeArabic(`${material.title} ${passage}`);
   if (normalized.includes("مجلس الوزراء")) return "رئاسة الوزراء";
-  if (normalized.includes("الهيئه المستقله للانتخاب")) return "الهيئة المستقلة للانتخاب";
+  if (normalized.includes(normalizeArabic("الهيئة المستقلة للانتخاب"))) return "الهيئة المستقلة للانتخاب";
   if (normalized.includes("مجلس النواب")) return "مجلس النواب";
   if (normalized.includes("مجلس الاعيان")) return "مجلس الأعيان";
   const ministry = /وزاره\s+[\p{L}]+(?:\s+[\p{L}]+)?/u.exec(material.title);
