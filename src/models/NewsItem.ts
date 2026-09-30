@@ -1,5 +1,6 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 import { LEGISLATIVE_STAGES, NEWS_CATEGORIES } from "@/lib/news/types";
+import { NEWS_EVENT_KINDS, NEWS_EVENT_STATUSES } from "@/lib/news/activityClassification";
 
 const NewsSourceSchema = new Schema(
   {
@@ -18,6 +19,10 @@ const NewsItemSchema = new Schema(
     category: { type: String, enum: NEWS_CATEGORIES, required: true },
     urgency: { type: String, enum: ["normal", "breaking"], default: "normal" },
     publishedAt: { type: Date, required: true },
+    eventKind: { type: String, enum: NEWS_EVENT_KINDS },
+    eventStatus: { type: String, enum: NEWS_EVENT_STATUSES },
+    scheduledAt: { type: Date, default: null },
+    attributedTo: { type: String, maxlength: 160, default: null },
     legislativeStage: { type: String, enum: [...LEGISLATIVE_STAGES, null], default: null },
     sources: { type: [NewsSourceSchema], required: true, validate: [(value: unknown[]) => value.length > 0 && value.length <= 6, "sources required"] },
     batchId: { type: String, default: null },

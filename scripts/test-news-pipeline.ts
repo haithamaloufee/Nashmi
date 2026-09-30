@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { eventDraftsFromMaterial, sameNewsEvent } from "../src/lib/news/pipelineCore";
-import { assertPipelineWriteIsolation, publishEventBatch, runNewsDiscovery, runNewsEditorial } from "../src/lib/news/pipeline";
+import { assertPipelineWriteIsolation, jordanEditorialDay, publishEventBatch, runNewsDiscovery, runNewsEditorial } from "../src/lib/news/pipeline";
 import { buildActiveNewsQuery } from "../src/lib/news/query";
 import { assertPreviewDatabaseRoles, verifyNewsPreviewIsolation } from "../src/lib/news/previewIsolation";
-import { NEWS_SOURCES, parseGovernmentArchive, parseGovernmentDetail, parseGovernmentDetailHeadline, type SourceMaterial } from "../src/lib/news/sourceRegistry";
+import { NEWS_SOURCES, parseGovernmentArchive, parseGovernmentDetail, parseGovernmentDetailHeadline, parseMamlakaOriginalPublication, type SourceMaterial } from "../src/lib/news/sourceRegistry";
 import NewsCandidate from "../src/models/NewsCandidate";
 import NewsEvent from "../src/models/NewsEvent";
 import NewsItem from "../src/models/NewsItem";
@@ -17,6 +17,9 @@ const archive = `<a href='/Ar/NewsDetails/test-decision'><div class='media news-
 const detail = `<div id='ctl00_ctl00_MainContent_ContentDetails_NewsSection'><p>وافق مجلس الوزراء على مشروع قانون جديد ينظم إجراءات القبول الجامعي في الأردن.</p><p>قرر مجلس الوزراء تعديل تعليمات النقل العام في المحافظات اعتبارا من العام المقبل.</p></div>`;
 
 function testPureRules() {
+  assert.equal(parseMamlakaOriginalPublication('<header>تاريخ الإنشاء<time><i></i>14:18:13 30 -09- 2026</time>آخر تحديث<time>15:07:03 30 -09- 2026</time></header>').toISOString(), "2026-09-30T11:18:13.000Z");
+  assert.throws(() => parseMamlakaOriginalPublication('<time>15:07:03 30 -09- 2026</time>'), /UNVERIFIED/);
+  assert.throws(() => parseMamlakaOriginalPublication('تاريخ الإنشاء<time>14:18:13 31 -02- 2026</time>'), /UNVERIFIED/);
   assertPreviewDatabaseRoles("nashmi_preview", [{ role: "readWrite", db: "nashmi_preview" }]);
   assert.throws(() => assertPreviewDatabaseRoles("sharek_demo", [{ role: "readWrite", db: "sharek_demo" }]), /ISOLATION_FAILED/);
   for (const roles of [undefined, [], [{ role: "readWriteAnyDatabase", db: "admin" }], [{ role: "readWrite", db: "nashmi_preview" }, { role: "readWrite", db: "sharek_demo" }], [{ role: "unreviewedCustomRole", db: "nashmi_preview" }]]) {
@@ -78,6 +81,49 @@ function testPureRules() {
   const longHeadingDrafts = eventDraftsFromMaterial(longHeadings, now);
   assert.equal(longHeadingDrafts.length, 3, "long official decision headings are distinct, with duplicate body text ignored");
   assert.ok(longHeadingDrafts.every((item) => item.eligible && item.titleAr.length <= 180 && item.passage.includes(item.titleAr)));
+  // Synthetic boundary fixtures, kept separate from the linked historical sample.
+  const activityMaterial = (title: string, paragraph: string, publisher = "مجلس النواب"): SourceMaterial => ({ ...material, sourceId: "house", publisher, title, detailHeadline: undefined, paragraphs: [paragraph], summary: paragraph });
+  const committee = eventDraftsFromMaterial(activityMaterial("اللجنة الصحية النيابية تعقد اجتماعًا مع بنك الدواء", "عقدت اللجنة الصحية في مجلس النواب اجتماعًا مع بنك الدواء في الأردن لبحث إجراءات توفير العلاج للمواطنين."), now)[0];
+  assert.equal(committee.eligible, true);
+  assert.equal(committee.eventKind, "parliamentary_committee");
+  assert.equal(committee.actionStage, "activity_held");
+  const scheduledMaterial = activityMaterial("مجلس النواب يعلن موعد جلسة مقبلة", "أعلن مجلس النواب موعد جلسة 2026/10/04 لمناقشة جدول الأعمال التشريعي والرقابي في الأردن.");
+  const scheduled = eventDraftsFromMaterial(scheduledMaterial, now)[0];
+  assert.equal(scheduled.eligible, true);
+  assert.equal(scheduled.eventStatus, "announced");
+  assert.equal(scheduled.scheduledAt?.toISOString(), "2026-10-03T21:00:00.000Z");
+  assert.equal(eventDraftsFromMaterial(scheduledMaterial, new Date(now.getTime() + 49 * 60 * 60_000))[0].eligible, false, "a future appointment does not renew an old announcement");
+  const postponed = eventDraftsFromMaterial(activityMaterial("مجلس النواب يعلن تأجيل الجلسة المقبلة", "أعلن مجلس النواب تأجيل موعد جلسة 2026/10/04 إلى موعد آخر يعلن لاحقًا في الأردن."), now)[0];
+  assert.equal(postponed.eventStatus, "postponed");
+  assert.equal(sameNewsEvent(scheduled, postponed), false);
+  const royalSchedule = eventDraftsFromMaterial({ ...activityMaterial("إرادتان ملكيتان بإرجاء اجتماع مجلس الأمة ودعوته للانعقاد في 2 تشرين الثاني المقبل", "صدرت إرادتان ملكيتان بإرجاء اجتماع مجلس الأمة ودعوته للانعقاد في 2 تشرين الثاني المقبل في الأردن."), sourceId: "mamlaka", publisher: "قناة المملكة", sourceClass: "reputable_media" }, now)[0];
+  assert.equal(royalSchedule.eventStatus, "postponed", "deferring Parliament is not a meeting that has already taken place");
+  assert.equal(royalSchedule.eventKind, "parliamentary_schedule");
+  assert.equal(royalSchedule.scheduledAt?.toISOString(), "2026-11-01T21:00:00.000Z");
+  const blockedSource = eventDraftsFromMaterial({ ...scheduledMaterial, sourceId: "roya", publisher: "رؤيا الإخباري", sourceClass: "reputable_media", aiInputAllowed: false }, now)[0];
+  assert.equal(blockedSource.eligible, false);
+  assert.equal(blockedSource.reason, "source_ai_input_prohibited");
+  const missingOriginalDate = eventDraftsFromMaterial({ ...scheduledMaterial, publicationVerified: false }, now)[0];
+  assert.equal(missingOriginalDate.eligible, false);
+  assert.equal(missingOriginalDate.reason, "original_publication_unverified");
+  assert.equal(sameNewsEvent(scheduled, { ...scheduled, publishedAt: new Date(scheduled.publishedAt.getTime() + 5 * 24 * 60 * 60_000) }), true, "repeating the same appointment announcement does not create a new event");
+  assert.equal(jordanEditorialDay(new Date("2026-09-29T21:01:00Z")), "2026-09-30");
+  assert.equal(jordanEditorialDay(new Date("2026-09-29T20:59:00Z")), "2026-09-29");
+  const recommended = eventDraftsFromMaterial(activityMaterial("اللجنة القانونية توصي بإقرار مشروع قانون جديد", "أوصت اللجنة القانونية في مجلس النواب بإقرار مشروع قانون جديد بعد مناقشته في اجتماع عقدته في الأردن."), now)[0];
+  assert.equal(recommended.actionStage, "recommendation", "a committee recommendation is not approval by Parliament");
+  const adoptedByCommittee = eventDraftsFromMaterial(activityMaterial("اللجنة القانونية تقر مشروع قانون جديد", "أقرت اللجنة القانونية في مجلس النواب مشروع قانون جديد وأوصت بإحالته إلى المجلس لمناقشته."), now)[0];
+  assert.equal(adoptedByCommittee.actionStage, "committee_adopted");
+  const futureLaw = eventDraftsFromMaterial({ ...material, title: "وزارة العمل تصدر تعليمات يبدأ تطبيقها لاحقًا", paragraphs: ["أعلنت وزارة العمل تعليمات جديدة سيبدأ العمل بها في العام المقبل بعد نشرها، ولن يبدأ تنفيذها قبل ذلك الموعد."], summary: "تعليمات جديدة موثقة من وزارة العمل الأردنية سيبدأ العمل بها في العام المقبل." }, now)[0];
+  assert.equal(futureLaw.actionStage, "effective_scheduled", "future entry into force is not current effectiveness");
+  for (const party of ["حزب ألف الأردني", "حزب باء الأردني"]) {
+    const meeting = eventDraftsFromMaterial({ ...activityMaterial(`${party} يعقد اجتماعًا عامًا في عمان`, `عقد ${party} اجتماعًا عامًا في عمان لمناقشة برنامجه والمبادرات العامة بحضور أعضاء الحزب.`), sourceId: "mamlaka", sourceClass: "reputable_media", publisher: "قناة المملكة" }, now)[0];
+    assert.equal(meeting.eligible, true, `${party}: political identity must not affect eligibility`);
+    assert.equal(meeting.eventKind, "party_activity");
+  }
+  const statement = (name: string) => eventDraftsFromMaterial({ ...activityMaterial(`${name}: حزب ألف يدعو لمراجعة مشروع القانون`, `قال ${name} إن حزب ألف الأردني يدعو لمراجعة مشروع القانون في بيان رسمي في عمان.`), sourceId: "mamlaka", sourceClass: "reputable_media", publisher: "قناة المملكة" }, now)[0];
+  assert.equal(statement("أحمد").actionStage, "statement");
+  assert.equal(sameNewsEvent(statement("أحمد"), statement("خالد")), false, "different speakers' claims must not merge");
+  assert.equal(eventDraftsFromMaterial({ ...activityMaterial("حزب مجهول يعقد اجتماعًا غير موثق", "ذكرت إشاعة من مصدر مجهول أن حزبًا عقد اجتماعًا في عمان دون مصدر موثق."), sourceId: "roya", sourceClass: "reputable_media" }, now)[0].eligible, false);
 }
 
 async function testPreviewIsolationBeforeMongoose() {
@@ -161,6 +207,11 @@ async function testIngestionAndPublishing() {
     assert.equal(await NewsEvent.countDocuments({ status: "eligible" }), 1, "an unselected event remains eligible");
     await assert.rejects(() => publishEventBatch([event], "repeat-batch", "test-lock", now));
     assert.equal(await NewsItem.countDocuments({}), 1, "published event cannot be inserted twice");
+    const extra = await NewsEvent.insertMany(Array.from({ length: 21 }, (_, index) => ({ ...event.toObject(), _id: new mongoose.Types.ObjectId(), eventKey: `cap-event-${index}`, titleAr: `قرار حكومي موثق بشأن خدمة المواطنين رقم ${index}`, status: "eligible", publishedNewsItemId: null })));
+    await assert.rejects(() => publishEventBatch(extra, "over-limit", "test-lock", now), /TOO_LARGE/);
+    assert.equal((await NewsRefreshState.findById("global"))?.currentBatchId, "first-batch", "a rejected oversized batch preserves the previous batch");
+    assert.equal(await publishEventBatch(extra.slice(0, 20), "twenty-batch", "test-lock", now), 20);
+    assert.equal(await NewsItem.countDocuments({ batchId: "twenty-batch", isActive: true }), 20);
   } finally {
     await mongoose.disconnect();
     await replSet.stop();

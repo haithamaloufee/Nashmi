@@ -4,7 +4,7 @@ import { NEWS_CATEGORIES } from "@/lib/news/types";
 const SelectionSchema = z.object({ selected: z.array(z.object({
   index: z.number().int().min(0),
   category: z.enum(NEWS_CATEGORIES)
-})).max(10) });
+})).max(20) });
 
 export function parseNewsSelection(value: unknown, itemCount: number, maximum: number) {
   const selection = SelectionSchema.parse(value).selected;

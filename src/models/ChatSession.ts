@@ -9,6 +9,10 @@ const NewsContextSchema = new Schema(
     category: { type: String, enum: NEWS_CATEGORIES, required: true },
     urgency: { type: String, enum: ["normal", "breaking"], required: true },
     publishedAt: { type: Date, required: true },
+    eventKind: { type: String, default: null },
+    eventStatus: { type: String, default: null },
+    scheduledAt: { type: String, default: null },
+    attributedTo: { type: String, default: null },
     legislativeStage: { type: String, enum: [...LEGISLATIVE_STAGES, null], default: null },
     sources: [{
       _id: false,

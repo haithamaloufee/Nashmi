@@ -7,6 +7,7 @@ import { isDuplicateKeyError } from "@/lib/routeUtils";
 import NewsRefreshReplay from "@/models/NewsRefreshReplay";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 180;
 
 export async function POST(request: Request) {
   try {

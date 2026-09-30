@@ -7,5 +7,5 @@ export function getNewsPipelineMode(): NewsPipelineMode {
 }
 
 export function mayPublishNewPipeline() {
-  return getNewsPipelineMode() === "new" && process.env.VERCEL_ENV === "production" && process.env.NEWS_AUTO_PUBLISH === "true";
+  return getNewsPipelineMode() === "new" && process.env.NEWS_AUTO_PUBLISH === "true" && (process.env.VERCEL_ENV === "production" || (process.env.VERCEL_ENV === "preview" && process.env.NEWS_PREVIEW_TEST_PUBLISH === "true"));
 }

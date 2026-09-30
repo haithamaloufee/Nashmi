@@ -23,6 +23,7 @@ const NewsRefreshStateSchema = new Schema(
     pipelineLastDiscoveryAt: { type: Date, default: null },
     pipelineLastEditorialAt: { type: Date, default: null },
     pipelineLastPublishedAt: { type: Date, default: null },
+    pipelinePublishedJordanDay: { type: String, default: null },
     pipelineLastDiscoveryStats: { type: Schema.Types.Mixed, default: null },
     pipelineLastEditorialStats: { type: Schema.Types.Mixed, default: null },
     pipelineSourceHealth: { type: Schema.Types.Mixed, default: {} }

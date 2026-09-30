@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       NewsRefreshState.findById("global").select("pipelineSourceHealth pipelineLastDiscoveryStats pipelineLastEditorialStats pipelineLastPublishedAt").lean()
     ]);
     const eventIds = candidates.flatMap((candidate) => candidate.eventIds || []);
-    const events = await NewsEvent.find({ _id: { $in: eventIds } }).select("titleAr actionStage verification status reason evidence").lean();
+    const events = await NewsEvent.find({ _id: { $in: eventIds } }).select("titleAr actionStage eventKind eventStatus scheduledAt attributedTo publishedAt verification status reason evidence").lean();
     return ok(serialize({ candidates, events, candidateCounts, eventCounts, state }));
   } catch (error) { return handleApiError(error, request); }
 }

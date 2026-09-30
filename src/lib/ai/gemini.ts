@@ -378,6 +378,10 @@ function buildNewsContextBlock(news: NewsContextSnapshot) {
     `درجة الاستعجال: ${news.urgency}`,
     `وقت النشر: ${news.publishedAt.toISOString()}`,
     news.legislativeStage ? `المرحلة التشريعية: ${news.legislativeStage}` : null,
+    news.eventKind ? `نوع الحدث: ${news.eventKind}` : null,
+    news.eventStatus ? `الحالة المثبتة: ${news.eventStatus}` : null,
+    news.scheduledAt ? `الموعد المعلن: ${news.scheduledAt}؛ الإعلان لا يثبت الانعقاد.` : null,
+    news.attributedTo ? `صاحب التصريح أو الجهة: ${news.attributedTo}؛ انسب الادعاءات والمواقف إليه.` : null,
     "المصادر المحفوظة:",
     ...news.sources.map((source, index) => `${index + 1}. ${source.title} — ${source.publisher} — ${source.url}`),
     "لا تتجاوز حقائق هذا السياق في الأسئلة العادية. إذا طلب المستخدم آخر/الوضع الحالي وكان بحث Google مفعلاً، قارن أي تحديث جديد بوضوح مع هذا السياق."

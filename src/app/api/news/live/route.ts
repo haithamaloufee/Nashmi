@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const items = await getActiveNewsItems(10);
+    const items = await getActiveNewsItems(20);
     return ok({ items }, { headers: { "Cache-Control": "public, s-maxage=20, max-age=0, must-revalidate" } });
   } catch (error) {
     return handleApiError(error);

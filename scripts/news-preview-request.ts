@@ -33,12 +33,12 @@ async function request(path: string, method: "GET" | "POST", secret: string) {
 }
 
 async function main() {
-  if (!["check", "discover", "select"].includes(action)) throw new Error("PREVIEW_ACTION_INVALID");
+  if (!["check", "discover", "select", "publish"].includes(action)) throw new Error("PREVIEW_ACTION_INVALID");
   const check = await request("/api/internal/news/preview-check", "GET", configuration.NEWS_DISCOVERY_SECRET);
-  if (!check.isolated || check.database !== "nashmi_preview" || check.branch !== "feat/news-discovery-redesign" || check.mode !== "shadow") throw new Error("PREVIEW_RUNTIME_ISOLATION_REQUIRED");
+  if (!check.isolated || check.database !== "nashmi_preview" || check.branch !== "feat/news-discovery-redesign" || check.mode !== (action === "publish" ? "new" : "shadow")) throw new Error("PREVIEW_RUNTIME_ISOLATION_REQUIRED");
   console.log(JSON.stringify({ inspection: check }));
   if (action === "discover") console.log(JSON.stringify({ discovery: await request("/api/internal/news/discover", "POST", configuration.NEWS_DISCOVERY_SECRET) }));
-  if (action === "select") console.log(JSON.stringify({ editorial: await request("/api/internal/news/refresh", "POST", configuration.NEWS_REFRESH_SECRET) }));
+  if (action === "select" || action === "publish") console.log(JSON.stringify({ editorial: await request("/api/internal/news/refresh", "POST", configuration.NEWS_REFRESH_SECRET) }));
 }
 
 main().catch((error) => {

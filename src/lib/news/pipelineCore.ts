@@ -2,9 +2,10 @@ import { normalizeArabic } from "@/lib/arabicSearch";
 import { sha256 } from "@/lib/news/dedupe";
 import { isObviousNonNashmiNews } from "@/lib/news/editorial";
 import { scoreNewsTopic } from "@/lib/news/topicScoring";
-import type { SourceMaterial } from "@/lib/news/sourceRegistry";
+import { sourceById, type SourceMaterial } from "@/lib/news/sourceRegistry";
 import type { NewsCategory } from "@/lib/news/types";
 import type { NEWS_ACTION_STAGES } from "@/models/NewsEvent";
+import { classifyPublicActivity, type EventKind, type EventStatus } from "@/lib/news/activityClassification";
 
 export type ActionStage = (typeof NEWS_ACTION_STAGES)[number];
 export type EventDraft = {
@@ -19,6 +20,11 @@ export type EventDraft = {
   publishedAt: Date;
   eligible: boolean;
   reason: string | null;
+  scopeSupported: boolean;
+  eventKind: EventKind;
+  eventStatus: EventStatus;
+  scheduledAt?: Date;
+  attributedTo?: string;
 };
 
 export const NEWS_FRESHNESS_MS = 48 * 60 * 60 * 1000;
@@ -27,6 +33,7 @@ function compact(value: string) { return value.replace(/\s+/g, " ").trim(); }
 
 function stageFor(text: string, official: boolean): ActionStage {
   const value = normalizeArabic(text);
+  if (/سيبدا العمل|سيدخل.{0,25}حيز التنفيذ|نافذ اعتبارا.{0,60}(المقبل|القادم)|يبدا العمل.{0,80}(المقبل|القادم|بعد نشر)/.test(value)) return "effective_scheduled";
   if (/دخل.{0,25}حيز التنفيذ|بدء العمل ب|يبدا العمل ب|نافذ اعتبارا/.test(value)) return "effective";
   if (/نشر.{0,40}الجريده الرسميه|صدر.{0,40}الجريده الرسميه/.test(value)) return "gazette_published";
   if (/(اقر|اعتمد).{0,100}والموافقه علي الاسباب الموجبه/.test(value)) return "unclear";
@@ -109,26 +116,46 @@ export function eventDraftsFromMaterial(material: SourceMaterial, now: Date): Ev
     /^علي صعيد اخر\s+قرر مجلس الوزراء/.test(normalizeArabic(paragraph)) && stageFor(paragraph, official) !== "unclear" && !splitHeadings.some((heading) => samePassageDecision(heading, paragraph))
   ) : [];
   const allPassages = [...splitHeadings, ...additionalBodyDecisions];
-  const passages = multipleDecisions ? allPassages.filter((paragraph, index) => !allPassages.slice(0, index).some((earlier) => samePassageDecision(earlier, paragraph))) : [material.paragraphs.find((paragraph) => stageFor(paragraph, official) !== "unclear") || material.summary];
+  const governmentPublisher = official && /وزار/.test(material.publisher);
+  const publicActivity = governmentPublisher ? null : classifyPublicActivity(sourceHeadline, paragraphs.join(" "), official ? material.publisher : "", material.publishedAt);
+  const passages = multipleDecisions ? allPassages.filter((paragraph, index) => !allPassages.slice(0, index).some((earlier) => samePassageDecision(earlier, paragraph))) : [publicActivity ? paragraphs[0] || material.summary : material.paragraphs.find((paragraph) => stageFor(paragraph, official) !== "unclear") || material.summary];
   const drafts: EventDraft[] = [];
-  for (const passage of passages.slice(0, 12)) {
-    const stage = stageFor(passage, official);
+  for (const passage of passages.slice(0, 20)) {
+    let stage = stageFor(passage, official);
     const headline = multipleDecisions ? exactHeadline(passage) : exactHeadline(sourceHeadline) || exactHeadline(passage);
     if (!headline) continue; // A long bulletin needs review, not a fabricated title.
-    const topic = scoreNewsTopic(headline, `${passage} ${official ? "الأردن" : ""}`);
+    const topic = scoreNewsTopic(headline, `${passage} ${official ? `الأردن ${material.publisher}` : ""}`);
+    const activity = !multipleDecisions && !governmentPublisher ? classifyPublicActivity(headline, passage, official ? material.publisher : "", material.publishedAt) : null;
+    const activityAllowed = Boolean(activity && topic.score >= 6);
+    if (activityAllowed && activity?.kind === "legislation") {
+      const legalEvidence = normalizeArabic(`${headline} ${passage}`);
+      if (activity.status === "recommended" || /توصي|اوصت|اوصي|توصيه/.test(normalizeArabic(headline))) stage = "recommendation";
+      else if (stage === "cabinet_approved_draft" || stage === "parliament_approved") {
+        stage = /لجنه|اللجنه|اللجان/.test(normalizeArabic(headline)) ? "committee_adopted" : /مجلس النواب|مجلس الاعيان|مجلس الامه/.test(legalEvidence) ? "parliament_approved" : "unclear";
+      }
+    }
+    if (activityAllowed && activity?.kind === "legislation" && /احال.{0,80}(لجنه|اللجنه|اللجان)|احاله.{0,80}(لجنه|اللجنه|اللجان)/.test(normalizeArabic(`${headline} ${passage}`))) stage = "referred_to_committee";
+    if (activityAllowed && activity?.kind === "legislation" && /نتيجه التصويت|نتائج التصويت|صوت.{0,60}(اغلبيه|رفض|مع|ضد)/.test(normalizeArabic(`${headline} ${passage}`)) && stage !== "parliament_approved") stage = "vote_result";
+    if (activityAllowed && activity && (activity.kind !== "legislation" || ["unclear", "directive", "media_reported"].includes(stage))) {
+      stage = activity.status === "announced" ? "activity_announced" : activity.status === "held" ? "activity_held" : activity.status === "postponed" ? "activity_postponed" : activity.status === "cancelled" ? "activity_cancelled" : activity.status === "discussed" ? "discussion" : activity.status === "recommended" ? "recommendation" : activity.kind.endsWith("update") || activity.kind.endsWith("election") ? "institutional_update" : "statement";
+    }
     const stale = now.getTime() - material.publishedAt.getTime() > NEWS_FRESHNESS_MS;
     const future = material.publishedAt.getTime() > now.getTime() + 10 * 60_000;
     const hardExcluded = !official && isObviousNonNashmiNews(sourceHeadline);
     const normalizedEvidence = normalizeArabic(`${sourceHeadline} ${passage}`);
     const officialDecision = official && !isRoutineTitle(sourceHeadline) && ["cabinet_approved_reasons", "cabinet_approved_draft", "decision_adopted", "instruction_issued", "directive", "enforcement_action"].includes(stage) && (/مجلس الوزراء|الوزاره|وزاره|العمل/.test(normalizedEvidence) || normalizedEvidence.includes(normalizeArabic("رئيس الوزراء")));
     const relevant = topic.score >= 6 || (officialDecision && (multipleDecisions || /يوجه|توضح اليه|تضبط|قرار|قرارات|اصدر|اعلن/.test(normalizeArabic(sourceHeadline))));
-    const eligible = !stale && !future && !hardExcluded && stage !== "unclear" && stage !== "proposal" && relevant;
-    const reason = stale ? "older_than_48_hours" : future ? "future_publication_date" : hardExcluded ? "unrelated_topic" : stage === "proposal" ? "proposal_without_decision" : stage === "unclear" ? "no_verified_action" : !relevant ? "outside_civic_scope" : null;
+    const documentedGovernmentProposal = official && stage === "proposal" && /مشروع قانون|مشروع نظام/.test(normalizedEvidence) && /الوزاره|وزاره|الوزراء/.test(normalizeArabic(material.publisher));
+    const supported = activityAllowed || (documentedGovernmentProposal && relevant) || (stage !== "unclear" && stage !== "proposal" && relevant);
+    const verifiedPublication = material.publicationVerified !== false;
+    const permittedAiInput = material.aiInputAllowed !== false && sourceById(material.sourceId).aiInputAllowed !== false;
+    const eligible = verifiedPublication && permittedAiInput && !stale && !future && !hardExcluded && supported;
+    const reason = !verifiedPublication ? "original_publication_unverified" : !permittedAiInput ? "source_ai_input_prohibited" : stale ? "older_than_48_hours" : future ? "future_publication_date" : hardExcluded ? "unrelated_topic" : supported ? null : stage === "proposal" ? "proposal_without_decision" : stage === "unclear" ? "no_verified_action" : "outside_civic_scope";
     const summaryAr = compact(passage).slice(0, 900);
     if (summaryAr.length < 30) continue;
-    const authority = authorityFor(material, passage);
+    const authority = activity?.category === "parties" ? activity.actor || activity.attributedTo : authorityFor(material, passage);
     const eventKey = sha256(`${material.sourceId}|${material.publishedAt.toISOString().slice(0, 10)}|${normalizeArabic(headline)}|${stage}`);
-    drafts.push({ eventKey, titleAr: headline, summaryAr, passage: summaryAr, category: categoryFor(topic.matchedTopics), authority, actionStage: stage, verification: official ? "official" : "reported", publishedAt: material.publishedAt, eligible, reason });
+    drafts.push({ eventKey, titleAr: headline, summaryAr, passage: summaryAr, category: activityAllowed && activity ? activity.category : categoryFor(topic.matchedTopics), authority, actionStage: stage, verification: official ? "official" : "reported", publishedAt: material.publishedAt, eligible, reason, scopeSupported: supported && !hardExcluded, eventKind: activity?.kind || (topic.matchedTopics.includes("legislation") ? "legislation" : stage === "instruction_issued" ? "government_regulation" : "government_decision"), eventStatus: activity?.status || (stage === "proposal" ? "announced" : stage === "unclear" || stage === "media_reported" ? "reported" : "adopted"), scheduledAt: activity?.scheduledAt, attributedTo: activity?.attributedTo });
   }
   return drafts;
 }
@@ -137,8 +164,12 @@ function significantTokens(value: string) {
   return new Set(normalizeArabic(value).split(/\s+/).filter((token) => token.length >= 4 && !["مجلس", "الوزراء", "وزاره", "الجديده", "الاردنيه", "الاردن"].includes(token)));
 }
 
-export function sameNewsEvent(a: Pick<EventDraft, "titleAr" | "authority" | "actionStage" | "publishedAt">, b: Pick<EventDraft, "titleAr" | "authority" | "actionStage" | "publishedAt">) {
-  if (a.authority !== b.authority || a.actionStage !== b.actionStage || Math.abs(a.publishedAt.getTime() - b.publishedAt.getTime()) > 2 * 24 * 60 * 60_000) return false;
+export function sameNewsEvent(a: Pick<EventDraft, "titleAr" | "authority" | "actionStage" | "publishedAt"> & Partial<Pick<EventDraft, "attributedTo" | "scheduledAt" | "eventStatus">>, b: Pick<EventDraft, "titleAr" | "authority" | "actionStage" | "publishedAt"> & Partial<Pick<EventDraft, "attributedTo" | "scheduledAt" | "eventStatus">>) {
+  if (a.attributedTo && b.attributedTo && normalizeArabic(a.attributedTo) !== normalizeArabic(b.attributedTo)) return false;
+  if (a.eventStatus && b.eventStatus && a.eventStatus !== b.eventStatus) return false;
+  if (a.scheduledAt && b.scheduledAt && a.scheduledAt.getTime() !== b.scheduledAt.getTime()) return false;
+  const sameAppointment = a.scheduledAt && b.scheduledAt && a.scheduledAt.getTime() === b.scheduledAt.getTime();
+  if (a.authority !== b.authority || a.actionStage !== b.actionStage || (!sameAppointment && Math.abs(a.publishedAt.getTime() - b.publishedAt.getTime()) > 2 * 24 * 60 * 60_000)) return false;
   const left = significantTokens(a.titleAr);
   const right = significantTokens(b.titleAr);
   if (left.size < 3 || right.size < 3) return normalizeArabic(a.titleAr) === normalizeArabic(b.titleAr);

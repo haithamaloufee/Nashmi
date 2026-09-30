@@ -1,4 +1,5 @@
 import { normalizeArabic } from "@/lib/arabicSearch";
+import { classifyPublicActivity } from "@/lib/news/activityClassification";
 
 export type NewsTopic = "legislation" | "government" | "parliament" | "parties" | "elections" | "local_government" | "public_policy";
 export type TopicMatch = { score: number; matchedTopics: NewsTopic[]; signals: string[] };
@@ -67,8 +68,8 @@ const ACTION_SIGNALS: Signal[] = [
   { phrase: "تقر", weight: 3 }, { phrase: "تعتمد", weight: 3 }
 ];
 
-const JORDAN_CONTEXT = ["الأردن", "الأردني", "المملكة الأردنية", "عمان", "أمانة عمان", "الهيئة المستقلة للانتخاب"];
-const FOREIGN_CONTEXT = ["الأمريكي", "الإيراني", "الإسرائيلي", "المصري", "السعودي", "اللبناني", "التركي", "الفرنسي", "الروسي", "الأوروبي", "الولايات المتحدة", "إيران", "إسرائيل", "مصر", "السعودية", "لبنان", "تركيا", "فرنسا", "روسيا", "المكسيك"];
+const JORDAN_CONTEXT = ["الأردن", "الأردني", "الأردنية", "الأردنيين", "المملكة الأردنية", "عمان", "أمانة عمان", "الهيئة المستقلة للانتخاب"];
+const FOREIGN_CONTEXT = ["الأمريكي", "الإيراني", "الإسرائيلي", "المصري", "السعودي", "اللبناني", "التركي", "الفرنسي", "الروسي", "الأوروبي", "الولايات المتحدة", "إيران", "إسرائيل", "مصر", "السعودية", "لبنان", "تركيا", "فرنسا", "روسيا", "المكسيك", "ألمانيا", "العراق", "الاحتلال", "نتانيا"];
 
 function contains(text: string, phrase: string) {
   return ` ${text} `.includes(` ${normalizeArabic(phrase)} `);
@@ -92,6 +93,9 @@ export function scoreNewsTopic(title: string, summary = ""): TopicMatch {
   // General publisher feeds include foreign politics. An explicit foreign setting
   // cannot enter merely because it contains "parliament" or "government".
   if (foreign && !jordan) return { score: 0, matchedTopics, signals };
+  const activity = classifyPublicActivity(title, summary);
+  if (activity?.category === "parties" && !jordan) return { score: 0, matchedTopics, signals };
+  if (activity) return { score: 7, matchedTopics: [activity.category === "parties" ? "parties" : activity.category === "elections" ? "elections" : activity.category === "legislation" ? "legislation" : "parliament"], signals: [activity.kind] };
 
   for (const [topic, topicSignals] of Object.entries(TOPIC_SIGNALS) as [NewsTopic, Signal[]][]) {
     const titleMatch = bestSignal(normalizedTitle, topicSignals);

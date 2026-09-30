@@ -9,7 +9,7 @@ export const NEWS_SIGNATURE_TOLERANCE_MS = 5 * 60 * 1000;
 type NewsSignatureMethod = "POST" | "GET";
 
 export function newsSignaturePayload(timestamp: string, path = "/api/internal/news/refresh", method: NewsSignatureMethod = "POST") {
-  const allowed = method === "POST" ? ["/api/internal/news/refresh", "/api/internal/news/discover"] : ["/api/internal/news/preview-check"];
+  const allowed = method === "POST" ? ["/api/internal/news/refresh", "/api/internal/news/discover"] : ["/api/internal/news/preview-check", "/api/internal/news/status"];
   if (!allowed.includes(path)) throw new Error("NEWS_SIGNATURE_PATH_INVALID");
   return `${timestamp}\n${method}\n${path}`;
 }

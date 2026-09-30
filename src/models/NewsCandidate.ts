@@ -2,6 +2,7 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
 
 const NewsCandidateSchema = new Schema({
   sourceId: { type: String, required: true, index: true },
+  extractionVersion: { type: Number, default: 1 },
   publisher: { type: String, required: true },
   sourceClass: { type: String, enum: ["official", "news_agency", "reputable_media"], required: true },
   originalUrl: { type: String, required: true, maxlength: 2048 },
@@ -11,6 +12,8 @@ const NewsCandidateSchema = new Schema({
   evidenceParagraphs: { type: [String], default: [] },
   publishedAt: { type: Date, required: true },
   datePrecision: { type: String, enum: ["time", "day"], required: true },
+  publicationVerified: { type: Boolean, default: true },
+  aiInputAllowed: { type: Boolean, default: true },
   firstDiscoveredAt: { type: Date, required: true },
   lastSeenAt: { type: Date, required: true },
   status: { type: String, enum: ["discovered", "validated", "eligible", "excluded", "error", "selected", "published"], default: "discovered" },

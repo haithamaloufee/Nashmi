@@ -89,6 +89,7 @@ export function buildNewsInitialSummary(news: NewsContextSnapshot) {
     news.summaryAr,
     "",
     `**تاريخ النشر:** ${news.publishedAt.toLocaleString("ar-JO", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Amman" })}`,
+    ...(news.scheduledAt ? [`**الموعد المعلن:** ${new Date(news.scheduledAt).toLocaleDateString("ar-JO", { timeZone: "Asia/Amman" })}؛ الإعلان لا يعني أن الجلسة انعقدت.`] : []),
     `**المصادر المحفوظة:** ${sourceNames}`,
     "",
     "اسألني عن تفاصيل هذا المستجد أو أثره على المواطن، وسأجيب اعتماداً على السياق والمصادر المحفوظة."
@@ -154,6 +155,8 @@ export async function handleChatMessage(params: {
     urgency: session.newsContext.urgency,
     publishedAt: new Date(session.newsContext.publishedAt),
     legislativeStage: session.newsContext.legislativeStage || null,
+    eventKind: session.newsContext.eventKind || null, eventStatus: session.newsContext.eventStatus || null,
+    scheduledAt: session.newsContext.scheduledAt || null, attributedTo: session.newsContext.attributedTo || null,
     sources: session.newsContext.sources.map((source) => ({
       title: source.title,
       url: source.url,
