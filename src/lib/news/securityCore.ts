@@ -6,23 +6,26 @@ export const NEWS_SIGNATURE_HEADER = "x-nashmi-news-signature";
 export const NEWS_TIMESTAMP_HEADER = "x-nashmi-news-timestamp";
 export const NEWS_SIGNATURE_TOLERANCE_MS = 5 * 60 * 1000;
 
-export function newsSignaturePayload(timestamp: string, path = "/api/internal/news/refresh") {
-  if (!["/api/internal/news/refresh", "/api/internal/news/discover"].includes(path)) throw new Error("NEWS_SIGNATURE_PATH_INVALID");
-  return `${timestamp}\nPOST\n${path}`;
+type NewsSignatureMethod = "POST" | "GET";
+
+export function newsSignaturePayload(timestamp: string, path = "/api/internal/news/refresh", method: NewsSignatureMethod = "POST") {
+  const allowed = method === "POST" ? ["/api/internal/news/refresh", "/api/internal/news/discover"] : ["/api/internal/news/preview-check"];
+  if (!allowed.includes(path)) throw new Error("NEWS_SIGNATURE_PATH_INVALID");
+  return `${timestamp}\n${method}\n${path}`;
 }
 
-export function signNewsRefreshWithSecret(timestamp: string, secret: string, path = "/api/internal/news/refresh") {
-  return createHmac("sha256", secret).update(newsSignaturePayload(timestamp, path)).digest("hex");
+export function signNewsRefreshWithSecret(timestamp: string, secret: string, path = "/api/internal/news/refresh", method: NewsSignatureMethod = "POST") {
+  return createHmac("sha256", secret).update(newsSignaturePayload(timestamp, path, method)).digest("hex");
 }
 
-export function verifyNewsRefreshSignatureWithSecret(request: Request, secret: string, now = Date.now(), path = "/api/internal/news/refresh") {
+export function verifyNewsRefreshSignatureWithSecret(request: Request, secret: string, now = Date.now(), path = "/api/internal/news/refresh", method: NewsSignatureMethod = "POST") {
   const timestamp = request.headers.get(NEWS_TIMESTAMP_HEADER)?.trim() || "";
   const supplied = request.headers.get(NEWS_SIGNATURE_HEADER)?.trim().toLowerCase() || "";
   const timestampMs = Number(timestamp);
   if (!/^\d{13}$/.test(timestamp) || !Number.isFinite(timestampMs) || Math.abs(now - timestampMs) > NEWS_SIGNATURE_TOLERANCE_MS) throw new Error("NEWS_SIGNATURE_EXPIRED");
   if (!/^[a-f0-9]{64}$/.test(supplied)) throw new Error("NEWS_SIGNATURE_INVALID");
-  if (new URL(request.url).pathname !== path) throw new Error("NEWS_SIGNATURE_INVALID");
-  const expected = signNewsRefreshWithSecret(timestamp, secret, path);
+  if (new URL(request.url).pathname !== path || request.method !== method) throw new Error("NEWS_SIGNATURE_INVALID");
+  const expected = signNewsRefreshWithSecret(timestamp, secret, path, method);
   const suppliedBuffer = Buffer.from(supplied, "hex");
   const expectedBuffer = Buffer.from(expected, "hex");
   if (suppliedBuffer.length !== expectedBuffer.length || !timingSafeEqual(suppliedBuffer, expectedBuffer)) throw new Error("NEWS_SIGNATURE_INVALID");

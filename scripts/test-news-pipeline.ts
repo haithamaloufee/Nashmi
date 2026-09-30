@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { eventDraftsFromMaterial, sameNewsEvent } from "../src/lib/news/pipelineCore";
-import { publishEventBatch, runNewsDiscovery, runNewsEditorial } from "../src/lib/news/pipeline";
+import { assertPipelineWriteIsolation, publishEventBatch, runNewsDiscovery, runNewsEditorial } from "../src/lib/news/pipeline";
 import { buildActiveNewsQuery } from "../src/lib/news/query";
+import { assertPreviewDatabaseRoles, verifyNewsPreviewIsolation } from "../src/lib/news/previewIsolation";
 import { NEWS_SOURCES, parseGovernmentArchive, parseGovernmentDetail, parseGovernmentDetailHeadline, type SourceMaterial } from "../src/lib/news/sourceRegistry";
 import NewsCandidate from "../src/models/NewsCandidate";
 import NewsEvent from "../src/models/NewsEvent";
@@ -16,6 +17,11 @@ const archive = `<a href='/Ar/NewsDetails/test-decision'><div class='media news-
 const detail = `<div id='ctl00_ctl00_MainContent_ContentDetails_NewsSection'><p>وافق مجلس الوزراء على مشروع قانون جديد ينظم إجراءات القبول الجامعي في الأردن.</p><p>قرر مجلس الوزراء تعديل تعليمات النقل العام في المحافظات اعتبارا من العام المقبل.</p></div>`;
 
 function testPureRules() {
+  assertPreviewDatabaseRoles("nashmi_preview", [{ role: "readWrite", db: "nashmi_preview" }]);
+  assert.throws(() => assertPreviewDatabaseRoles("sharek_demo", [{ role: "readWrite", db: "sharek_demo" }]), /ISOLATION_FAILED/);
+  for (const roles of [undefined, [], [{ role: "readWriteAnyDatabase", db: "admin" }], [{ role: "readWrite", db: "nashmi_preview" }, { role: "readWrite", db: "sharek_demo" }], [{ role: "unreviewedCustomRole", db: "nashmi_preview" }]]) {
+    assert.throws(() => assertPreviewDatabaseRoles("nashmi_preview", roles), /PERMISSIONS_UNVERIFIED/);
+  }
   const parsed = parseGovernmentArchive(archive, source);
   assert.equal(parsed.length, 1);
   assert.equal(parsed[0].publishedAt.toISOString(), "2026-09-28T21:00:00.000Z");
@@ -74,6 +80,45 @@ function testPureRules() {
   assert.ok(longHeadingDrafts.every((item) => item.eligible && item.titleAr.length <= 180 && item.passage.includes(item.titleAr)));
 }
 
+async function testPreviewIsolationBeforeMongoose() {
+  const previousEnvironment = process.env.VERCEL_ENV;
+  const previousUri = process.env.MONGODB_URI;
+  const replica = await MongoMemoryReplSet.create({ replSet: {
+    count: 1, storageEngine: "wiredTiger",
+    auth: { enable: true, extraUsers: [
+      { createUser: "restricted_preview", pwd: "local-test-password", roles: [{ role: "readWrite", db: "nashmi_preview" }] },
+      { createUser: "broad_preview", pwd: "local-test-password", roles: [{ role: "readWriteAnyDatabase", db: "admin" }] }
+    ] }
+  } });
+  const credentialUri = (username: string) => {
+    const base = replica.getUri("nashmi_preview");
+    return base.replace("mongodb://", `mongodb://${username}:local-test-password@`) + `${base.includes("?") ? "&" : "?"}authSource=admin`;
+  };
+  try {
+    process.env.VERCEL_ENV = "preview";
+    process.env.MONGODB_URI = credentialUri("restricted_preview");
+    const result = await verifyNewsPreviewIsolation();
+    assert.equal(result.database, "nashmi_preview");
+    assert.equal(result.productionWriteGranted, false);
+    assert.equal(mongoose.connection.readyState, 0, "read-only inspection must not start Mongoose model initialization");
+    const restricted = new mongoose.mongo.MongoClient(process.env.MONGODB_URI);
+    try {
+      await restricted.connect();
+      assert.deepEqual(await restricted.db().listCollections().toArray(), [], "inspection must not create collections");
+      await assert.rejects(() => restricted.db("production_fixture").listCollections().toArray(), (error: unknown) => error instanceof mongoose.mongo.MongoServerError && error.code === 13, "the restricted user cannot inspect another database");
+    } finally { await restricted.close(); }
+    process.env.MONGODB_URI = credentialUri("broad_preview");
+    await assert.rejects(() => assertPipelineWriteIsolation(), /PERMISSIONS_UNVERIFIED/);
+    assert.equal(mongoose.connection.readyState, 0, "a broad credential must be rejected before Mongoose connects");
+  } finally {
+    if (previousEnvironment === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = previousEnvironment;
+    if (previousUri === undefined) delete process.env.MONGODB_URI;
+    else process.env.MONGODB_URI = previousUri;
+    await replica.stop();
+  }
+}
+
 async function testIngestionAndPublishing() {
   const replSet = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: "wiredTiger" } });
   process.env.MONGODB_URI = replSet.getUri("nashmi_news_pipeline_test");
@@ -124,6 +169,7 @@ async function testIngestionAndPublishing() {
 
 async function main() {
   testPureRules();
+  await testPreviewIsolationBeforeMongoose();
   await testIngestionAndPublishing();
   console.log("News pipeline parsing, 48-hour window, idempotency, shadow mode and atomic publishing passed.");
 }

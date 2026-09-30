@@ -9,6 +9,7 @@ import { getNewsConfig } from "@/lib/news/config";
 import { sha256, sourceUrlHash } from "@/lib/news/dedupe";
 import { eventDraftsFromMaterial, NEWS_FRESHNESS_MS, sameNewsEvent, type EventDraft } from "@/lib/news/pipelineCore";
 import { mayPublishNewPipeline } from "@/lib/news/pipelineMode";
+import { verifyNewsPreviewIsolation } from "@/lib/news/previewIsolation";
 import { fetchSourceText } from "@/lib/news/sourceFetch";
 import { NEWS_SOURCES, parseGovernmentArchive, parseGovernmentDetail, parseGovernmentDetailHeadline, parseRegisteredFeed, type SourceDefinition, type SourceMaterial } from "@/lib/news/sourceRegistry";
 import NewsCandidate from "@/models/NewsCandidate";
@@ -28,22 +29,16 @@ function safeReason(error: unknown) {
 }
 
 export async function assertPipelineWriteIsolation() {
-  const connection = await connectToDatabase();
-  const database = connection.connection.db;
-  if (!database) throw new Error("NEWS_DATABASE_UNAVAILABLE");
   if (process.env.VERCEL_ENV === "preview") {
-    if (database.databaseName !== "nashmi_preview") throw new Error("NEWS_PREVIEW_DATABASE_ISOLATION_FAILED");
-    const status = await database.admin().command({ connectionStatus: 1 });
-    const roles = status.authInfo?.authenticatedUserRoles as Array<{ role: string; db: string }> | undefined;
-    if (!roles?.length || roles.some((role) => role.db !== "nashmi_preview" || /AnyDatabase|root|dbOwner|userAdmin/i.test(role.role))) {
-      throw new Error("NEWS_PREVIEW_DATABASE_PERMISSIONS_UNVERIFIED");
-    }
+    await verifyNewsPreviewIsolation();
   } else if (process.env.VERCEL_ENV !== "production") {
     // Local runs use only a disposable replica set with an explicit test marker.
     if (process.env.NEWS_PIPELINE_TEST_DB !== "true" || !/^mongodb:\/\/(127\.0\.0\.1|localhost):\d+\/nashmi_news_pipeline_test(?:\?|$)/.test(getMongoUri())) {
       throw new Error("NEWS_PIPELINE_LOCAL_WRITE_DISABLED");
     }
   }
+  const connection = await connectToDatabase();
+  if (!connection.connection.db) throw new Error("NEWS_DATABASE_UNAVAILABLE");
   return connection;
 }
 
