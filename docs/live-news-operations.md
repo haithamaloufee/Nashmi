@@ -35,4 +35,3 @@ Run `npm run test:news`, `npm run test:security`, `npm run typecheck`, `npm run 
 ### Preview verification tools
 
 Use the ignored `.env.preview.local` only for the restricted Preview URI. Never paste its value into reports or commits. `npm run news:preview-inspect` reads candidate/event counts and checks that every evidence reference resolves without initializing Mongoose models. `npm run news:preview-replay` writes only after native database/role verification, caches actual source responses for an identical-input replay, simulates one failed source and advances editorial time past the 48-hour window. It always uses shadow mode and asserts that NewsItem counts and `currentBatchId` are unchanged. This harness runs locally against the isolated Atlas Preview database; distinguish it from the deployed signed API requests in reports.
-
