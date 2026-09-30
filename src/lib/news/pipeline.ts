@@ -21,7 +21,7 @@ import NewsRefreshReplay from "@/models/NewsRefreshReplay";
 
 const ARCHIVE_MS = 180 * 24 * 60 * 60_000;
 const LOCK_MS = 15 * 60_000;
-const EXTRACTION_VERSION = 5;
+const EXTRACTION_VERSION = 6;
 const indexReadiness = new Map<string, Promise<unknown>>();
 
 type SourceStats = { found: number; created: number; duplicates: number; eligible: number; excluded: number; errors: number; failure?: string; metrics?: SourceFetchMetrics & { durationMs: number } };

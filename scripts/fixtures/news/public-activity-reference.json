@@ -2,6 +2,26 @@
   "description": "Real published articles, article-level manual labels; original excerpts. Virtual replay at original publication +24h. Party leadership example is 2024; not claimed as a September 2026 sample.",
   "rows": [
     {
+      "sourceId": "senate",
+      "url": "https://www.senate.jo/Ar/NewsDetails/sen_029092026",
+      "publishedAt": "2026-09-29T00:00:00+03:00",
+      "title": "العين آسيا ياغي تشارك في أعمال المؤتمر الدولي العاشر «فرسان وفارسات الرسالة»",
+      "passage": "عمّان – 27( أيلول) شاركت العين آسيا ياغي، رئيسة لجنة الأشخاص ذوي الإعاقة في مجلس الأعيان، وعضو الهيئة الاستشارية العليا لفرسان السلام، في أعمال المؤتمر الدولي العاشر «فرسان وفارسات الرسالة – Leaders of the Moral Journey»",
+      "expected": true,
+      "expectedKind": "parliamentary_institutional_update",
+      "expectedStatus": "held"
+    },
+    {
+      "sourceId": "senate",
+      "url": "https://www.senate.jo/Ar/NewsDetails/Ene_30092026",
+      "publishedAt": "2026-09-30T00:00:00+03:00",
+      "title": "\"طاقة الأعيان\" تطلع على واقع عمل شركة مصفاة البترول الأردنية",
+      "passage": "عمان 30 أيلول (مجلس الاعيان)- زارت لجنة الطاقة والثروة المعدنية في مجلس الأعيان، برئاسة العين المهندس فاروق الحياري، اليوم الأربعاء، شركة مصفاة البترول الأردنية.",
+      "expected": true,
+      "expectedKind": "parliamentary_committee",
+      "expectedStatus": "held"
+    },
+    {
       "sourceId": "mamlaka",
       "url": "https://almamlakatv.com/news/211398-",
       "publishedAt": "2026-09-30T13:18:23+03:00",

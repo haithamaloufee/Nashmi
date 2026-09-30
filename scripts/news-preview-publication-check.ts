@@ -44,7 +44,7 @@ async function main() {
     process.env.NEWS_PREVIEW_TEST_PUBLISH = "true";
     const count = await NewsItem.countDocuments({});
     const now = new Date();
-    const event = await NewsEvent.findOne({ status: action === "repeat" ? "published" : "eligible", publishedAt: { $gte: new Date(now.getTime() - 48 * 60 * 60_000), $lte: now } });
+    const event = await NewsEvent.findOne({ status: action === "repeat" ? "published" : action === "capacity" ? { $in: ["eligible", "published"] } : "eligible", publishedAt: { $gte: new Date(now.getTime() - 48 * 60 * 60_000), $lte: now } });
     assert.ok(event, "a real current event is required");
     const token = `preview-test-${randomUUID()}`;
     assert.ok(!before?.pipelineEditorialLockUntil || before.pipelineEditorialLockUntil < now, "another editorial job is not running");

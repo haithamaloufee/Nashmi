@@ -1,13 +1,14 @@
-# Nashmi news scheduling (proposed, not deployed)
+# Nashmi news scheduling
 
-The checked-in Worker configuration prepares hourly discovery at `30 * * * *` UTC and the existing editorial refresh at `0 3 * * *` UTC (06:00 Asia/Amman). The live Cloudflare Cron remains unchanged until explicit approval. Discovery and refresh use separate HMAC secrets (`NEWS_DISCOVERY_SECRET`, `NEWS_REFRESH_SECRET`) and different paths. Both requests require the corresponding secret in Vercel. The new route returns 409 while `NEWS_PIPELINE_MODE=legacy`.
+The Worker configuration runs hourly discovery at `30 * * * *` UTC and daily editorial at `0 3 * * *` UTC (06:00 Asia/Amman). Discovery and refresh use separate HMAC secrets (`NEWS_DISCOVERY_SECRET`, `NEWS_REFRESH_SECRET`) and different paths. Each secret must match Vercel Production. The discovery route returns 409 in `legacy`. The server also guards publication to one batch per Jordan calendar day.
 
-After approval to activate, deployment steps are:
+Activation requires the acceptance gates in `docs/live-news-operations.md`. The user has authorized deployment conditionally on these gates; approval does not permit bypassing a failed gate. Keep `shadow` and auto-publication false while coordinating configuration, exact merged SHA and Worker deployment. Supply secrets through the CLI's secret input/file mechanism, never command arguments or logs.
 
 ```text
+npx wrangler secret bulk <ignored-secret-file>
 npx wrangler deploy
-npx wrangler secret put NEWS_REFRESH_SECRET
-npx wrangler secret put NEWS_DISCOVERY_SECRET
 ```
 
-Keep `NEWS_PIPELINE_MODE=legacy` in Production until Preview isolation, historic/live replays and editorial review are accepted. Preview and shadow editorial runs never publish the new pipeline. The `/health` route does not trigger discovery. Confirm Cloudflare triggers and secrets before any future Worker deployment.
+Verify actual deployed schedules, bindings, version and `/health` after deployment; a dry run is not deployment proof. `/health` never triggers either job. `npm run test:news:worker` checks both Cron branches against the server HMAC verifier with mocked transport; it does not claim that Cloudflare has executed a live scheduled event.
+
+Rollback: first set Vercel `NEWS_AUTO_PUBLISH=false`, `NEWS_PIPELINE_MODE=shadow` and redeploy. To return to Legacy, restore the backed-up daily-only Worker source/schedule and set mode `legacy`; retain the current matching refresh secret on both sides. Stored secret plaintext cannot be recovered, so do not attempt to restore an unknown previous secret. Preserve all Production news, events and the current batch. The legacy `/feed` endpoint is retained for compatibility, but the new pipeline never uses it to bypass an unavailable publisher.

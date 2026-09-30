@@ -20,6 +20,9 @@ export function classifyPublicActivity(title: string, passage: string, publisher
   const announcement = /سيعقد|ستعقد|موعد|جدول اعمال|يدعو.{0,30}جلسه/.test(heading) || /سيعقد|ستعقد|يعقد.{0,60}(غدا|القادم|يوم)/.test(lead) || (!heldEvidence && /يعقد|تعقد/.test(heading) && /جلسه|اجتماع|مؤتمر/.test(heading));
   const status: EventStatus = /تاجيل|اجل|مؤجله|ارجاء/.test(heading) ? "postponed" : /الغاء|الغي|ملغاه/.test(heading) ? "cancelled" : announcement || /دعوته للانعقاد|دعوه.{0,30}للانعقاد/.test(heading) ? "announced" : /توصيه|توصيات|اوصت|اوصي/.test(heading) ? "recommended" : /ناقش|يناقش|مناقشه/.test(heading) ? "discussed" : heldEvidence ? "held" : "reported";
   let kind: EventKind;
+  // Membership mentioned in a speaker's biography is not evidence that a
+  // committee itself held the activity. Require a committee actor/action.
+  const committeeAction = /(?:عقدت|اجتمعت|التقت|زارت|اطلعت|بحثت)\s+(?:لجنه|اللجنه).{0,80}مجلس (?:الاعيان|النواب)/.test(lead);
   const electoralAuthority = /الهييه المستقله للانتخاب/.test(text) && /حل حزب|تسجيل حزب|عدد الاحزاب|الاحزاب السياسيه|انتخاب/.test(heading);
   if (electoralAuthority) {
     kind = "electoral_institutional_update";
@@ -27,7 +30,7 @@ export function classifyPublicActivity(title: string, passage: string, publisher
     const internalElection = /(?:انتخاب|ينتخب|انتخب).{0,35}(قياد|امين|الامين|مكتب|المكتب|شوري|الشوري)|الانتخابات الداخليه/.test(heading) || (/امين|امينا/.test(heading) && /انتخب|انتخاب/.test(text));
     kind = internalElection ? "party_internal_election" : /حل حزب|تسجيل حزب|اندماج|قياده|امين عام|امينا عاما|تنظيمي/.test(heading) ? "party_organizational_update" : /[:：]|بيان|قال|صرح|اكد|دعا|يدعو|يطالب|موقف/.test(title + " " + heading) ? "party_statement" : "party_activity";
   } else {
-    kind = /جلسه|جدول اعمال|موعد|اجتماع مجلس (النواب|الاعيان|الامه)/.test(heading) ? (status === "announced" || status === "postponed" || status === "cancelled" ? "parliamentary_schedule" : "parliamentary_session") : /مشروع قانون|قانون معدل/.test(heading) ? "legislation" : /استجواب|سؤال نيابي|اسئله|رقاب/.test(heading) ? "parliamentary_oversight" : /كتله حزب|كتله.*النيابيه/.test(text) || /انتخاب|مكتب المجلس|رئاسه المجلس|كتله/.test(heading) ? "parliamentary_institutional_update" : /لجنه|النيابيه|النيابي/.test(heading) || (heldEvidence && !/[:：]|قال|اكد|بيان/.test(heading) && /لجنه.{0,60}مجلس الاعيان|لجنه.{0,60}مجلس النواب/.test(lead)) ? "parliamentary_committee" : status === "held" ? "parliamentary_institutional_update" : "parliamentary_statement";
+    kind = /جلسه|جدول اعمال|موعد|اجتماع مجلس (النواب|الاعيان|الامه)/.test(heading) ? (status === "announced" || status === "postponed" || status === "cancelled" ? "parliamentary_schedule" : "parliamentary_session") : /مشروع قانون|قانون معدل/.test(heading) ? "legislation" : /استجواب|سؤال نيابي|اسئله|رقاب/.test(heading) ? "parliamentary_oversight" : /كتله حزب|كتله.*النيابيه/.test(text) || /انتخاب|مكتب المجلس|رئاسه المجلس|كتله/.test(heading) ? "parliamentary_institutional_update" : /لجنه|النيابيه|النيابي/.test(heading) || (heldEvidence && !/[:：]|قال|اكد|بيان/.test(heading) && committeeAction) ? "parliamentary_committee" : status === "held" ? "parliamentary_institutional_update" : "parliamentary_statement";
   }
   // An attribution is part of identity. Different speakers' statements must not merge.
   const partyName = /حزب\s+["«“]([^"»”]+)["»”]/.exec(`${title} ${passage}`)?.[1] || /حزب\s+(.+?)(?=\s+(?:يعقد|عقد|يدعو|دعا|ينظم|انتخب|ينتخب|يعلن|أعلن|اصدر|أصدر|يطالب|لامتناعه|خلفا|السيد|برئاسة|النيابية)|[،:؛.]|$)/.exec(`${title} ${passage}`)?.[1]?.trim();

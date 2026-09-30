@@ -87,6 +87,11 @@ function testPureRules() {
   assert.equal(committee.eligible, true);
   assert.equal(committee.eventKind, "parliamentary_committee");
   assert.equal(committee.actionStage, "activity_held");
+  const memberConference = eventDraftsFromMaterial(activityMaterial("العين آسيا ياغي تشارك في أعمال مؤتمر دولي", "شاركت العين آسيا ياغي، عضو لجنة الصحة في مجلس الأعيان، في مؤتمر دولي يمثل مشاركة عامة مرتبطة بمهامها في الأردن.", "مجلس الأعيان"), now)[0];
+  assert.equal(memberConference.eligible, true);
+  assert.equal(memberConference.eventKind, "parliamentary_institutional_update", "a member's committee affiliation does not turn their conference participation into a committee meeting");
+  const committeeVisit = eventDraftsFromMaterial(activityMaterial('"طاقة الأعيان" تطلع على واقع عمل شركة مصفاة البترول الأردنية', "اطلعت لجنة الطاقة في مجلس الأعيان على واقع عمل شركة مصفاة البترول الأردنية خلال زيارة عقدت اليوم في الأردن.", "مجلس الأعيان"), now)[0];
+  assert.equal(committeeVisit.eventKind, "parliamentary_committee");
   const scheduledMaterial = activityMaterial("مجلس النواب يعلن موعد جلسة مقبلة", "أعلن مجلس النواب موعد جلسة 2026/10/04 لمناقشة جدول الأعمال التشريعي والرقابي في الأردن.");
   const scheduled = eventDraftsFromMaterial(scheduledMaterial, now)[0];
   assert.equal(scheduled.eligible, true);

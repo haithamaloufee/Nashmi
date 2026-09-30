@@ -36,6 +36,7 @@
     "test:moderation:ui": "tsx scripts/test-moderation-ui.ts",
     "test:news": "tsx scripts/test-news.ts",
     "test:news:pipeline": "tsx scripts/test-news-pipeline.ts",
+    "test:news:worker": "tsx scripts/test-news-worker.ts",
     "news:dry-run": "tsx scripts/news-source-dry-run.ts",
     "news:live-replay": "tsx scripts/news-live-replay.ts",
     "news:historical-replay": "tsx scripts/news-historical-replay.ts",

@@ -1,5 +1,7 @@
 # PR #23 verification — 30 September 2026
 
+This is the earlier verification snapshot. Subsequent expansion, real Preview publication, UI repairs and updated measurements are recorded in [news-expansion-verification-2026-09-30.md](news-expansion-verification-2026-09-30.md). Statements below about remaining work and Production status refer to their original snapshot.
+
 Historical and local replay results used a disposable local MongoDB replica set. Subsequent isolated Preview verification is documented below. Production was read only; its pipeline remains on legacy.
 
 ## Before and after
