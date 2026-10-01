@@ -1,0 +1,51 @@
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { authenticate } from "./helpers";
+
+for (const theme of ["light", "dark"]) test(`populated comments, vote, chat and law controls WCAG ${theme}`, async ({ page, context }, info) => {
+  const states: any[] = [];
+  await page.addInitScript(theme => localStorage.setItem("nashmi-theme", theme), theme);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const audit = async (state: string) => {
+    const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    states.push({ state, violations: result.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => ({ target: n.target, summary: n.failureSummary })) })) });
+    await info.attach(`axe-${state}`, { body: JSON.stringify(states.at(-1), null, 2), contentType: "application/json" });
+  };
+  await page.goto("/updates");
+  await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+  const post = page.locator("article").first();
+  await post.getByRole("button", { name: "تعليق", exact: true }).click();
+  await post.getByRole("textbox", { name: "كتابة تعليق", exact: true }).fill("مسودة اصطناعية لفحص التباين، لا يتم إرسالها");
+  await audit("comments and enabled submission");
+  const poll = page.locator("article").filter({ has: page.getByRole("radio") }).first();
+  await poll.getByRole("radio").first().check();
+  await audit("comments and enabled vote");
+  await page.route("**/api/chat", route => route.request().method() === "POST" ? route.fulfill({ json: { ok: true, data: { message: { role: "assistant", content: "رد اصطناعي محلي لاختبار العرض" } } } }) : route.continue());
+  await page.goto("/chat");
+  await page.locator("main input").fill("رسالة اصطناعية لفحص التباين");
+  await audit("enabled chat submission");
+  await page.locator('main button[type="submit"]').click();
+  await expect(page.getByText("رد اصطناعي محلي لاختبار العرض", { exact: true })).toBeVisible();
+  await page.getByText("رسالة اصطناعية لفحص التباين", { exact: true }).scrollIntoViewIfNeeded();
+  await audit("populated chat messages");
+  // The floating assistant is deliberately absent from the full chat page.
+  await page.goto("/iec");
+  await expect(page.locator('button[aria-controls="mobile-navigation"]')).toBeEnabled();
+  await page.getByRole("button", { name: "المساعد الذكي", exact: true }).click();
+  const assistant = page.locator('section[aria-label="المساعد الذكي"]');
+  await assistant.locator("input").fill("رسالة اصطناعية داخل المساعد");
+  await assistant.getByRole("button", { name: "إرسال الرسالة", exact: true }).click();
+  await expect(assistant.getByText("رد اصطناعي محلي لاختبار العرض", { exact: true })).toBeVisible();
+  await assistant.getByText("رسالة اصطناعية داخل المساعد", { exact: true }).scrollIntoViewIfNeeded();
+  await audit("populated floating assistant");
+  await assistant.getByRole("button", { name: /إغلاق/ }).click();
+  await authenticate(context, "iec");
+  await page.goto("/laws");
+  await page.getByRole("button", { name: "إضافة قانون", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.locator('[name="title"]').fill("عنوان اصطناعي");
+  await dialog.locator('button[type="submit"]').scrollIntoViewIfNeeded();
+  await audit("law creation dialog");
+  await info.attach("populated-state-axe", { body: JSON.stringify(states, null, 2), contentType: "application/json" });
+  expect(states.filter(state => state.violations.length)).toEqual([]);
+});

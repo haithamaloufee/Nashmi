@@ -1,3 +1,4 @@
+import SearchField from "@/components/ui/SearchField";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
@@ -71,7 +72,7 @@ export default async function AdminPartiesPage({ searchParams }: PageProps) {
           <form action="/admin/parties" className="mb-4 grid gap-2 md:grid-cols-[1fr_auto]">
             {status !== "active" ? <input type="hidden" name="status" value={status} /> : null}
             {verified ? <input type="hidden" name="verified" value={verified} /> : null}
-            <input name="q" defaultValue={q} className="rounded border-line" placeholder="ابحث باسم الحزب أو الرابط المختصر" />
+            <SearchField name="q" defaultValue={q} placeholder="ابحث باسم الحزب أو الرابط المختصر" label="ابحث باسم الحزب أو الرابط المختصر" />
             <button className="rounded bg-civic px-4 py-2 font-semibold text-white">بحث</button>
           </form>
 

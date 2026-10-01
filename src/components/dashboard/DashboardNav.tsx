@@ -1,4 +1,4 @@
-import Link from "next/link";
+import DashboardLinks from "./DashboardLinks";
 import type { ReactNode } from "react";
 import { I18nText } from "@/components/i18n/LanguageProvider";
 import type { TranslationKey } from "@/lib/i18n";
@@ -23,18 +23,12 @@ export function DashboardNav({
   wide?: boolean;
 }) {
   return (
-    <main className={`${wide ? "mx-auto w-[min(1480px,calc(100%_-_24px))]" : "container-page"} grid gap-6 py-8 lg:grid-cols-[220px_1fr]`}>
-      <aside className="card h-fit p-4">
-        <h1 className="mb-4 text-xl font-bold">{titleKey ? <I18nText id={titleKey} /> : title}</h1>
-        <nav className="grid gap-2 text-sm">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className="rounded px-3 py-2 hover:bg-civic/10">
-              {link.labelKey ? <I18nText id={link.labelKey} /> : link.label}
-            </Link>
-          ))}
-        </nav>
+    <main className={`${wide ? "mx-auto w-[min(1480px,calc(100%_-_24px))]" : "container-page"} grid grid-cols-1 gap-5 py-5 lg:grid-cols-[220px_minmax(0,1fr)]`}>
+      <aside className="h-fit min-w-0 rounded-2xl border border-line bg-white p-3 dark:bg-slate-950 lg:sticky lg:top-20">
+        <h2 className="mb-3 text-lg font-bold">{titleKey ? <I18nText id={titleKey} /> : title}</h2>
+        <DashboardLinks links={links} />
       </aside>
-      <section>{children}</section>
+      <section className="dashboard-content">{children}</section>
     </main>
   );
 }

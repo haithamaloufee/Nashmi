@@ -1,3 +1,4 @@
+import SearchField from "@/components/ui/SearchField";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
@@ -54,8 +55,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           </div>
 
           <form action="/admin/users" className="mb-4 grid gap-2 md:grid-cols-[1fr_auto_auto]">
-            <input name="q" defaultValue={q} className="rounded border-line" placeholder="ابحث بالاسم أو البريد" />
-            <select name="role" defaultValue={role} className="rounded border-line">
+            <SearchField name="q" defaultValue={q} placeholder="ابحث بالاسم أو البريد" label="ابحث بالاسم أو البريد" />
+            <select aria-label="الدور" name="role" defaultValue={role} className="rounded border-line">
               <option value="all">كل الأدوار</option>
               <option value="citizen">المواطنون</option>
               <option value="party">حسابات الأحزاب</option>

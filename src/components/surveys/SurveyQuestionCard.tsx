@@ -63,6 +63,7 @@ export default function SurveyQuestionCard({ question, index, value, onChange, d
             <button
               key={rating}
               type="button"
+              aria-pressed={value?.valueNumber === rating}
               onClick={() => onChange({ questionId: question._id, valueNumber: rating })}
               className={`h-11 w-11 rounded-full border text-sm font-black transition ${value?.valueNumber === rating ? "border-civic bg-civic text-white" : "border-slate-300 bg-white text-ink hover:border-civic dark:border-slate-700 dark:bg-slate-950 dark:text-white"}`}
             >
@@ -74,6 +75,7 @@ export default function SurveyQuestionCard({ question, index, value, onChange, d
 
       {question.type === "TEXT" ? (
         <textarea
+          aria-label={question.title}
           value={value?.valueText || ""}
           onChange={(event) => onChange({ questionId: question._id, valueText: event.target.value })}
           rows={5}

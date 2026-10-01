@@ -2,8 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Cairo";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("/fonts/cairo/cairo-arabic-variable.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+  font-family: "Cairo";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("/fonts/cairo/cairo-latin-variable.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
-  --font-sans: "Cairo", "Noto Kufi Arabic", "Tajawal", system-ui, sans-serif;
+  --font-sans: "Cairo", "Segoe UI", Tahoma, Arial, sans-serif;
   color-scheme: light;
 }
 
@@ -22,7 +39,7 @@ html {
 
 body {
   margin: 0;
-  background: #f7f5ef;
+  background: #f2f4f7;
   color: #17212b;
   font-family: var(--font-sans);
   overflow-x: clip;
@@ -94,7 +111,7 @@ select:disabled {
 
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select) {
   min-height: 2.75rem;
-  border-color: #d8d4c8;
+  border-color: #dfe3e8;
   border-radius: 0.625rem;
   background-color: rgba(255, 255, 255, 0.92);
   color: #17212b;
@@ -104,6 +121,11 @@ select:disabled {
 
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select):hover {
   border-color: rgba(18, 107, 111, 0.42);
+}
+
+/* Override legacy square utilities; search/composer rules below keep their pills. */
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select)[class] {
+  border-radius: 12px;
 }
 
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select):focus {
@@ -161,10 +183,10 @@ select:disabled {
 }
 
 .card {
-  border: 1px solid #d8d4c8;
-  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #dfe3e8;
+  background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 8px 26px rgba(23, 33, 43, 0.055);
+  box-shadow: 0 1px 3px rgba(23, 33, 43, 0.08);
   transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
@@ -483,7 +505,7 @@ html[dir="ltr"] .home-hero-overlay {
 .news-ticker-home {
   position: fixed;
   inset-inline: 0;
-  top: 76px;
+  top: var(--navbar-height);
   z-index: 45;
 }
 
@@ -606,3 +628,47 @@ html[dir="ltr"] .home-hero-overlay {
   .news-ticker-item { padding-inline: 0.8rem; font-size: 0.875rem; }
   .news-ticker-source { display: none; }
 }
+
+/* Shared social surfaces: neutral content, Nashmi teal, logical RTL/LTR spacing. */
+:root { --surface: #fff; --surface-muted: #f2f4f7; --surface-border: #dfe3e8; --foreground: #17212b; --foreground-muted: #58636f; --brand: #126b6f; }
+.dark { --surface: #15212c; --surface-muted: #0b141b; --surface-border: #344454; --foreground: #f1f5f9; --foreground-muted: #bac7d4; --brand: #62d3c8; }
+:root { --navbar-height: 101px; }
+@media (min-width: 1024px) { :root { --navbar-height: 57px; } }
+.social-navbar { background: var(--surface); color: var(--foreground); border-color: var(--surface-border); box-shadow: 0 1px 6px #17212b12; }
+.nav-tab { display: flex; min-width: 0; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-bottom: 3px solid transparent; color: var(--foreground-muted); border-radius: 8px 8px 0 0; }
+@media (min-width: 1024px) { .nav-tab { min-width: 80px; max-width: 140px; } }
+.nav-tab:hover { background: var(--surface-muted); }
+.nav-tab-active { color: var(--brand); border-bottom-color: var(--brand); }
+.text-ink\/50, .text-ink\/55, .text-ink\/60, .text-ink\/65 { color: var(--foreground-muted); }
+.feed-card { background: var(--surface); padding: 16px; border-radius: 14px; }
+.feed-card:hover { transform: none; }
+.feed-actions { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 2px; }
+.feed-actions > * { min-width: 0; }
+.feed-actions button { min-height: 44px; padding-inline: 4px; font-size: 13px; }
+.dashboard-content, .dashboard-content > *, .dashboard-content .grid > * { min-width: 0; }
+.dashboard-content table { min-width: 600px; }
+.dashboard-link { display: flex; align-items: center; min-height: 44px; padding: 10px 14px; border-radius: 10px; white-space: nowrap; }
+.dashboard-link[aria-current="page"] { background: #126b6f14; color: var(--brand); font-weight: 800; box-shadow: inset 3px 0 var(--brand); }
+.comment-bubble { background: var(--surface-muted); border: 0; box-shadow: none; border-radius: 18px; }
+.social-search-input,
+.dark .social-search-input { min-height: 44px; border: 1px solid transparent; border-radius: 9999px; background: var(--surface-muted); color: var(--foreground); box-shadow: none; }
+.social-search-input:focus { background: var(--surface); border-color: var(--brand); box-shadow: 0 0 0 3px #126b6f20; }
+.comment-composer { background: var(--surface-muted); border: 1px solid transparent; }
+.comment-composer:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px #126b6f20; }
+.comment-composer textarea,
+.dark .comment-composer textarea { background: transparent; border: 0; border-radius: 24px; color: var(--foreground); box-shadow: none; }
+.comment-composer textarea:focus-visible { outline: none; }
+@media(max-width: 639px) { .feed-card { padding: 12px; } .feed-actions button { gap: 4px; } }
+
+/* Stable, bounded media frames; full image remains available in the viewer. */
+.post-media { margin-inline: -16px; overflow: hidden; background: var(--surface-muted); }
+.post-media > button { height: min(360px, 70vw); }
+.post-media-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2px; height: 300px; }
+.post-media-grid > button { min-height: 0; height: 100%; }
+.post-media-grid > button:first-child:nth-last-child(3) { grid-row: span 2; }
+.post-media video { max-height: 350px; }
+@media(max-width:639px) { .post-media { margin-inline: -12px; } .post-media-grid { height: 260px; } }
+
+@media (max-width:639px) { body:has(.comment-composer textarea:focus) .floating-assistant { visibility: hidden; } }
+.social-profile-cover { height: 260px; background: linear-gradient(120deg, #126b6f, #263f48); }
+@media (max-width:639px) { .social-profile-cover { height: 160px; } }

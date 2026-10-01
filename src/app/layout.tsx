@@ -40,6 +40,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={initialLanguage} dir={initialDir} suppressHydrationWarning>
       <head>
+        <link rel="preload" href="/fonts/cairo/cairo-arabic-variable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/cairo/cairo-latin-variable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem("nashmi-theme");if(t!=="light"&&t!=="dark"){t="light"}document.documentElement.classList.toggle("dark",t==="dark");document.documentElement.style.colorScheme=t;var m=document.cookie.match(/(?:^|; )nashmi-language=(ar|en)/);var l=localStorage.getItem("nashmi-language")||(m&&m[1]);if(l!=="en"&&l!=="ar"){l="${initialLanguage}"}document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}catch(e){}`

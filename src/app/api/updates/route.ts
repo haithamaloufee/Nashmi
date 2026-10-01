@@ -1,3 +1,4 @@
+import { compareFeedItems, feedCursor, parseFeedCursor } from "@/lib/feedPagination";
 import { connectToDatabase } from "@/lib/db";
 import { ok, fail, handleApiError } from "@/lib/apiResponse";
 import { CACHE_HEADERS, cacheHeaders } from "@/lib/cache";
@@ -31,7 +32,8 @@ export async function GET(request: Request) {
     const to = url.searchParams.get("to");
     const cursor = url.searchParams.get("cursor");
     const since = url.searchParams.get("since");
-    const cursorDate = cursor ? new Date(cursor) : null;
+    const parsedCursor = cursor ? parseFeedCursor(cursor) : null;
+    if (cursor && !parsedCursor) return fail("BAD_REQUEST", undefined, 400);
     const sinceDate = since ? new Date(since) : null;
     const regex = search ? searchRegex(search) : null;
     const partyNameMatches = regex ? await Party.find({ status: "active", searchNormalized: regex }).select("_id").lean() : [];
@@ -57,10 +59,6 @@ export async function GET(request: Request) {
       basePostQuery.publishedAt = { $gt: sinceDate };
       basePollQuery.publishedAt = { $gt: sinceDate };
       baseSurveyQuery.publishedAt = { $gt: sinceDate };
-    } else if (cursorDate && !Number.isNaN(cursorDate.getTime())) {
-      basePostQuery.publishedAt = { $lt: cursorDate };
-      basePollQuery.publishedAt = { $lt: cursorDate };
-      baseSurveyQuery.publishedAt = { $lt: cursorDate };
     }
     if (filter === "iec") {
       basePostQuery.authorType = "iec";
@@ -102,7 +100,15 @@ export async function GET(request: Request) {
       basePollQuery.$and = [...((basePollQuery.$and as unknown[]) || []), { $or: [{ endsAt: { $gte: now, $lte: soon } }, { expiresAt: { $gte: now, $lte: soon } }] }];
     }
 
-    const fetchLimit = sort === "newest" || sort === "oldest" ? limit : Math.max(limit * 4, 40);
+    const countQueries = [basePostQuery, basePollQuery, baseSurveyQuery].map(query => ({ ...query }));
+    if (parsedCursor && !sinceDate) {
+      const operator = sort === "oldest" ? "$gt" : "$lt";
+      const boundary = parsedCursor.id ? { $or: [{ publishedAt: { [operator]: parsedCursor.date } }, { publishedAt: parsedCursor.date, _id: { [operator]: parsedCursor.id } }] } : { publishedAt: { [operator]: parsedCursor.date } };
+      for (const query of [basePostQuery, basePollQuery, baseSurveyQuery]) query.$and = [...((query.$and as unknown[]) || []), boundary];
+    }
+    const chronological = sort === "newest" || sort === "oldest";
+    const fetchLimit = chronological ? limit + 1 : Math.max(limit * 4, 40);
+    const databaseSort: Record<string, 1 | -1> = sort === "oldest" ? { publishedAt: 1, _id: 1 } : { publishedAt: -1, _id: -1 };
 
     const includePosts = filter !== "polls" && filter !== "surveys";
     const includePolls = filter !== "posts" && filter !== "surveys";
@@ -116,7 +122,7 @@ export async function GET(request: Request) {
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
-            .sort({ publishedAt: -1 })
+            .sort(databaseSort)
             .limit(fetchLimit)
             .lean(),
       !includePolls
@@ -125,7 +131,7 @@ export async function GET(request: Request) {
             .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-            .sort({ publishedAt: -1 })
+            .sort(databaseSort)
             .limit(fetchLimit)
             .lean(),
       !includeSurveys
@@ -134,12 +140,12 @@ export async function GET(request: Request) {
             .select("authorType authorUserId partyId publisherSnapshot title slug description totalResponses startsAt endsAt status resultsVisibility publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-            .sort({ publishedAt: -1 })
+            .sort(databaseSort)
             .limit(fetchLimit)
             .lean(),
-      includePosts ? Post.countDocuments(basePostQuery) : 0,
-      includePolls ? Poll.countDocuments(basePollQuery) : 0,
-      includeSurveys ? Survey.countDocuments(baseSurveyQuery) : 0,
+      includePosts ? Post.countDocuments(countQueries[0]) : 0,
+      includePolls ? Poll.countDocuments(countQueries[1]) : 0,
+      includeSurveys ? Survey.countDocuments(countQueries[2]) : 0,
       getAuthorityAuthor()
     ]);
 
@@ -168,7 +174,7 @@ export async function GET(request: Request) {
     updates = updates.sort((a, b) => {
       const aItem = a.item || {};
       const bItem = b.item || {};
-      if (sort === "oldest") return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
+      if (sort === "oldest") return -compareFeedItems(a, b);
       if (sort === "mostCommented") return (bItem.commentsCount || 0) - (aItem.commentsCount || 0);
       if (sort === "mostLiked") return (bItem.likesCount || 0) - (aItem.likesCount || 0);
       if (sort === "pollsEndingSoon") {
@@ -181,14 +187,15 @@ export async function GET(request: Request) {
         const bOpen = b.type === "poll" && bItem.status === "active" ? 1 : 0;
         return bOpen - aOpen || new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
       }
-      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      return compareFeedItems(a, b);
     });
 
     const totalCount = hashtag ? updates.length : postsCount + pollsCount + surveysCount;
+    const hasMore = updates.length > limit;
     updates = updates.slice(0, limit);
 
-    const supportsCursor = sort === "newest";
-    const nextCursor = supportsCursor && !sinceDate && updates.length === limit ? new Date(updates[updates.length - 1].publishedAt).toISOString() : null;
+    const supportsCursor = chronological;
+    const nextCursor = supportsCursor && !sinceDate && hasMore ? feedCursor(updates[updates.length - 1]) : null;
     return ok(
       { updates: serialize(updates), totalCount },
       { nextCursor, headers: filter === "followed" || sinceDate ? undefined : cacheHeaders(CACHE_HEADERS.publicFeed) }

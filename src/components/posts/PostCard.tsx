@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MessageCircle, Newspaper } from "lucide-react";
+import { MessageCircle, BadgeCheck, Globe, ThumbsUp } from "lucide-react";
+import PostMedia from "./PostMedia";
 import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import SafeImage from "@/components/ui/SafeImage";
@@ -12,6 +13,8 @@ import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import HashtagText from "@/components/hashtags/HashtagText";
 import { formatNumber, formatRelativeTime, normalizeHashtag } from "@/lib/localization";
+import { useClientUser } from "@/lib/useClientUser";
+import { canEditOwnPost } from "@/lib/permissions";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
@@ -109,13 +112,17 @@ function mediaItems(post: Post) {
   return (post.mediaIds || []).filter((media): media is Media => typeof media === "object" && media.status !== "deleted" && Boolean(media.url));
 }
 
-export default function PostCard({ post, compact = false, showModerationActions = false }: { post: Post; compact?: boolean; showModerationActions?: boolean }) {
+export default function PostCard({ post, compact = false, showModerationActions = false, priorityMedia = false }: { post: Post; compact?: boolean; showModerationActions?: boolean; priorityMedia?: boolean }) {
   const { language, t } = useTranslation();
+  const user = useClientUser();
   const [currentPost, setCurrentPost] = useState(post);
   const [deleted, setDeleted] = useState(false);
   const [expandedText, setExpandedText] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [commentsStarted, setCommentsStarted] = useState(false);
+  useEffect(() => { if (commentsExpanded) setCommentsStarted(true); }, [commentsExpanded]);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
+  const [reactionCounts, setReactionCounts] = useState({ like: post.likesCount || 0, dislike: post.dislikesCount || 0 });
   const [timeReady, setTimeReady] = useState(false);
   useEffect(() => {
     setTimeReady(true);
@@ -134,6 +141,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
     <SafeImage
       src={author.image}
       alt={author.name}
+      sizes="44px"
       className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:bg-slate-900 dark:group-hover:ring-emerald-200/50"
       fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic/10 text-lg font-bold text-civic ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:group-hover:ring-emerald-200/50">{author.fallback}</div>}
       localPrefixes={["/uploads/", "/images/", "/related/"]}
@@ -143,7 +151,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
   if (deleted) return null;
 
   return (
-    <article className="card card-hover overflow-visible bg-white p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+    <article className="card feed-card overflow-visible bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           {author.href ? (
@@ -162,32 +170,22 @@ export default function PostCard({ post, compact = false, showModerationActions 
               ) : (
                 <h3 className="truncate font-bold text-slate-900 dark:text-white">{author.name}</h3>
               )}
-              {author.badgeTooltip ? (
-                <DelayedTooltipBadge tooltip={author.badgeTooltip} className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic outline-none ring-civic/20 focus-visible:ring-2 dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">
-                  {author.badge}
-                </DelayedTooltipBadge>
-              ) : (
-                <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{author.badge}</span>
-              )}
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                <Newspaper className="h-3.5 w-3.5" />
-                {t("content.post")}
-              </span>
+              {author.badgeTooltip ? <DelayedTooltipBadge tooltip={author.badgeTooltip} className="inline-flex rounded-full text-civic"><BadgeCheck aria-label={author.badge} className="h-4 w-4" /></DelayedTooltipBadge> : null}
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{timeReady ? formatRelativeTime(currentPost.publishedAt || currentPost.createdAt, language) : ""}</p>
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-ink/60" data-visual-dynamic>{timeReady ? formatRelativeTime(currentPost.publishedAt || currentPost.createdAt, language) : ""}<span aria-hidden="true"> · </span><Globe aria-hidden="true" className="h-3 w-3" /></p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <OwnerContentMenu type="post" item={currentPost} onUpdated={(updated) => setCurrentPost(updated)} onDeleted={() => setDeleted(true)} />
+          {user && canEditOwnPost(user, currentPost) ? <OwnerContentMenu type="post" item={currentPost} onUpdated={(updated) => setCurrentPost(updated)} onDeleted={() => setDeleted(true)} /> : null}
           {showModerationActions ? <InlineModerationActions targetType="post" targetId={currentPost._id} /> : null}
           <ReportButton targetType="post" targetId={currentPost._id} compact />
         </div>
       </div>
 
-      {currentPost.title ? <h4 className="mt-4 text-lg font-bold leading-8 text-slate-950 dark:text-white">{currentPost.title}</h4> : null}
-      <p className="mt-3 whitespace-pre-line break-words leading-8 text-slate-800 dark:text-slate-200"><HashtagText text={text} /></p>
+      {currentPost.title ? <h4 className="mt-3 text-base font-semibold leading-7 text-slate-950 dark:text-white">{currentPost.title}</h4> : null}
+      <p className={`mt-2 whitespace-pre-line break-words text-[15px] leading-7 text-slate-800 dark:text-slate-200 ${isLong && !expandedText ? "line-clamp-4" : ""}`}><HashtagText text={text} /></p>
       {isLong ? (
-        <button type="button" onClick={() => setExpandedText((value) => !value)} className="mt-1 text-sm font-semibold text-civic hover:underline">
+        <button type="button" onClick={() => setExpandedText((value) => !value)} aria-expanded={expandedText} className="focus-ring mt-1 min-h-11 rounded px-1 text-sm font-semibold text-civic hover:underline">
           {expandedText ? t("common.showLess") : t("common.showMore")}
         </button>
       ) : null}
@@ -202,38 +200,21 @@ export default function PostCard({ post, compact = false, showModerationActions 
         </div>
       ) : null}
 
-      {media.length ? (
-        <div className={`mt-4 grid gap-2 overflow-hidden rounded border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900 ${media.length > 1 ? "sm:grid-cols-2" : ""}`}>
-          {media.slice(0, 4).map((item) =>
-            item.type === "video" || item.mimeType?.startsWith("video/") ? (
-              <video key={item._id || item.url} className="aspect-video max-h-[520px] w-full bg-black object-contain" controls preload="metadata">
-                <source src={item.url} type={item.mimeType || "video/mp4"} />
-              </video>
-            ) : (
-              <SafeImage
-                key={item._id || item.url}
-                src={item.url}
-                alt={currentPost.title || t("content.post")}
-                className="aspect-video max-h-[520px] w-full bg-white object-contain p-3 dark:bg-slate-950"
-                fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">{t("common.error")}</div>}
-                localPrefixes={["/uploads/", "/images/", "/related/"]}
-              />
-            )
-          )}
-        </div>
-      ) : null}
+      {media.length ? <PostMedia media={media} title={currentPost.title || t("content.post")} priority={priorityMedia} /> : null}
 
-      <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-        <span>{formatNumber(commentsCount, language)} {t("comments.label")}</span>
+      <div data-visual-counts className="mt-3 flex items-center justify-between gap-3 border-b border-line text-sm text-ink/60">
+        <span className="inline-flex items-center gap-1.5 text-xs"><ThumbsUp aria-hidden="true" className="h-4 w-4 text-civic" />{formatNumber(reactionCounts.like + reactionCounts.dislike, language)} {t("social.reactions")}</span>
+        <button type="button" onClick={() => setCommentsExpanded(value => !value)} aria-expanded={commentsExpanded} className="focus-ring min-h-11 rounded px-1 hover:underline">{formatNumber(commentsCount, language)} {t("comments.label")}</button>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <ReactionButtons targetType="posts" targetId={currentPost._id} likesCount={currentPost.likesCount} dislikesCount={currentPost.dislikesCount} />
+      <div className="mt-2 feed-actions">
+        <ReactionButtons targetType="posts" targetId={currentPost._id} likesCount={currentPost.likesCount} dislikesCount={currentPost.dislikesCount} social onCountsChange={setReactionCounts} />
         {!compact ? (
           <button
             type="button"
+            aria-controls={"comments-" + currentPost._id}
             onClick={() => setCommentsExpanded((value) => !value)}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-civic/10 hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-95 dark:text-slate-300 dark:hover:bg-emerald-200/10 dark:hover:text-emerald-200"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-civic/10 hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-95 dark:text-slate-300 dark:hover:bg-emerald-200/10 dark:hover:text-emerald-200"
             aria-expanded={commentsExpanded}
           >
             <MessageCircle className="h-4 w-4" />
@@ -243,7 +224,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
         <ShareMenu url={shareUrl} title={currentPost.title || author.name} text={currentPost.content.slice(0, 140)} />
       </div>
 
-      {!compact ? <CommentBox targetType="posts" targetId={currentPost._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
+      {!compact && (commentsExpanded || commentsStarted) ? <CommentBox targetType="posts" targetId={currentPost._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>
   );
 }

@@ -23,7 +23,7 @@ export default async function PartyDashboardPage() {
   return (
     <DashboardNav titleKey="dashboard.party.title" links={links}>
       <h1 className="mb-5 text-2xl font-bold">{data.party.name}</h1>
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard labelKey="dashboard.party.stats.followers" value={data.party.followersCount} />
         <StatCard labelKey="dashboard.party.stats.posts" value={data.posts.length} />
         <StatCard labelKey="dashboard.party.stats.polls" value={data.polls.length} />

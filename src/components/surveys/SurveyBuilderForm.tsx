@@ -110,6 +110,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
   const [partyId, setPartyId] = useState("");
   const [questions, setQuestions] = useState<BuilderQuestion[]>([emptyQuestion()]);
   const [loading, setLoading] = useState(false);
+  const [pendingSurvey, setPendingSurvey] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
 
   const sortedSurveys = useMemo(() => [...surveys].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()), [surveys]);
@@ -208,22 +209,34 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
   }
 
   async function setSurveyStatus(survey: Survey, nextStatus: string) {
-    const response = await fetch(`/api/surveys/${survey._id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: nextStatus })
-    });
-    const json = await response.json().catch(() => ({}));
-    showToast(json.ok ? "تم تحديث الحالة." : json.error?.message || "تعذر تحديث الحالة.", json.ok ? "success" : "error");
-    if (json.ok) router.refresh();
+    if (pendingSurvey) return;
+    setPendingSurvey(survey._id);
+    try {
+      const response = await fetch(`/api/surveys/${survey._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      const json = await response.json().catch(() => ({}));
+      const succeeded = response.ok && json.ok;
+      showToast(succeeded ? "تم تحديث الحالة." : json.error?.message || "تعذر تحديث الحالة.", succeeded ? "success" : "error");
+      if (succeeded) router.refresh();
+    } catch { showToast("تعذر الاتصال بالخادم.", "error"); }
+    finally { setPendingSurvey(null); }
   }
 
   async function archive(survey: Survey) {
+    if (pendingSurvey) return;
     if (!window.confirm("هل تريد أرشفة هذا الاستبيان؟")) return;
-    const response = await fetch(`/api/surveys/${survey._id}`, { method: "DELETE" });
-    const json = await response.json().catch(() => ({}));
-    showToast(json.ok ? "تمت أرشفة الاستبيان." : json.error?.message || "تعذر الأرشفة.", json.ok ? "success" : "error");
-    if (json.ok) router.refresh();
+    setPendingSurvey(survey._id);
+    try {
+      const response = await fetch(`/api/surveys/${survey._id}`, { method: "DELETE" });
+      const json = await response.json().catch(() => ({}));
+      const succeeded = response.ok && json.ok;
+      showToast(succeeded ? "تمت أرشفة الاستبيان." : json.error?.message || "تعذر الأرشفة.", succeeded ? "success" : "error");
+      if (succeeded) router.refresh();
+    } catch { showToast("تعذر الاتصال بالخادم.", "error"); }
+    finally { setPendingSurvey(null); }
   }
 
   return (
@@ -319,7 +332,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
               </div>
               <input value={question.title} onChange={(event) => updateQuestion(questionIndex, { title: event.target.value })} className="mb-2 w-full rounded border-line" placeholder="نص السؤال" required />
               <div className="grid gap-2 sm:grid-cols-2">
-                <select value={question.type} onChange={(event) => updateQuestion(questionIndex, { type: event.target.value as QuestionType, options: event.target.value === "SINGLE_CHOICE" || event.target.value === "MULTIPLE_CHOICE" ? question.options.length >= 2 ? question.options : emptyQuestion().options : [] })} className="rounded border-line">
+                <select aria-label={"نوع السؤال " + (questionIndex + 1)} value={question.type} onChange={(event) => updateQuestion(questionIndex, { type: event.target.value as QuestionType, options: event.target.value === "SINGLE_CHOICE" || event.target.value === "MULTIPLE_CHOICE" ? question.options.length >= 2 ? question.options : emptyQuestion().options : [] })} className="rounded border-line">
                   <option value="SINGLE_CHOICE">اختيار واحد</option>
                   <option value="MULTIPLE_CHOICE">اختيارات متعددة</option>
                   <option value="YES_NO">نعم / لا</option>
@@ -336,7 +349,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
                   {question.options.map((option, optionIndex) => (
                     <div key={option.id || optionIndex} className="flex gap-2">
                       <input value={option.label} onChange={(event) => updateOption(questionIndex, optionIndex, event.target.value)} className="min-w-0 flex-1 rounded border-line" placeholder={`خيار ${optionIndex + 1}`} required />
-                      <button type="button" onClick={() => updateQuestion(questionIndex, { options: question.options.filter((_, index) => index !== optionIndex) })} className="rounded border border-line px-2 text-red-700"><Trash2 className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => updateQuestion(questionIndex, { options: question.options.filter((_, index) => index !== optionIndex) })} aria-label={"حذف الخيار " + (optionIndex + 1)} className="min-h-11 min-w-11 rounded border border-line px-2 text-red-700"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   ))}
                   <button type="button" onClick={() => updateQuestion(questionIndex, { options: [...question.options, { label: "", order: question.options.length }] })} className="rounded border border-line px-3 py-1.5 text-sm font-bold hover:border-civic">إضافة خيار</button>
@@ -366,15 +379,15 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
                 <h3 className="font-black">{survey.title}</h3>
                 {survey.description ? <p className="mt-1 line-clamp-2 text-sm text-ink/65 dark:text-slate-300">{survey.description}</p> : null}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <fieldset disabled={Boolean(pendingSurvey)} className="flex flex-wrap gap-2 disabled:opacity-60">
                 <button type="button" onClick={() => edit(survey)} className="rounded border border-line px-3 py-1.5 text-sm font-bold hover:border-civic">تعديل</button>
                 {survey.status !== "published" ? <button type="button" onClick={() => void setSurveyStatus(survey, "published")} className="rounded bg-civic px-3 py-1.5 text-sm font-bold text-white">نشر</button> : null}
                 {survey.status === "published" ? <button type="button" onClick={() => void setSurveyStatus(survey, "closed")} className="rounded border border-line px-3 py-1.5 text-sm font-bold hover:border-civic">إغلاق</button> : null}
-                <button type="button" onClick={() => void archive(survey)} className="inline-flex items-center gap-1 rounded border border-line px-3 py-1.5 text-sm font-bold text-red-700 hover:border-red-300">
+                <button type="button" onClick={() => void archive(survey)} className="inline-flex items-center gap-1 rounded border border-line px-3 py-1.5 text-sm font-bold text-red-700 hover:border-red-300 dark:text-red-300 dark:hover:bg-red-950/30">
                   <Archive className="h-4 w-4" />
                   أرشفة
                 </button>
-              </div>
+              </fieldset>
             </div>
           </article>
         ))}

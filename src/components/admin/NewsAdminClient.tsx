@@ -1,4 +1,5 @@
 "use client";
+import SearchField from "@/components/ui/SearchField";
 
 import { useEffect, useState } from "react";
 import { ExternalLink, Eye, EyeOff, RefreshCw } from "lucide-react";
@@ -24,32 +25,42 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
   const funnel = state?.lastStats?.rejectionReasons;
 
   async function loadDiagnostics(q = "") {
-    const response = await fetch(`/api/admin/news/diagnostics?q=${encodeURIComponent(q)}`, { cache: "no-store" });
-    const json = await response.json().catch(() => null);
-    if (response.ok && json?.ok) setDiagnostics(json.data);
+    try {
+      const response = await fetch(`/api/admin/news/diagnostics?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.ok) setDiagnostics(json.data);
+      else setMessage("تعذر تحميل التشخيص. حاول مرة أخرى.");
+    } catch { setMessage("تعذر تحميل التشخيص. حاول مرة أخرى."); }
   }
 
   useEffect(() => { void loadDiagnostics(); }, []);
 
   async function toggle(item: AdminNews) {
+    if (busy) return;
     setBusy(item._id);
-    const response = await fetch(`/api/admin/news/${item._id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hidden: item.status !== "hidden" }) });
-    const json = await response.json().catch(() => ({}));
-    setBusy(null);
-    if (!response.ok || !json.ok) return setMessage("تعذر تحديث حالة الخبر.");
-    setItems((current) => current.map((entry) => entry._id === item._id ? json.data.item : entry));
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/admin/news/${item._id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hidden: item.status !== "hidden" }) });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.ok) return setMessage("تعذر تحديث حالة الخبر.");
+      setItems((current) => current.map((entry) => entry._id === item._id ? json.data.item : entry));
+    } catch { setMessage("تعذر الاتصال بالخادم. حاول مرة أخرى."); }
+    finally { setBusy(null); }
   }
 
   async function refreshBatch() {
+    if (busy) return;
     setBusy("refresh");
     setMessage(null);
-    const response = await fetch("/api/admin/news/refresh", { method: "POST" });
-    const json = await response.json().catch(() => ({}));
-    setBusy(null);
-    if (!response.ok || !json.ok) return setMessage(json.error?.message || "تعذر تحديث الأخبار.");
-    setState({ ...(state || {}), lastStatus: json.data.stats.dryRun ? "dry_run" : "success", lastStats: json.data.stats, lastDryRunCandidates: json.data.preview });
-    void loadDiagnostics(candidateQuery);
-    setMessage(json.data.stats.dryRun ? `اكتملت المعاينة الآمنة: ${json.data.stats.selected} خبر مختار، بدون نشر.` : `اكتمل التحديث: ${json.data.stats.created} خبر في الدفعة الجديدة.`);
+    try {
+      const response = await fetch("/api/admin/news/refresh", { method: "POST" });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.ok) return setMessage(json.error?.message || "تعذر تحديث الأخبار.");
+      setState({ ...(state || {}), lastStatus: json.data.stats.dryRun ? "dry_run" : "success", lastStats: json.data.stats, lastDryRunCandidates: json.data.preview });
+      void loadDiagnostics(candidateQuery);
+      setMessage(json.data.stats.dryRun ? `اكتملت المعاينة الآمنة: ${json.data.stats.selected} خبر مختار، بدون نشر.` : `اكتمل التحديث: ${json.data.stats.created} خبر في الدفعة الجديدة.`);
+    } catch { setMessage("تعذر الاتصال بالخادم. حاول مرة أخرى."); }
+    finally { setBusy(null); }
   }
 
   return (
@@ -79,14 +90,14 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
             </div>
           </div>
         ) : null}
-        {message ? <p className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm font-bold text-civic">{message}</p> : null}
+        {message ? <p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm font-bold text-civic">{message}</p> : null}
       </section>
 
       <section className="card p-5">
         <h2 className="text-lg font-black">تشخيص الرصد الجديد</h2>
         <p className="mt-1 text-sm text-ink/60">المواد المرصودة لا تظهر في الشريط حتى تُختار وتُنشر في دفعة معتمدة.</p>
         <div className="mt-3 flex gap-2">
-          <input className="input flex-1" value={candidateQuery} onChange={(event) => setCandidateQuery(event.target.value)} placeholder="ابحث بالرابط أو عنوان الناشر" aria-label="البحث عن خبر مرصود" />
+          <SearchField className="flex-1" value={candidateQuery} onChange={(event) => setCandidateQuery(event.target.value)} placeholder="ابحث بالرابط أو عنوان الناشر" label="البحث عن خبر مرصود" />
           <button type="button" className="btn-primary" onClick={() => void loadDiagnostics(candidateQuery)}>بحث</button>
         </div>
         {diagnostics ? <>

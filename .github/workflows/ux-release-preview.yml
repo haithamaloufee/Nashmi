@@ -1,0 +1,41 @@
+name: UX release Preview
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: ux-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview-read-only:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Verify deployed Preview SHA, pages, media and navigation without writes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_PREVIEW_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/ux-release-preview.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ux-preview-read-only-${{ github.event.pull_request.number }}
+          path: test-results/release-preview/
+          if-no-files-found: ignore

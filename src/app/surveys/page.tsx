@@ -25,7 +25,7 @@ export default async function SurveysPage({ searchParams }: { searchParams: Prom
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <span className="rounded-full bg-civic/10 px-3 py-1 text-sm font-black text-civic">استبيانات المجتمع</span>
-          <h1 className="mt-3 text-3xl font-black">نبض المجتمع</h1>
+          <h1 className="mt-3 text-3xl font-black">الاستبيانات</h1>
           <p className="mt-2 max-w-3xl leading-7 text-ink/70 dark:text-slate-300">استبيانات تفاعلية من الأحزاب والجهات الرسمية والمنصة لقياس الرأي والمشاركة المدنية.</p>
         </div>
         <Link href="/updates?filter=surveys" className="rounded border border-line px-4 py-2 text-sm font-bold hover:border-civic hover:text-civic">آخر المستجدات</Link>
@@ -34,7 +34,7 @@ export default async function SurveysPage({ searchParams }: { searchParams: Prom
       <form className="card mb-6 grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_180px_210px_auto]">
         <label className="relative block">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/45" />
-          <input name="search" defaultValue={search} className="w-full rounded border-line ps-10" placeholder="ابحث في الاستبيانات..." />
+          <input name="search" defaultValue={search} type="search" aria-label="ابحث في الاستبيانات..." className="social-search-input w-full ps-10" placeholder="ابحث في الاستبيانات..." />
         </label>
         <select name="filter" defaultValue={filter} aria-label="تصفية الاستبيانات حسب الناشر" className="rounded border-line">
           {filters.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}

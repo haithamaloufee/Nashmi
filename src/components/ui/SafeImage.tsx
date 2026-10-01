@@ -12,9 +12,10 @@ type SafeImageProps = {
   localPrefixes?: string[];
   sizes?: string;
   priority?: boolean;
+  quality?: number;
 };
 
-export default function SafeImage({ src, alt, className, fallback, localPrefixes, sizes = "(max-width: 768px) 100vw, 640px", priority = false }: SafeImageProps) {
+export default function SafeImage({ src, alt, className, fallback, localPrefixes, sizes = "(max-width: 768px) 100vw, 640px", priority = false, quality = 75 }: SafeImageProps) {
   const safeSrc = useMemo(() => normalizeSafeImageUrl(src, { localPrefixes: localPrefixes || ["/images/", "/uploads/"] }), [src, localPrefixes]);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
@@ -29,6 +30,8 @@ export default function SafeImage({ src, alt, className, fallback, localPrefixes
         height={600}
         sizes={sizes}
         priority={priority}
+        fetchPriority={priority ? "high" : undefined}
+        quality={quality}
         unoptimized={safeSrc.startsWith("/api/media/")}
         className={className}
         onError={() => setFailedSrc(safeSrc)}
@@ -42,6 +45,7 @@ export default function SafeImage({ src, alt, className, fallback, localPrefixes
       alt={alt}
       className={className}
       loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : undefined}
       decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setFailedSrc(safeSrc)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -12,15 +12,20 @@ type Props = {
   targetId: string;
   likesCount: number;
   dislikesCount: number;
+  social?: boolean;
+  onCountsChange?: (counts: { like: number; dislike: number }) => void;
 };
 
-export default function ReactionButtons({ targetType, targetId, likesCount, dislikesCount }: Props) {
+export default function ReactionButtons({ targetType, targetId, likesCount, dislikesCount, social = false, onCountsChange }: Props) {
   const { language, t } = useTranslation();
   const [reaction, setReaction] = useState<"like" | "dislike" | null>(null);
   const [counts, setCounts] = useState({ like: likesCount, dislike: dislikesCount });
   const [loginOpen, setLoginOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const lock = useRef(false);
   const { showToast } = useToast();
+  useEffect(() => { setCounts({ like: likesCount, dislike: dislikesCount }); }, [likesCount, dislikesCount]);
+  useEffect(() => { onCountsChange?.(counts); }, [counts, onCountsChange]);
 
   function calculateCounts(current: typeof counts, previous: typeof reaction, next: typeof reaction) {
     const updated = { ...current };
@@ -30,6 +35,8 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
   }
 
   async function send(next: "like" | "dislike" | null) {
+    if (lock.current) return;
+    lock.current = true;
     const previous = reaction;
     const previousCounts = counts;
     const nextCounts = calculateCounts(counts, previous, next);
@@ -44,6 +51,7 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
         body: next ? JSON.stringify({ type: next }) : undefined
       });
       const json = await response.json().catch(() => ({}));
+      lock.current = false;
       setPending(false);
       if (response.status === 401) {
         setReaction(previous);
@@ -61,6 +69,7 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
         setCounts({ like: json.data.likesCount, dislike: json.data.dislikesCount });
       }
     } catch {
+      lock.current = false;
       setPending(false);
       setReaction(previous);
       setCounts(previousCounts);
@@ -69,30 +78,32 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
   }
 
   return (
-    <div className="flex flex-1 flex-wrap items-center gap-2 text-sm">
+    <div className="grid min-w-0 grid-cols-2 items-center gap-1 text-sm">
       <button
         onClick={() => send(reaction === "like" ? null : "like")}
         type="button"
         disabled={pending}
-        className={`inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-95 disabled:opacity-60 dark:hover:bg-emerald-200/10 ${
+        className={`inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-civic/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-95 disabled:opacity-60 dark:hover:bg-emerald-200/10 ${
           reaction === "like" ? "bg-civic/10 text-civic ring-1 ring-civic/20 dark:bg-emerald-200/12 dark:text-emerald-100 dark:ring-emerald-200/25" : "text-slate-600 dark:text-slate-300"
         }`}
         aria-label={t("reaction.like")}
+        aria-pressed={reaction === "like"}
       >
         <ThumbsUp className="h-4 w-4" />
-        {formatNumber(counts.like, language)}
+        {social ? <><span className="hidden sm:inline">{t("reaction.like")}</span><span className="sm:hidden">{formatNumber(counts.like, language)}</span></> : formatNumber(counts.like, language)}
       </button>
       <button
         onClick={() => send(reaction === "dislike" ? null : "dislike")}
         type="button"
         disabled={pending}
-        className={`inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-clay/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay active:scale-95 disabled:opacity-60 dark:hover:bg-amber-300/10 ${
+        className={`inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded px-3 py-2 font-semibold transition hover:bg-clay/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay active:scale-95 disabled:opacity-60 dark:hover:bg-amber-300/10 ${
           reaction === "dislike" ? "bg-clay/10 text-clay ring-1 ring-clay/20 dark:bg-amber-300/12 dark:text-amber-200 dark:ring-amber-200/20" : "text-slate-600 dark:text-slate-300"
         }`}
         aria-label={t("reaction.dislike")}
+        aria-pressed={reaction === "dislike"}
       >
         <ThumbsDown className="h-4 w-4" />
-        {formatNumber(counts.dislike, language)}
+        {social ? <><span className="hidden sm:inline">{t("reaction.dislike")}</span><span className="sm:hidden">{formatNumber(counts.dislike, language)}</span></> : formatNumber(counts.dislike, language)}
       </button>
       <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>

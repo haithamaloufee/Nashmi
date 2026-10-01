@@ -79,15 +79,15 @@ export default async function AdminAuditLogsPage({ searchParams }: { searchParam
             </div>
             <form className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <input name="q" defaultValue={params.q || ""} className="rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900" placeholder="بحث في السجل" />
-              <select name="action" defaultValue={params.action || ""} className="rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900">
+              <select aria-label="الإجراء" name="action" defaultValue={params.action || ""} className="rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900">
                 <option value="">كل الإجراءات</option>
                 {actions.map((action) => <option key={action} value={action}>{actionLabels[action] || action}</option>)}
               </select>
-              <select name="role" defaultValue={params.role || ""} className="rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900">
+              <select aria-label="الدور" name="role" defaultValue={params.role || ""} className="rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900">
                 <option value="">كل الأدوار</option>
                 {roles.map((role) => <option key={role} value={role}>{roleLabels[role] || role}</option>)}
               </select>
-              <select name="target" defaultValue={params.target || ""} className="rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900">
+              <select aria-label="نوع المحتوى" name="target" defaultValue={params.target || ""} className="rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900">
                 <option value="">كل الكيانات</option>
                 {targets.map((target) => <option key={target} value={target}>{target}</option>)}
               </select>
@@ -96,7 +96,7 @@ export default async function AdminAuditLogsPage({ searchParams }: { searchParam
           </div>
         </div>
 
-        <div className="card overflow-auto p-0">
+        <div role="region" aria-label="جدول سجل التدقيق" tabIndex={0} className="card focus-ring overflow-auto p-0">
           <table className="w-full min-w-[1120px] text-sm">
             <thead className="bg-slate-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300">
               <tr className="text-right">
@@ -117,7 +117,7 @@ export default async function AdminAuditLogsPage({ searchParams }: { searchParam
                   <td className="px-4 py-3 font-semibold">{actorName(log)}</td>
                   <td className="px-4 py-3">{roleLabels[log.actorRole] || log.actorRole || "-"}</td>
                   <td className="px-4 py-3"><span className="rounded-full bg-civic/10 px-3 py-1 text-xs font-bold text-civic dark:bg-emerald-200/12 dark:text-emerald-200">{actionLabels[log.action] || log.action}</span></td>
-                  <td className="px-4 py-3">{log.targetType}{log.metadata?.slug ? <p className="mt-1 text-xs text-slate-500">{log.metadata.slug}</p> : null}</td>
+                  <td className="px-4 py-3">{log.targetType}{log.metadata?.slug ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{log.metadata.slug}</p> : null}</td>
                   <td className="max-w-md px-4 py-3 leading-7 text-slate-700 dark:text-slate-200">{describeLog(log)}</td>
                   <td className="px-4 py-3">{log.metadata?.status ? <span className="rounded bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">{log.metadata.status}</span> : "تم"}</td>
                   <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">

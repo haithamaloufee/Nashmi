@@ -1,3 +1,4 @@
+import SearchField from "@/components/ui/SearchField";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
@@ -102,13 +103,8 @@ export default async function AdminModerationPage({ searchParams }: PageProps) {
 
         <form action="/admin/moderation" className="mb-5 grid gap-2 lg:grid-cols-[1fr_180px_auto]">
           <input type="hidden" name="type" value={type} />
-          <input
-            name="q"
-            defaultValue={q}
-            className="rounded border-line"
-            placeholder="ابحث في المنشورات أو التعليقات أو التصويتات..."
-          />
-          <select name="status" defaultValue={status} className="rounded border-line">
+          <SearchField name="q" defaultValue={q} placeholder="ابحث في المنشورات أو التعليقات أو التصويتات..." label="ابحث في المنشورات أو التعليقات أو التصويتات..." />
+          <select aria-label="الحالة" name="status" defaultValue={status} className="rounded border-line">
             {statusOptions(type).map((option) => (
               <option key={option || "all"} value={option}>{statusOptionLabel(option)}</option>
             ))}

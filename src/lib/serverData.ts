@@ -1,3 +1,4 @@
+import { compareFeedItems } from "@/lib/feedPagination";
 import { connectToDatabase } from "@/lib/db";
 import { searchRegex } from "@/lib/arabicSearch";
 import { normalizeHashtag, textHasHashtag } from "@/lib/localization";
@@ -53,10 +54,6 @@ async function getAuthorityAuthor() {
 
 function attachAuthorityAuthor<T extends LeanItem>(items: T[], authorityAuthor: { name: string; logoUrl: string }) {
   return attachPublisherSnapshots(items, authorityAuthor).map((item) => (item.authorType === "iec" ? { ...item, authorityAuthor } : item));
-}
-
-function dateTime(value: unknown) {
-  return new Date(value instanceof Date || typeof value === "string" || typeof value === "number" ? value : 0).getTime();
 }
 
 function shuffleItems<T>(items: T[]) {
@@ -341,7 +338,7 @@ export async function getUpdates(search?: string, filter = "all") {
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
             .populate({ path: "mediaIds", select: "url storageKey mimeType type width height status purpose provider" })
-            .sort({ publishedAt: -1 })
+            .sort({ publishedAt: -1, _id: -1 })
             .limit(12)
             .lean(),
       filter === "posts" || filter === "surveys"
@@ -350,7 +347,7 @@ export async function getUpdates(search?: string, filter = "all") {
             .select("authorType authorUserId partyId publisherSnapshot question description options totalVotes likesCount dislikesCount commentsCount durationDays startsAt endsAt expiresAt status publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-            .sort({ publishedAt: -1 })
+            .sort({ publishedAt: -1, _id: -1 })
             .limit(12)
             .lean(),
       filter === "posts" || filter === "polls"
@@ -359,7 +356,7 @@ export async function getUpdates(search?: string, filter = "all") {
             .select("authorType authorUserId partyId publisherSnapshot title slug description totalResponses startsAt endsAt status resultsVisibility publishedAt createdAt")
             .populate({ path: "authorUserId", select: "name avatarUrl image role" })
             .populate({ path: "partyId", select: "name slug logoUrl isVerified" })
-            .sort({ publishedAt: -1 })
+            .sort({ publishedAt: -1, _id: -1 })
             .limit(12)
             .lean(),
       getAuthorityAuthor()
@@ -377,7 +374,7 @@ export async function getUpdates(search?: string, filter = "all") {
           )
         }))
       ]
-        .sort((a, b) => dateTime(b.publishedAt) - dateTime(a.publishedAt))
+        .sort(compareFeedItems)
         .slice(0, 18)
     );
   });

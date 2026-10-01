@@ -671,7 +671,7 @@ export function ReportModerationForm({ reportId }: { reportId: string }) {
   const api = useApiMessage();
   return (
     <form action={(formData) => api.submit(`/api/admin/reports/${reportId}`, { action: formData.get("action"), reason: formData.get("reason") }, "PATCH")} className="flex flex-wrap gap-2">
-      <select name="action" className="rounded border-line text-sm">
+      <select aria-label="الإجراء" name="action" className="rounded border-line text-sm">
         <option value="dismiss_report">رفض البلاغ</option>
         <option value="hide">إخفاء الهدف</option>
         <option value="delete">حذف ناعم</option>
@@ -690,7 +690,7 @@ export function UserControls({ user }: { user: any }) {
   return (
     <div className="flex flex-wrap gap-2">
       <form action={(formData) => api.submit(`/api/admin/users/${user._id}/status`, { status: formData.get("status") }, "PATCH")} className="flex gap-1">
-        <select name="status" defaultValue={user.status} className="rounded border-line text-xs">
+        <select aria-label="الحالة" name="status" defaultValue={user.status} className="rounded border-line text-xs">
           <option value="active">active</option>
           <option value="disabled">disabled</option>
           <option value="pending">pending</option>
@@ -699,7 +699,7 @@ export function UserControls({ user }: { user: any }) {
         <button className="rounded border border-line px-2 text-xs">حفظ</button>
       </form>
       <form action={(formData) => api.submit(`/api/admin/users/${user._id}/role`, { role: formData.get("role") }, "PATCH")} className="flex gap-1">
-        <select name="role" defaultValue={user.role} className="rounded border-line text-xs">
+        <select aria-label="الدور" name="role" defaultValue={user.role} className="rounded border-line text-xs">
           <option value="citizen">citizen</option>
           <option value="party">party</option>
           <option value="iec">iec</option>
@@ -747,14 +747,14 @@ export function UserCreateForm() {
       <input name="email" type="email" className="w-full rounded border-line" placeholder="البريد الإلكتروني" required />
       <p className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">ستُرسل دعوة إعداد آمنة صالحة لمدة 24 ساعة بدل عرض كلمة مرور أو رابط سري.</p>
       <div className="grid gap-3 md:grid-cols-2">
-        <select name="role" className="rounded border-line">
+        <select aria-label="الدور" name="role" className="rounded border-line">
           <option value="citizen">citizen</option>
           <option value="party">party</option>
           <option value="iec">iec</option>
           <option value="admin">admin</option>
           <option value="super_admin">super_admin</option>
         </select>
-        <select name="status" className="rounded border-line">
+        <select aria-label="الحالة" name="status" className="rounded border-line">
           <option value="active">active</option>
           <option value="pending">pending</option>
           <option value="disabled">disabled</option>

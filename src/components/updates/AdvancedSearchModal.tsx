@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
+import { useDialog } from "@/lib/useDialog";
 import { Hash, RotateCcw, X } from "lucide-react";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import type { TranslationKey } from "@/lib/i18n";
@@ -45,27 +46,7 @@ export default function AdvancedSearchModal({
   const titleId = useId();
   const panelRef = useRef<HTMLFormElement | null>(null);
 
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const focusTimer = window.setTimeout(() => panelRef.current?.focus(), 0);
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose, open]);
+  useDialog(open, panelRef, onClose);
 
   if (!open) return null;
 

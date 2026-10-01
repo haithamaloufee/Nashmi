@@ -45,6 +45,7 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
     <SafeImage
       src={publisher?.imageUrl || null}
       alt={publisher?.name || t("content.survey")}
+      sizes="44px"
       className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line dark:bg-slate-900"
       fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-clay/10 text-lg font-bold text-clay ring-1 ring-line dark:bg-amber-200/10 dark:text-amber-100">{(publisher?.name || t("content.survey")).slice(0, 1)}</div>}
       localPrefixes={["/uploads/", "/images/", "/related/"]}
@@ -52,7 +53,7 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
   );
 
   return (
-    <article className="card card-hover overflow-visible bg-white p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+    <article className="card feed-card overflow-visible bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           {publisher?.href ? (
@@ -71,21 +72,21 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
               ) : (
                 <h3 className="font-bold">{publisher?.name || t("content.survey")}</h3>
               )}
-              {publisher?.badge ? <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{publisher.badge}</span> : null}
+              {publisher?.badge ? <span className="sr-only">{publisher.badge}</span> : null}
               <span className="inline-flex items-center gap-1 rounded-full bg-clay/10 px-2.5 py-1 text-xs font-black text-clay dark:bg-amber-200/10 dark:text-amber-100">
                 <ClipboardList className="h-3.5 w-3.5" />
                 {t("survey.badge")}
               </span>
               <SurveyStatusBadge status={survey.lifecycleStatus || survey.status} />
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400" data-visual-dynamic>
               {timeReady && publishedAt ? formatRelativeTime(publishedAt, language) : ""}
             </p>
           </div>
         </div>
       </div>
 
-      <h3 className="text-lg font-black leading-8 text-slate-950 dark:text-white">{survey.title}</h3>
+      <h3 className="text-base font-bold leading-7 text-slate-950 dark:text-white">{survey.title}</h3>
       {survey.description ? <p className="mt-2 line-clamp-3 whitespace-pre-line break-words leading-7 text-slate-700 dark:text-slate-300">{survey.description}</p> : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-slate-200 py-3 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
@@ -102,7 +103,7 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
       </div>
 
       {href ? (
-        <Link href={href} className="mt-4 inline-flex items-center gap-2 rounded bg-civic px-4 py-2 text-sm font-bold text-white hover:bg-civic/90">
+        <Link href={href} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-civic/10 px-4 py-2 text-sm font-bold text-civic hover:bg-civic/20">
           {isOpen ? t("survey.participate") : t("survey.view")}
           <ArrowLeft className="h-4 w-4" />
         </Link>

@@ -1,0 +1,48 @@
+{
+  "license": "https://www.pexels.com/license/",
+  "checkedOn": "2026-10-01",
+  "scope": "Only isolated loopback QA. Illustrative stock media; no publisher endorsement or real news claim.",
+  "assets": [
+    {
+      "file": "amman.jpg",
+      "type": "image",
+      "creator": "AXP Photography",
+      "page": "https://www.pexels.com/photo/cityscape-of-amman-city-in-jordan-18717618/",
+      "download": "https://images.pexels.com/photos/18717618/pexels-photo-18717618.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "alt": "منظر توضيحي لمدينة عمّان"
+    },
+    {
+      "file": "citadel.jpg",
+      "type": "image",
+      "creator": "AXP Photography",
+      "page": "https://www.pexels.com/photo/amman-cityscape-with-citadel-ruins-18717637/",
+      "download": "https://images.pexels.com/photos/18717637/pexels-photo-18717637.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "alt": "آثار القلعة وأفق عمّان، صورة توضيحية"
+    },
+    {
+      "file": "library.jpg",
+      "type": "image",
+      "creator": "Element5 Digital",
+      "page": "https://www.pexels.com/photo/bookshelves-in-the-library-1370292/",
+      "download": "https://images.pexels.com/photos/1370292/pexels-photo-1370292.jpeg?auto=compress&cs=tinysrgb&w=900",
+      "alt": "رفوف كتب في مكتبة، صورة توضيحية غير منسوبة إلى مكان محلي"
+    },
+    {
+      "file": "forest.mp4",
+      "type": "video",
+      "creator": "Kaboompics",
+      "page": "https://www.pexels.com/video/close-up-shot-of-a-tree-bark-4211174/",
+      "download": "https://videos.pexels.com/video-files/4211174/4211174-sd_640_360_30fps.mp4",
+      "alt": "لقطة توضيحية قصيرة من الطبيعة، ليست خبرًا محليًا",
+      "durationSeconds": 19
+    },
+    {
+      "file": "forest-poster.jpg",
+      "type": "image",
+      "creator": "Kaboompics",
+      "page": "https://www.pexels.com/video/close-up-shot-of-a-tree-bark-4211174/",
+      "download": "https://images.pexels.com/videos/4211174/pexels-photo-4211174.jpeg?auto=compress&dpr=1&w=960",
+      "alt": "صورة توضيحية مصغرة لفيديو الطبيعة"
+    }
+  ]
+}

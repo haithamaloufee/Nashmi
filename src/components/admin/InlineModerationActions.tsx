@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useClientUser } from "@/lib/useClientUser";
 import { MoreHorizontal } from "lucide-react";
 import DropdownMenu from "@/components/ui/DropdownMenu";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -22,41 +23,18 @@ const actionOptions: Record<TargetType, ActionType[]> = {
   comment: ["hide", "delete", "restore"]
 };
 
-let adminStatusPromise: Promise<boolean> | null = null;
-
-async function fetchIsAdmin() {
-  if (!adminStatusPromise) {
-    adminStatusPromise = fetch("/api/auth/me", { cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) return false;
-        const json = await response.json().catch(() => null);
-        return Boolean(json?.data?.user?.role === "admin" || json?.data?.user?.role === "super_admin");
-      })
-      .catch(() => false);
-  }
-  return adminStatusPromise;
-}
-
 type Props = {
   targetType: TargetType;
   targetId: string;
 };
 
 export default function InlineModerationActions({ targetType, targetId }: Props) {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const user = useClientUser();
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    let active = true;
-    void fetchIsAdmin().then((value) => {
-      if (active) setIsAdmin(value);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   async function handleAction(action: ActionType) {
     const confirmText: Record<ActionType, string> = {

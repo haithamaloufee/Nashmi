@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MessageSquare } from "lucide-react";
+import { Send, UserRound } from "lucide-react";
+import { useClientUser } from "@/lib/useClientUser";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
-import { useToast } from "@/components/ui/ToastProvider";
 import ReportButton from "@/components/reports/ReportButton";
 import SafeImage from "@/components/ui/SafeImage";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
@@ -71,13 +71,23 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const submitLock = useRef(false);
-  const { showToast } = useToast();
+  const user = useClientUser();
+
+  useEffect(() => {
+    const textarea = composerRef.current;
+    if (!textarea || !expanded) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(144, Math.max(44, textarea.scrollHeight))}px`;
+    textarea.style.overflowY = textarea.scrollHeight > 144 ? "auto" : "hidden";
+  }, [content, expanded]);
 
   const loadComments = useCallback(async (cursor?: string | null) => {
     setLoading(true);
+    setLoadError("");
     const params = new URLSearchParams({ limit: "3" });
     if (cursor) params.set("cursor", cursor);
     try {
@@ -86,7 +96,7 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
       setLoading(false);
       setLoaded(true);
       if (!json.ok) {
-        showToast(json.error?.message || t("common.error"), "error");
+        setLoadError(json.error?.message || t("common.error"));
         return;
       }
       setComments((current) => {
@@ -98,9 +108,9 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
     } catch {
       setLoading(false);
       setLoaded(true);
-      showToast(t("common.error"), "error");
+      setLoadError(t("common.connectionFailed"));
     }
-  }, [showToast, t, targetId, targetType]);
+  }, [t, targetId, targetType]);
 
   useEffect(() => {
     if (expanded && !loaded && !loading) void loadComments();
@@ -164,15 +174,19 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
   if (!expanded) return null;
 
   return (
-    <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
-      <div className="flex flex-col gap-2 sm:flex-row">
+    <div id={"comments-" + targetId} className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+      <div className="flex items-start gap-2">
+        <SafeImage src={user?.avatarUrl || user?.image} alt={user?.name || t("comments.you")} className="h-9 w-9 shrink-0 rounded-full object-cover" sizes="36px" localPrefixes={["/uploads/", "/images/"]} fallback={<span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-civic/10 text-civic"><UserRound aria-hidden="true" className="h-5 w-5" /></span>} />
+        <div className="comment-composer flex min-w-0 flex-1 items-end rounded-[24px]">
         <textarea
           ref={composerRef}
           value={content}
           onChange={(event) => setContent(event.target.value)}
           disabled={submitting}
-          className="min-h-11 flex-1 resize-y rounded border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
-          rows={2}
+          className="min-h-11 min-w-0 flex-1 resize-none border-0 bg-transparent px-4 py-3 text-sm leading-5 shadow-none focus:ring-0"
+          rows={1}
+          aria-describedby={"comment-hint-" + targetId}
+          onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void submit(); } }}
           maxLength={1000}
           placeholder={t("comments.write")}
           aria-label={t("comments.ariaWrite")}
@@ -180,13 +194,16 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
         <button
           onClick={submit}
           disabled={!content.trim() || submitting}
-          className="inline-flex h-11 min-w-24 items-center justify-center gap-2 rounded bg-civic px-3 text-sm font-semibold text-white transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+          className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-full text-civic hover:bg-civic/10 disabled:opacity-40"
           type="button"
+          aria-label={t("comments.label")}
         >
-          <MessageSquare className="h-4 w-4" />
-          {t("comments.label")}
+          <Send aria-hidden="true" className="h-5 w-5 rtl:rotate-180" />
         </button>
+        </div>
       </div>
+<p id={"comment-hint-" + targetId} className="sr-only">{t("social.commentHint")}</p>
+      {loadError ? <div role="alert" className="mt-3 text-sm text-red-700 dark:text-red-200"><p>{loadError}</p><button type="button" onClick={() => void loadComments(nextCursor)} className="focus-ring min-h-11 rounded px-2 font-bold text-civic">{t("social.retry")}</button></div> : null}
       {submitError ? <p role="alert" className="mt-2 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">{submitError}</p> : null}
 
       <div className="mt-4 space-y-3">
@@ -196,9 +213,9 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
             <div className="skeleton h-16 rounded" />
           </div>
         ) : null}
-        {loaded && comments.length === 0 ? <p className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300">{t("comments.empty")}</p> : null}
+        {loaded && !loadError && comments.length === 0 ? <p className="rounded border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300">{t("comments.empty")}</p> : null}
         {comments.map((comment) => (
-          <div key={comment._id} className={`rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 ${comment.pending ? "opacity-75" : ""}`}>
+          <div key={comment._id} data-comment={comment._id} className={`text-slate-900 dark:text-slate-100 ${comment.pending ? "opacity-75" : ""}`}>
             <div className="flex items-start gap-3">
               {authorProfile(comment) ? (
                 <Link href={authorProfile(comment) || "#"} className="focus-ring shrink-0 rounded-full" aria-label={authorName(comment, t("comments.user"))}>
@@ -222,6 +239,7 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
                 />
               )}
               <div className="min-w-0 flex-1">
+                <div className="comment-bubble w-fit max-w-full px-3 py-2">
                 <div className="flex flex-wrap items-center gap-2">
                   {authorProfile(comment) ? (
                     <Link href={authorProfile(comment) || "#"} className="focus-ring rounded font-semibold text-slate-900 hover:text-civic hover:underline dark:text-white dark:hover:text-emerald-200">
@@ -230,10 +248,11 @@ export default function CommentBox({ targetType, targetId, expanded, showModerat
                   ) : (
                     <span className="font-semibold text-slate-900 dark:text-white">{authorName(comment, t("comments.user"))}</span>
                   )}
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{comment.pending ? t("comments.pending") : formatDate(comment.createdAt, language, { dateStyle: "medium", timeStyle: "short" }) || t("comments.now")}</span>
                   {comment.failed ? <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-950/45 dark:text-red-200">{t("comments.failed")}</span> : null}
                 </div>
-                <p className="mt-1 whitespace-pre-line break-words text-sm leading-7 text-slate-800 dark:text-slate-200">{comment.content}</p>
+                <p className="mt-0.5 whitespace-pre-line break-words text-sm leading-6 text-slate-800 dark:text-slate-200">{comment.content}</p>
+                </div>
+                <span className="mt-1 block px-3 text-xs text-ink/60">{comment.pending ? t("comments.pending") : formatDate(comment.createdAt, language, { dateStyle: "medium", timeStyle: "short" }) || t("comments.now")}</span>
               </div>
               {!comment.pending ? (
                 <div className="flex shrink-0 items-center gap-1">

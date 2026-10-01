@@ -35,7 +35,11 @@ export default function NavbarPrefetcher({ routes }: NavbarPrefetcherProps) {
       router.prefetch(route);
     }
 
-    const cancelIdle = onIdle(() => {
+    // On touch/mobile or constrained connections, preload only after intent.
+    // Fetching every full route during hydration competes with the feed itself.
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    const constrained = window.matchMedia("(max-width: 1023px), (pointer: coarse)").matches || connection?.saveData || /^(slow-2g|2g|3g)$/.test(connection?.effectiveType || "");
+    const cancelIdle = constrained ? () => {} : onIdle(() => {
       publicRoutes.slice(0, maxIdlePrefetches).forEach(prefetch);
     });
 

@@ -38,9 +38,9 @@ export default function PasswordActionForm({ token, kind }: { token: string; kin
           <p className="text-sm leading-7 text-ink/70 dark:text-slate-300">{en ? "Use at least 12 characters with uppercase and lowercase letters, a number, and a symbol." : "استخدم 12 حرفًا على الأقل، مع حرف كبير وصغير ورقم ورمز."}</p>
           <label className="block space-y-2"><span className="font-semibold">{en ? "New password" : "كلمة المرور الجديدة"}</span><span className="relative block"><input name="password" type={visible ? "text" : "password"} autoComplete="new-password" required className="w-full rounded-xl border-line pe-12" /><button type="button" onClick={() => setVisible((value) => !value)} className="absolute inset-y-0 end-2 grid w-10 place-items-center" aria-label={visible ? "Hide password" : "Show password"}>{visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></span></label>
           <label className="block space-y-2"><span className="font-semibold">{en ? "Confirm password" : "تأكيد كلمة المرور"}</span><input name="confirmation" type={visible ? "text" : "password"} autoComplete="new-password" required className="w-full rounded-xl border-line" /></label>
-          {message ? <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800" role="alert">{message}</p> : null}
+          {message ? <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-200" role="alert">{message}</p> : null}
           <button disabled={loading || !token} className="min-h-11 w-full rounded-xl bg-civic px-5 font-bold text-white disabled:opacity-50">{loading ? (en ? "Saving…" : "جارٍ الحفظ…") : (en ? "Save password" : "حفظ كلمة المرور")}</button>
-          {!token ? <p className="text-sm text-red-700">{en ? "This link is incomplete or has expired. Request a new one." : "هذا الرابط غير مكتمل أو انتهت صلاحيته. اطلب رابطًا جديدًا."}</p> : null}
+          {!token ? <p className="text-sm text-red-700 dark:text-red-200">{en ? "This link is incomplete or has expired. Request a new one." : "هذا الرابط غير مكتمل أو انتهت صلاحيته. اطلب رابطًا جديدًا."}</p> : null}
         </form>
       )}
     </section>
