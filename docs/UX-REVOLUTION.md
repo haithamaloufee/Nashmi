@@ -1,5 +1,7 @@
 # Nashmi UX Revolution — execution record
 
+> Historical Phase 1 record. Phase 1 is now committed (`0eeb505`, `c47a9a8`, `79aac7a`), and native Playwright MCP became available during Phase 2. Current navigation, validation and remaining limits are in [UX-PHASE-2.md](UX-PHASE-2.md) and [the Arabic Phase 2 report](UX-PHASE-2-REPORT-AR.md). Historical counts and snapshots below retain their original scope.
+
 Started 2026-10-01, Asia/Amman. Work is local on Windows 11 Pro (10.0.26200).
 
 ## Isolation

@@ -1,0 +1,539 @@
+{
+  "scope": "Local loopback production build; Lighthouse 13.5.0 simulated defaults; observed insight subparts are unthrottled, not the simulated LCP decomposition. No production field data.",
+  "batches": [
+    {
+      "phase": "rich-before",
+      "runs": [
+        {
+          "report": "desktop-1.report.json",
+          "device": "desktop",
+          "performance": 98,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1136.2447000000002,
+          "tbtMs": 0,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 42.779,
+            "resourceLoadDelay": 215.921,
+            "resourceLoadDuration": 13.521,
+            "elementRenderDelay": 654.267
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 203343,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "desktop-2.report.json",
+          "device": "desktop",
+          "performance": 97,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1214.6178999999997,
+          "tbtMs": 2.9999999999998863,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 67.233,
+            "resourceLoadDelay": 179.758,
+            "resourceLoadDuration": 25.136,
+            "elementRenderDelay": 587.714
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 203343,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "desktop-3.report.json",
+          "device": "desktop",
+          "performance": 98,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1138.9551,
+          "tbtMs": 0,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 61.00299987792969,
+            "resourceLoadDelay": 225.27000012207031,
+            "resourceLoadDuration": 18.39,
+            "elementRenderDelay": 608.663
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 203343,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "mobile-1.report.json",
+          "device": "mobile",
+          "performance": 62,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 6194.171549999999,
+          "tbtMs": 631.999999999999,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 82.89700012207031,
+            "resourceLoadDelay": 283.0689998779297,
+            "resourceLoadDuration": 397.784,
+            "elementRenderDelay": 254.312
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 194276,
+          "ammanImageBytes": 86162
+        },
+        {
+          "report": "mobile-2.report.json",
+          "device": "mobile",
+          "performance": 65,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5635.653000000002,
+          "tbtMs": 548.6735000000001,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 132.232,
+            "resourceLoadDelay": 246.217,
+            "resourceLoadDuration": 13.22,
+            "elementRenderDelay": 787.203
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 194276,
+          "ammanImageBytes": 86161
+        },
+        {
+          "report": "mobile-3.report.json",
+          "device": "mobile",
+          "performance": 61,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5645.193300000001,
+          "tbtMs": 770,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 67.4579998779297,
+            "resourceLoadDelay": 331.9430001220703,
+            "resourceLoadDuration": 17.799,
+            "elementRenderDelay": 611.998
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 194276,
+          "ammanImageBytes": 86161
+        }
+      ],
+      "summary": [
+        {
+          "device": "mobile",
+          "runs": 3,
+          "medianLcpMs": 5645.193300000001,
+          "medianPerformance": 62,
+          "medianTbtMs": 631.999999999999
+        },
+        {
+          "device": "desktop",
+          "runs": 3,
+          "medianLcpMs": 1138.9551,
+          "medianPerformance": 98,
+          "medianTbtMs": 0
+        }
+      ]
+    },
+    {
+      "phase": "rich-after",
+      "runs": [
+        {
+          "report": "desktop-1.report.json",
+          "device": "desktop",
+          "performance": 98,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1079.5513000000003,
+          "tbtMs": 0,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 57.243,
+            "resourceLoadDelay": 21.811,
+            "resourceLoadDuration": 126.85,
+            "elementRenderDelay": 516.051
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 199748,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "desktop-2.report.json",
+          "device": "desktop",
+          "performance": 99,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1018.3964,
+          "tbtMs": 5,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 58.848999877929685,
+            "resourceLoadDelay": 27.368000122070313,
+            "resourceLoadDuration": 25.737,
+            "elementRenderDelay": 545.022
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 199748,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "desktop-3.report.json",
+          "device": "desktop",
+          "performance": 98,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1088.7631999999999,
+          "tbtMs": 7,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 84.591,
+            "resourceLoadDelay": 46.197,
+            "resourceLoadDuration": 67.929,
+            "elementRenderDelay": 555.432
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 199748,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "mobile-1.report.json",
+          "device": "mobile",
+          "performance": 73,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5603.833499999999,
+          "tbtMs": 284,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 160.136,
+            "resourceLoadDelay": 39.755,
+            "resourceLoadDuration": 403.431,
+            "elementRenderDelay": 419.572
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 190659,
+          "ammanImageBytes": 73412
+        },
+        {
+          "report": "mobile-2.report.json",
+          "device": "mobile",
+          "performance": 64,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5199.2113,
+          "tbtMs": 671,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 70.728,
+            "resourceLoadDelay": 69.407,
+            "resourceLoadDuration": 43.545,
+            "elementRenderDelay": 579.87
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 190659,
+          "ammanImageBytes": 73411
+        },
+        {
+          "report": "mobile-3.report.json",
+          "device": "mobile",
+          "performance": 70,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5113.8195,
+          "tbtMs": 463.99999999999955,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 69.13,
+            "resourceLoadDelay": 37.672,
+            "resourceLoadDuration": 24.686,
+            "elementRenderDelay": 595.751
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 190659,
+          "ammanImageBytes": 73411
+        }
+      ],
+      "summary": [
+        {
+          "device": "mobile",
+          "runs": 3,
+          "medianLcpMs": 5199.2113,
+          "medianPerformance": 70,
+          "medianTbtMs": 463.99999999999955
+        },
+        {
+          "device": "desktop",
+          "runs": 3,
+          "medianLcpMs": 1079.5513000000003,
+          "medianPerformance": 98,
+          "medianTbtMs": 5
+        }
+      ]
+    },
+    {
+      "phase": "rich-final",
+      "runs": [
+        {
+          "report": "desktop-1.report.json",
+          "device": "desktop",
+          "performance": 98,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1068.0319999999997,
+          "tbtMs": 5.999999999999886,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 65.211,
+            "resourceLoadDelay": 27.938,
+            "resourceLoadDuration": 38.343,
+            "elementRenderDelay": 601.285
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 191220,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "desktop-2.report.json",
+          "device": "desktop",
+          "performance": 98,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1080.6433,
+          "tbtMs": 38,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 48.183,
+            "resourceLoadDelay": 28.112,
+            "resourceLoadDuration": 24.06,
+            "elementRenderDelay": 584.567
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 191220,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "desktop-3.report.json",
+          "device": "desktop",
+          "performance": 99,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1035.043,
+          "tbtMs": 0,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 77.43,
+            "resourceLoadDelay": 23.435,
+            "resourceLoadDuration": 29.218,
+            "elementRenderDelay": 675.465
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 191220,
+          "ammanImageBytes": null
+        },
+        {
+          "report": "mobile-1.report.json",
+          "device": "mobile",
+          "performance": 74,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5417.0605,
+          "tbtMs": 279.99999999999955,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 354.812,
+            "resourceLoadDelay": 80.916,
+            "resourceLoadDuration": 285.004,
+            "elementRenderDelay": 600.166
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 182100,
+          "ammanImageBytes": 73411
+        },
+        {
+          "report": "mobile-2.report.json",
+          "device": "mobile",
+          "performance": 76,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5283.0795,
+          "tbtMs": 237.00000000000034,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 125.998,
+            "resourceLoadDelay": 39.643,
+            "resourceLoadDuration": 28.888,
+            "elementRenderDelay": 678.28
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 182100,
+          "ammanImageBytes": 73411
+        },
+        {
+          "report": "mobile-3.report.json",
+          "device": "mobile",
+          "performance": 69,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5335.738599999999,
+          "tbtMs": 456,
+          "cls": 0,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 46.85,
+            "resourceLoadDelay": 28.759,
+            "resourceLoadDuration": 38.247,
+            "elementRenderDelay": 579.806
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 182100,
+          "ammanImageBytes": 73411
+        }
+      ],
+      "summary": [
+        {
+          "device": "mobile",
+          "runs": 3,
+          "medianLcpMs": 5335.738599999999,
+          "medianPerformance": 74,
+          "medianTbtMs": 279.99999999999955
+        },
+        {
+          "device": "desktop",
+          "runs": 3,
+          "medianLcpMs": 1068.0319999999997,
+          "medianPerformance": 98,
+          "medianTbtMs": 5.999999999999886
+        }
+      ]
+    },
+    {
+      "phase": "rich-toolbar",
+      "runs": [
+        {
+          "report": "desktop-1.report.json",
+          "device": "desktop",
+          "performance": 99,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1036.4595,
+          "tbtMs": 19,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 118.828,
+            "resourceLoadDelay": 27.808,
+            "resourceLoadDuration": 23.908,
+            "elementRenderDelay": 669.742
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 191223
+        },
+        {
+          "report": "desktop-2.report.json",
+          "device": "desktop",
+          "performance": 98,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1036.4074,
+          "tbtMs": 24,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 91.181,
+            "resourceLoadDelay": 24.226,
+            "resourceLoadDuration": 19.412,
+            "elementRenderDelay": 916.006
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 191223
+        },
+        {
+          "report": "desktop-3.report.json",
+          "device": "desktop",
+          "performance": 99,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 1034.7535,
+          "tbtMs": 35,
+          "cls": 1.721582855879111e-05,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 53.81000012207031,
+            "resourceLoadDelay": 22.521999877929687,
+            "resourceLoadDuration": 24.009,
+            "elementRenderDelay": 727.579
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 191223
+        },
+        {
+          "report": "mobile-1.report.json",
+          "device": "mobile",
+          "performance": 70,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5419.0399,
+          "tbtMs": 401.9999999999999,
+          "cls": 0,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 140.4569998779297,
+            "resourceLoadDelay": 44.566000122070314,
+            "resourceLoadDuration": 186.999,
+            "elementRenderDelay": 437.129
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 182103
+        },
+        {
+          "report": "mobile-2.report.json",
+          "device": "mobile",
+          "performance": 76,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5334.2261,
+          "tbtMs": 222.99999999999955,
+          "cls": 0.0001033526050504461,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 108.90199987792968,
+            "resourceLoadDelay": 34.10100012207031,
+            "resourceLoadDuration": 16.479,
+            "elementRenderDelay": 512.172
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 182103
+        },
+        {
+          "report": "mobile-3.report.json",
+          "device": "mobile",
+          "performance": 72,
+          "accessibility": 100,
+          "bestPractices": 100,
+          "simulatedLcpMs": 5339.127300000001,
+          "tbtMs": 355.00000000000045,
+          "cls": 0,
+          "observedUnthrottledSubpartsMs": {
+            "timeToFirstByte": 135.317,
+            "resourceLoadDelay": 56.053,
+            "resourceLoadDuration": 41.254,
+            "elementRenderDelay": 579.398
+          },
+          "lcpSelector": "article.card > div.post-media > button.focus-ring > img.h-full",
+          "transferredScriptsBytes": 182103
+        }
+      ],
+      "summary": [
+        {
+          "device": "mobile",
+          "runs": 3,
+          "medianLcpMs": 5339.127300000001,
+          "medianPerformance": 72,
+          "medianTbtMs": 355.00000000000045
+        },
+        {
+          "device": "desktop",
+          "runs": 3,
+          "medianLcpMs": 1036.4074,
+          "medianPerformance": 99,
+          "medianTbtMs": 24
+        }
+      ]
+    }
+  ]
+}
