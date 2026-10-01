@@ -13,6 +13,7 @@ import Survey from "../src/models/Survey";
 import Law from "../src/models/Law";
 import AuthorityProfile from "../src/models/AuthorityProfile";
 import { createSearchText } from "../src/lib/arabicSearch";
+import { seedSocialFixtures } from "./ux-social-fixtures";
 
 // No dotenv: this harness deliberately never loads the user's environment files.
 async function main() {
@@ -36,9 +37,10 @@ async function main() {
   await Poll.create({ authorType: "party", authorUserId: actors.party._id, partyId: party._id, question: "أي موضوع ترغب في فهمه أكثر؟", description: "تصويت اختبار محلي", options: [{ text: "التعليم" }, { text: "الخدمات" }], endsAt: new Date("2027-01-01"), status: "active", publishedAt: new Date(referenceTime - 90_000) });
   await Survey.create({ title: "استبيان مدني تجريبي", slug: "qa-survey", description: "استبيان محلي للاختبار", authorType: "party", authorUserId: actors.party._id, partyId: party._id, status: "published", publishedAt: new Date(referenceTime - 150_000), endsAt: new Date("2027-01-01"), questions: [{ title: "ما رأيك بوضوح المعلومات؟", type: "RATING", required: true, order: 0 }] });
   await Law.create({ title: "مادة قانونية تجريبية", slug: "qa-law", category: "الأحزاب", sourceName: "اختبار محلي", sourceType: "official", shortDescription: "بيانات عرض اصطناعية", simplifiedExplanation: "شرح لا يمثل استشارة قانونية ويستخدم لاختبار الواجهة فقط.", createdByUserId: actors.iec._id, status: "published" });
+  const previewPostId = process.argv.includes("--social") ? await seedSocialFixtures(party._id, actors.party._id, passwordHash) : posts[0]._id;
   await mongoose.disconnect();
   mkdirSync("test-results", { recursive: true });
-  writeFileSync("test-results/qa-fixtures.json", JSON.stringify({ citizenId: String(actors.citizen._id), partySlug: party.slug, postId: String(posts[0]._id), password }, null, 2));
+  writeFileSync("test-results/qa-fixtures.json", JSON.stringify({ citizenId: String(actors.citizen._id), partySlug: party.slug, postId: String(previewPostId), password }, null, 2));
   const env: NodeJS.ProcessEnv = { NODE_ENV: process.argv.includes("--production") || process.argv.includes("--build") ? "production" : "development" };
   for (const key of ["PATH", "Path", "SystemRoot", "WINDIR", "TEMP", "TMP", "USERPROFILE", "LOCALAPPDATA", "APPDATA", "COMSPEC", "ComSpec", "PATHEXT"]) if (process.env[key]) env[key] = process.env[key];
   Object.assign(env, { MONGODB_URI: uri, JWT_SECRET: randomBytes(48).toString("hex"), RATE_LIMIT_SECRET: randomBytes(48).toString("hex"), NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3020", APP_URL: "http://127.0.0.1:3020", NEXT_TELEMETRY_DISABLED: "1", NEWS_AUTO_PUBLISH: "false", MONGODB_SERVER_SELECTION_TIMEOUT_MS: "3000" });
