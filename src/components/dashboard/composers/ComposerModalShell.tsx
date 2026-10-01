@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useDialog } from "@/lib/useDialog";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import type { TranslationKey } from "@/lib/i18n";
@@ -17,6 +18,7 @@ type ComposerModalShellProps = {
 export default function ComposerModalShell({ open, titleKey, dirty, onClose, onBack, children }: ComposerModalShellProps) {
   const { dir, t } = useTranslation();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
   const [showDiscardPrompt, setShowDiscardPrompt] = useState(false);
   const [discardAction, setDiscardAction] = useState<"close" | "back">("close");
 
@@ -39,29 +41,8 @@ export default function ComposerModalShell({ open, titleKey, dirty, onClose, onB
     onBack();
   }, [dirty, onBack]);
 
-  useEffect(() => {
-    if (!open) {
-      setShowDiscardPrompt(false);
-      setDiscardAction("close");
-      return undefined;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        requestClose();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open, requestClose]);
+  useDialog(open, panelRef, requestClose);
+  useEffect(() => { if (!open) { setShowDiscardPrompt(false); setDiscardAction("close"); } }, [open]);
 
   if (!open) return null;
 
@@ -75,6 +56,8 @@ export default function ComposerModalShell({ open, titleKey, dirty, onClose, onB
       }}
     >
       <div
+        ref={panelRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

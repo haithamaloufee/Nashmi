@@ -297,7 +297,7 @@ export default function MediaUploadField({
             </div>
           </div>
         </div>
-        <input ref={inputRef} type="file" accept={imagesOnly ? imageAccept : mediaAccept} className="sr-only" onChange={(event) => void upload(event.target.files?.[0])} disabled={uploading} />
+        <input ref={inputRef} aria-label={label} type="file" accept={imagesOnly ? imageAccept : mediaAccept} className="sr-only" onChange={(event) => void upload(event.target.files?.[0])} disabled={uploading} />
       </div>
     </div>
   );

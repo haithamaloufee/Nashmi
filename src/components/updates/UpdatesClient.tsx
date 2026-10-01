@@ -1,26 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Bot, Compass, Loader2, Search, SlidersHorizontal } from "lucide-react";
+import { Home, Landmark, BookOpen, BarChart3, Info, Bot, Compass, Loader2, Search, SlidersHorizontal } from "lucide-react";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
 import SurveyFeedCard from "@/components/surveys/SurveyFeedCard";
 import type { PublisherComposerProfile } from "@/components/dashboard/composers/types";
 import { PostCardSkeleton, SidebarSkeleton } from "@/components/ui/Skeletons";
-import { useToast } from "@/components/ui/ToastProvider";
+import { useSocialFeed, type UpdateItem } from "./useSocialFeed";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { extractHashtags, formatNumber, normalizeHashtag } from "@/lib/localization";
 
 const AdvancedSearchModal = dynamic(() => import("@/components/updates/AdvancedSearchModal"), { ssr: false });
 const UpdatesPublishButton = dynamic(() => import("@/components/updates/UpdatesPublishButton"), { ssr: false });
-
-type UpdateItem = { type: "post" | "poll" | "survey"; publishedAt: string; item: any };
-
-const pageSize = 10;
-const refreshIntervalMs = 45000;
-
 const filters = ["all", "posts", "polls", "surveys", "iec", "parties"] as const;
 const quickFilters = ["all", "posts", "polls", "surveys"] as const;
 const sortOptions = ["newest", "oldest", "mostCommented", "mostLiked", "pollsEndingSoon"] as const;
@@ -41,36 +35,6 @@ const sortLabelKeys = {
 } as const;
 const advancedFilterOptions = filters.map((value) => ({ value, labelKey: filterLabelKeys[value] }));
 
-function updateKey(update: UpdateItem) {
-  return `${update.type}-${update.item?._id || update.publishedAt}`;
-}
-
-function appendUnique(current: UpdateItem[], incoming: UpdateItem[]) {
-  const seen = new Set(current.map(updateKey));
-  return [
-    ...current,
-    ...incoming.filter((update) => {
-      const key = updateKey(update);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-  ];
-}
-
-function prependUnique(current: UpdateItem[], incoming: UpdateItem[]) {
-  const seen = new Set(current.map(updateKey));
-  return [
-    ...incoming.filter((update) => {
-      const key = updateKey(update);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    }),
-    ...current
-  ].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-}
-
 export default function UpdatesClient({
   initialSearch = "",
   initialFilter = "all",
@@ -83,144 +47,8 @@ export default function UpdatesClient({
   publisher?: PublisherComposerProfile | null;
 }) {
   const { language, t } = useTranslation();
-  const [search, setSearch] = useState(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
-  const [filter, setFilter] = useState(initialFilter);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [hashtag, setHashtag] = useState("");
-  const [sort, setSort] = useState("newest");
-  const [updates, setUpdates] = useState<UpdateItem[]>(initialUpdates);
-  const [totalCount, setTotalCount] = useState(initialUpdates.length);
-  const [nextCursor, setNextCursor] = useState<string | null>(initialUpdates.length >= pageSize ? initialUpdates[initialUpdates.length - 1]?.publishedAt || null : null);
-  const [loading, setLoading] = useState(initialUpdates.length === 0);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const { ready, search, setSearch, debouncedSearch, filter, setFilter, fromDate, setFromDate, toDate, setToDate, hashtag, setHashtag, sort, setSort, updates, totalCount, nextCursor, loading, loadingMore, error, load, sentinelRef, pendingUpdates, showPending } = useSocialFeed(initialUpdates, initialSearch, initialFilter, t("common.connectionFailed"));
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
-  const prefetchedPage = useRef<{ key: string; updates: UpdateItem[]; nextCursor: string | null } | null>(null);
-  const loadingMoreInFlightRef = useRef(false);
-  const { showToast } = useToast();
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 350);
-    return () => window.clearTimeout(timeout);
-  }, [search]);
-
-  const buildParams = useCallback((cursor?: string | null, since?: string | null) => {
-    const params = new URLSearchParams({ limit: String(pageSize), filter, sort });
-    if (debouncedSearch) params.set("search", debouncedSearch);
-    if (fromDate) params.set("from", fromDate);
-    if (toDate) params.set("to", toDate);
-    if (hashtag.trim()) params.set("hashtag", normalizeHashtag(hashtag));
-    if (cursor) params.set("cursor", cursor);
-    if (since) params.set("since", since);
-    return params;
-  }, [debouncedSearch, filter, fromDate, hashtag, sort, toDate]);
-
-  const load = useCallback(async (cursor?: string | null) => {
-    const params = buildParams(cursor);
-    const key = params.toString();
-    if (cursor && prefetchedPage.current?.key === key) {
-      const page = prefetchedPage.current;
-      prefetchedPage.current = null;
-      setUpdates((current) => appendUnique(current, page.updates));
-      setNextCursor(page.nextCursor);
-      return;
-    }
-    if (cursor) {
-      if (loadingMoreInFlightRef.current) return;
-      loadingMoreInFlightRef.current = true;
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const response = await fetch(`/api/updates?${key}`, { cache: "no-store" });
-      const json = await response.json().catch(() => ({}));
-      if (cursor) {
-        loadingMoreInFlightRef.current = false;
-        setLoadingMore(false);
-      } else {
-        setLoading(false);
-      }
-      if (!json.ok) {
-        showToast(json.error?.message || t("common.error"), "error");
-        if (!cursor) setUpdates([]);
-        return;
-      }
-      setUpdates((current) => (cursor ? appendUnique(current, json.data.updates || []) : json.data.updates || []));
-      setTotalCount(json.data.totalCount ?? json.data.updates?.length ?? 0);
-      setNextCursor(json.nextCursor || null);
-    } catch {
-      loadingMoreInFlightRef.current = false;
-      setLoadingMore(false);
-      setLoading(false);
-      if (!cursor) setUpdates([]);
-      showToast(t("poll.connectionFailed"), "error");
-    }
-  }, [buildParams, showToast, t]);
-
-  useEffect(() => {
-    if (!nextCursor || loading || loadingMore || sort !== "newest") return;
-    const params = buildParams(nextCursor);
-    const key = params.toString();
-    if (prefetchedPage.current?.key === key) return;
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      void fetch(`/api/updates?${key}`, { signal: controller.signal, cache: "no-store" })
-        .then((response) => response.json())
-        .then((json) => {
-          if (json?.ok) prefetchedPage.current = { key, updates: json.data?.updates || [], nextCursor: json.nextCursor || null };
-        })
-        .catch(() => undefined);
-    }, 500);
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [buildParams, filter, loading, loadingMore, nextCursor, sort]);
-
-  useEffect(() => {
-    if (
-      debouncedSearch === initialSearch &&
-      filter === initialFilter &&
-      !fromDate &&
-      !toDate &&
-      !hashtag &&
-      sort === "newest" &&
-      initialUpdates.length
-    ) {
-      return;
-    }
-    prefetchedPage.current = null;
-    void load();
-  }, [debouncedSearch, filter, fromDate, hashtag, initialFilter, initialSearch, initialUpdates.length, load, sort, toDate]);
-
-  useEffect(() => {
-    const newestPublishedAt = updates[0]?.publishedAt;
-    if (!newestPublishedAt || sort !== "newest") return;
-    let cancelled = false;
-    const refreshNewItems = async () => {
-      if (document.visibilityState !== "visible") return;
-      try {
-        const response = await fetch(`/api/updates?${buildParams(null, newestPublishedAt).toString()}`, { cache: "no-store" });
-        const json = await response.json().catch(() => ({}));
-        const incoming = json?.ok ? (json.data?.updates || []) as UpdateItem[] : [];
-        if (!cancelled && incoming.length) setUpdates((current) => prependUnique(current, incoming));
-      } catch {
-        // Background refresh should not interrupt reading.
-      }
-    };
-    const interval = window.setInterval(() => void refreshNewItems(), refreshIntervalMs);
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void refreshNewItems();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [buildParams, filter, sort, updates]);
 
   const tags = useMemo(() => {
     const counts = new Map<string, number>();
@@ -263,7 +91,6 @@ export default function UpdatesClient({
   }
 
   const refreshAfterPublish = useCallback(() => {
-    prefetchedPage.current = null;
     void load();
   }, [load]);
   const closeAdvancedFilters = useCallback(() => setAdvancedFiltersOpen(false), []);
@@ -285,31 +112,39 @@ export default function UpdatesClient({
         onApply={closeAdvancedFilters}
         onClose={closeAdvancedFilters}
       />
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,820px)_280px] lg:justify-center xl:grid-cols-[minmax(0,840px)_300px]">
-      <section className="min-w-0 space-y-4">
+      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[190px_minmax(0,680px)] xl:grid-cols-[210px_minmax(0,680px)_270px] lg:justify-center">
+      <aside className="hidden space-y-4 lg:sticky lg:top-20 lg:block lg:self-start" aria-label={t("social.explore")}>
+        <h2 className="px-3 text-sm font-black text-ink/65">{t("social.explore")}</h2>
+        <nav className="grid gap-1">{[{href:"/updates", key:"nav.home", icon:Home},{href:"/parties",key:"nav.parties",icon:Landmark},{href:"/iec",key:"content.authority",icon:Landmark},{href:"/laws",key:"nav.laws",icon:BookOpen},{href:"/surveys",key:"nav.surveys",icon:BarChart3},{href:"/about-nashmi",key:"nav.aboutNashmi",icon:Info}].map(({href,key,icon:Icon}) => <Link key={href} href={href} aria-current={href === "/updates" ? "page" : undefined} className="focus-ring flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold hover:bg-civic/10"><Icon className="h-6 w-6 text-civic dark:text-emerald-200"/>{t(key as any)}</Link>)}</nav>
+        <p className="border-t border-line px-3 pt-4 text-xs leading-6 text-ink/65">{t("social.neutral")}</p>
+      </aside>
+      <section className="min-w-0 space-y-4" data-feed-region aria-busy={loading || loadingMore} aria-label={t("updates.title")}>
         <div className="card p-3">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_auto] xl:grid-cols-[minmax(0,1fr)_220px_auto]">
-            <label className="relative block">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
+            <label className="relative col-span-2 block sm:col-span-1">
               <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/[0.45]" />
               <input
+                disabled={!ready}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 className="w-full rounded border-line bg-white py-3 ps-10 text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white"
                 placeholder={t("updates.search")}
+                aria-label={t("updates.search")}
               />
             </label>
             <label className="grid gap-1 text-sm font-semibold xl:block">
               <span className="sr-only">{t("updates.sortBy")}</span>
-              <select value={sort} onChange={(event) => setSort(event.target.value)} className="h-full w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white">
+              <select disabled={!ready} value={sort} onChange={(event) => setSort(event.target.value)} className="h-full w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white">
                 {sortOptions.map((item) => <option key={item} value={item}>{t(sortLabelKeys[item])}</option>)}
               </select>
             </label>
             <button
               type="button"
-              onClick={() => setAdvancedFiltersOpen(true)}
+              disabled={!ready}
+              onClick={event => { event.currentTarget.focus(); setAdvancedFiltersOpen(true); }}
               aria-haspopup="dialog"
               aria-expanded={advancedFiltersOpen}
-              className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-civic/30 bg-civic/10 px-4 py-2.5 text-sm font-black text-civic shadow-sm hover:border-civic hover:bg-civic hover:text-white dark:border-emerald-200/[0.35] dark:bg-emerald-200/10 dark:text-emerald-100 dark:hover:bg-emerald-200 dark:hover:text-slate-950 xl:w-auto"
+              className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-civic/30 bg-civic/10 px-3 py-2.5 text-sm font-bold text-civic hover:border-civic hover:bg-civic hover:text-white dark:border-emerald-200/[0.35] dark:bg-emerald-200/10 dark:text-emerald-100 dark:hover:bg-emerald-200 dark:hover:text-slate-950"
             >
               <SlidersHorizontal className="h-4 w-4" />
               {t("updates.advancedSearch")}
@@ -320,10 +155,11 @@ export default function UpdatesClient({
               {quickFilters.map((value) => (
                 <button
                   key={value}
+                  disabled={!ready}
                   type="button"
                   onClick={() => setFilter(value)}
                   aria-pressed={filter === value}
-                  className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+                  className={`min-h-11 rounded-full border px-3 py-2 text-sm font-semibold transition ${
                     filter === value ? "border-civic bg-civic text-white" : "border-line bg-white text-ink/70 hover:border-civic hover:text-civic dark:bg-slate-900 dark:text-slate-200"
                   }`}
                 >
@@ -342,6 +178,8 @@ export default function UpdatesClient({
           </div>
         </div>
 
+        {pendingUpdates.length ? <button type="button" onClick={showPending} className="focus-ring sticky top-[calc(var(--navbar-height)+12px)] z-10 min-h-11 w-full rounded-full bg-civic px-4 font-bold text-white shadow-soft">{t("social.newUpdates")} ({formatNumber(pendingUpdates.length,language)})</button> : null}
+        {error ? <div role="alert" className="card space-y-3 border-red-300 p-4"><p className="text-sm text-red-700 dark:text-red-200">{error}</p><button type="button" onClick={() => void load(nextCursor)} className="focus-ring min-h-11 rounded-xl border border-line px-4 font-bold text-civic">{t("social.retry")}</button></div> : null}
         {loading ? (
           <div className="space-y-4">
             <PostCardSkeleton />
@@ -350,29 +188,24 @@ export default function UpdatesClient({
           </div>
         ) : null}
 
-        {!loading && updates.length === 0 ? (
+        {!loading && !error && updates.length === 0 ? (
           <div className="card p-8 text-center">
             <h2 className="text-xl font-bold">{t("updates.noResults")}</h2>
             <p className="mt-2 text-ink/65">{t("updates.noResultsHint")}</p>
           </div>
         ) : null}
 
+        <h2 className="sr-only">{t("updates.subtitle")}</h2>
         {!loading ? (
           <div className="space-y-4">
-            {updates.map((update) =>
-              update.type === "post" ? (
-                <PostCard key={`post-${update.item._id}`} post={update.item} />
-              ) : update.type === "poll" ? (
-                <PollCard key={`poll-${update.item._id}`} poll={update.item} />
-              ) : (
-                <SurveyFeedCard key={`survey-${update.item._id}`} survey={update.item} />
-              )
-            )}
+            {updates.map((update) => <div key={update.type + "-" + update.item._id} data-feed-item={update.type + "-" + update.item._id}>
+              {update.type === "post" ? <PostCard post={update.item}/> : update.type === "poll" ? <PollCard poll={update.item}/> : <SurveyFeedCard survey={update.item}/>}
+            </div>)}
           </div>
         ) : null}
 
         {nextCursor ? (
-          <div className="grid min-h-16 place-items-center pt-2" aria-live="polite">
+          <div ref={sentinelRef} data-feed-sentinel className="grid min-h-16 place-items-center pt-2" aria-live="polite">
             <button
               type="button"
               onClick={() => void load(nextCursor)}
@@ -383,10 +216,10 @@ export default function UpdatesClient({
               {loadingMore ? t("common.loading") : t("common.showMore")}
             </button>
           </div>
-        ) : null}
+        ) : !loading && updates.length ? <p role="status" className="py-5 text-center text-sm text-ink/65">{t("social.feedEnd")}</p> : null}
       </section>
 
-      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+      <aside className="hidden space-y-4 xl:sticky xl:top-20 xl:block xl:self-start">
         {loading ? (
           <SidebarSkeleton />
         ) : (

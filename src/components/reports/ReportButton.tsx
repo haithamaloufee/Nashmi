@@ -1,63 +1,52 @@
 "use client";
-
-import { useState } from "react";
-import { Flag } from "lucide-react";
+import { useId, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
+import { Flag, X } from "lucide-react";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useToast } from "@/components/ui/ToastProvider";
-
+import { useTranslation } from "@/components/i18n/LanguageProvider";
+import { useDialog } from "@/lib/useDialog";
 type ReportTargetType = "post" | "poll" | "comment" | "party" | "user";
 
 export default function ReportButton({ targetType, targetId, compact = false }: { targetType: ReportTargetType; targetId: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const panel = useRef<HTMLFormElement>(null);
+  const titleId = useId();
   const { showToast } = useToast();
+  const { t, language, dir } = useTranslation();
+  useDialog(open, panel, () => setOpen(false));
+  const reasons = language === "ar" ? ["محتوى مسيء", "خطاب كراهية", "معلومات مضللة", "رسائل مزعجة", "سبب آخر"] : ["Abuse", "Hate speech", "Misinformation", "Spam", "Other"];
 
-  async function submit(formData: FormData) {
-    const response = await fetch("/api/reports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        targetType,
-        targetId,
-        reason: String(formData.get("reason") || "other"),
-        details: String(formData.get("details") || "")
-      })
-    });
-    const json = await response.json().catch(() => ({}));
-    if (response.status === 401) {
-      setLoginOpen(true);
-      return;
-    }
-    showToast(json.ok ? "تم إرسال البلاغ بنجاح" : json.error?.message || "تعذر إرسال البلاغ", json.ok ? "success" : "error");
-    if (json.ok) setOpen(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending) return;
+    const formData = new FormData(event.currentTarget);
+    setPending(true); setError("");
+    try {
+      const response = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetType, targetId, reason: String(formData.get("reason") || "other"), details: String(formData.get("details") || "") }) });
+      const json = await response.json();
+      if (response.status === 401) { setLoginOpen(true); return; }
+      if (!response.ok || !json.ok) { setError(json.error?.message || t("common.error")); return; }
+      showToast(t("social.reportSent"), "success"); setOpen(false);
+    } catch { setError(t("common.connectionFailed")); }
+    finally { setPending(false); }
   }
-
-  return (
-    <div className="relative inline-block">
-      <button
-        onClick={() => setOpen((value) => !value)}
-        type="button"
-        className={`${compact ? "h-8 w-8 px-0" : "px-3 py-1.5"} rounded border border-slate-200 bg-white text-xs text-slate-600 transition hover:border-civic hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-300 dark:hover:text-emerald-200`}
-        aria-label={targetType === "user" ? "إبلاغ عن المستخدم" : "إرسال بلاغ"}
-      >
-        <Flag className={`${compact ? "mx-auto" : "ml-1 inline"} h-3.5 w-3.5`} />
-        {compact ? null : targetType === "user" ? "إبلاغ عن المستخدم" : "بلاغ"}
-      </button>
-      {open ? (
-        <form action={submit} className="absolute left-0 z-30 mt-2 w-72 space-y-2 rounded border border-slate-200 bg-white p-3 text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
-          <select name="reason" required className="w-full rounded border-slate-300 bg-white text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
-            <option value="abuse">محتوى مسيء</option>
-            <option value="other">انتحال شخصية</option>
-            <option value="hate">خطاب كراهية</option>
-            <option value="misinformation">معلومات مضللة</option>
-            <option value="spam">سبام</option>
-            <option value="other">سبب آخر</option>
-          </select>
-          <textarea name="details" className="w-full rounded border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500" rows={2} maxLength={1000} placeholder="تفاصيل اختيارية" />
-          <button className="rounded bg-civic px-3 py-1.5 text-sm font-semibold text-white hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]">إرسال</button>
-        </form>
-      ) : null}
-      <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)} />
-    </div>
-  );
+  return <>
+    <button type="button" onClick={event => { event.currentTarget.focus(); setError(""); setOpen(true); }} aria-label={t("social.report")} aria-haspopup="dialog" aria-expanded={open} className={`focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm text-slate-600 hover:bg-civic/10 hover:text-civic dark:text-slate-300 ${compact ? "h-11 w-11 shrink-0" : "px-3"}`}>
+      <Flag className="h-4 w-4" aria-hidden="true"/>{compact ? null : t("social.report")}
+    </button>
+    {open ? createPortal(<div className="fixed inset-0 z-[80] grid place-items-center bg-ink/60 p-3 backdrop-blur-sm" onMouseDown={event => { if (event.target === event.currentTarget) setOpen(false); }}>
+      <form ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId} dir={dir} onSubmit={submit} className="card w-full max-w-md space-y-4 p-5 outline-none">
+        <div className="flex items-center justify-between gap-3"><h2 id={titleId} className="text-xl font-bold">{t("social.report")}</h2><button type="button" onClick={() => setOpen(false)} aria-label={t("common.close")} className="focus-ring grid h-11 w-11 place-items-center rounded-full hover:bg-civic/10"><X className="h-5 w-5"/></button></div>
+        <label className="grid gap-2 text-sm font-semibold">{t("social.reportReason")}<select name="reason" required className="w-full rounded-xl">{["abuse","hate","misinformation","spam","other"].map((value,i) => <option key={value} value={value}>{reasons[i]}</option>)}</select></label>
+        <label className="grid gap-2 text-sm font-semibold">{t("social.reportDetails")}<textarea name="details" className="w-full rounded-xl" rows={3} maxLength={1000}/></label>
+        {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-200">{error}</p> : null}
+        <button type="submit" disabled={pending} className="focus-ring min-h-11 w-full rounded-xl bg-civic px-4 font-bold text-white">{pending ? t("common.saving") : t("common.save")}</button>
+      </form>
+    </div>, document.body) : null}
+    <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)}/>
+  </>;
 }

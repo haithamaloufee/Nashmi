@@ -4,6 +4,7 @@ import { getIecDashboardData } from "@/lib/serverData";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
 import PublisherCreateHub from "@/components/dashboard/PublisherCreateHub";
 import StatCard from "@/components/ui/StatCard";
+import { I18nText } from "@/components/i18n/LanguageProvider";
 
 export const dynamic = "force-dynamic";
 const links = [
@@ -21,7 +22,8 @@ export default async function IecDashboardPage() {
   const authorityAuthor = (data as any).authorityAuthor || { name: "الهيئة المستقلة للانتخاب", logoUrl: "/related/iec-logo.png" };
   return (
     <DashboardNav titleKey="dashboard.authority.title" links={links}>
-      <div className="grid gap-4 md:grid-cols-3">
+      <h1 className="mb-5 text-2xl font-black"><I18nText id="dashboard.authority.title" /></h1>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard labelKey="dashboard.authority.stats.posts" value={(data.posts as any[]).length} />
         <StatCard labelKey="dashboard.authority.stats.laws" value={(data.laws as any[]).length} />
         <StatCard labelKey="dashboard.authority.stats.surveys" value={((data as any).surveys || []).length} />

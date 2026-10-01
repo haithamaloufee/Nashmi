@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { usePathname } from "next/navigation";
 import {
   AuthPageSkeleton,
@@ -29,6 +30,7 @@ function isPlainLeftClick(event: MouseEvent) {
 
 export default function RouteTransitionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { dir } = useTranslation();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function RouteTransitionProvider({ children }: { children: ReactN
       const url = new URL(anchor.href, window.location.href);
       if (url.origin !== window.location.origin) return;
       if (url.hash && url.pathname === window.location.pathname && url.search === window.location.search) return;
-      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      if (url.pathname === window.location.pathname) return;
 
       setPendingPath(url.pathname);
     }
@@ -69,7 +71,7 @@ export default function RouteTransitionProvider({ children }: { children: ReactN
     <>
       {children}
       {skeleton ? (
-        <div className="fixed inset-x-0 bottom-0 top-0 z-30 overflow-auto bg-paper pt-20 lg:pt-16" dir="rtl" aria-live="polite" aria-busy="true">
+        <div className="fixed inset-x-0 bottom-0 top-0 z-30 overflow-auto bg-paper pt-20 lg:pt-16" dir={dir} aria-live="polite" aria-busy="true">
           {skeleton}
         </div>
       ) : null}

@@ -113,7 +113,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
   if (deleted) return null;
 
   return (
-    <article className="card card-hover bg-white p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+    <article className="card feed-card bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           {author.href ? (
@@ -134,7 +134,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
               <span className="rounded-full bg-clay/10 px-2.5 py-1 text-xs font-bold text-clay dark:bg-amber-200/10 dark:text-amber-200">{t("poll.type")}</span>
               <PollStatusBadge poll={currentPoll} />
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{timeReady ? formatRelativeTime(currentPoll.publishedAt || currentPoll.createdAt, language) : ""}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400" data-visual-dynamic>{timeReady ? formatRelativeTime(currentPoll.publishedAt || currentPoll.createdAt, language) : ""}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">

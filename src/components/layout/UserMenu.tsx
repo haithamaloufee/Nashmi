@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LayoutDashboard, LogOut, Settings, UserRound } from "lucide-react";
+import { invalidateClientUser } from "@/lib/useClientUser";
 import { useRouter } from "next/navigation";
 import SafeImage from "@/components/ui/SafeImage";
 import type { SafeUser } from "@/lib/auth";
@@ -22,7 +23,7 @@ export default function UserMenu({ user }: { user: SafeUser }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const avatarSrc = user.avatarUrl || user.image;
-  const fallback = <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-200/[0.16] text-sm font-black text-emerald-100">{user.name.slice(0, 1)}</span>;
+  const fallback = <span className="grid h-9 w-9 place-items-center rounded-full bg-civic/10 text-sm font-black text-civic dark:text-emerald-100">{user.name.slice(0, 1)}</span>;
 
   useEffect(() => {
     if (!open) return;
@@ -45,15 +46,16 @@ export default function UserMenu({ user }: { user: SafeUser }) {
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
+    invalidateClientUser();
     router.push("/");
     router.refresh();
   }
 
   return (
     <div ref={rootRef} className="relative">
-      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className="focus-ring flex min-h-11 items-center gap-2 rounded-full border border-white/[0.16] bg-white/[0.08] px-1.5 text-white hover:border-emerald-200/[0.45] hover:bg-white/[0.14]" aria-expanded={open} aria-controls="account-menu">
+      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className="focus-ring flex min-h-11 items-center gap-2 rounded-full border border-line bg-paper px-1.5 text-ink hover:border-civic/40 hover:bg-civic/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white" aria-expanded={open} aria-controls="account-menu">
         <SafeImage src={avatarSrc} alt={user.name} className="h-9 w-9 rounded-full object-cover" fallback={fallback} localPrefixes={["/uploads/avatars/", "/uploads/", "/images/"]} />
-        <span className="hidden max-w-28 truncate pe-2 text-sm font-bold text-white/[0.82] xl:inline">{user.name.split(" ")[0]}</span>
+        <span className="hidden max-w-28 truncate pe-2 text-sm font-bold text-ink dark:text-white xl:inline">{user.name.split(" ")[0]}</span>
       </button>
       {open ? (
         <div id="account-menu" className="absolute end-0 mt-3 w-56 rounded-2xl border border-white/[0.12] bg-[#10252b]/[0.99] p-2 text-sm text-white shadow-2xl backdrop-blur-xl">

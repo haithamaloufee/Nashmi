@@ -335,19 +335,19 @@ export default function FloatingAssistant() {
           ) : null}
 
           <div className="relative min-h-0 flex-1">
-            <div ref={messagesRef} className="assistant-scrollbar h-full space-y-3 overflow-auto bg-[#f5f7f6] p-3.5 dark:bg-[#101820]" aria-live="polite">
+            <div ref={messagesRef} tabIndex={0} role="log" aria-label={t("nav.chat")} className="assistant-scrollbar focus-ring h-full space-y-3 overflow-auto bg-[#f5f7f6] p-3.5 dark:bg-[#101820]" aria-live="polite">
               {messages.map((message, index) => (
                 <div key={`${message.role}-${index}`} dir="ltr" className={`flex items-end gap-2 ${message.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
                   <ChatAvatar role={message.role} name={message.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={message.role === "user" ? userAvatarUrl(currentUser) : null} loading={message.role === "user" && currentUserLoading} compact />
                   <div
                     ref={message.role === "user" && index === messages.length - 1 ? latestUserRef : message.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
                     dir={dir}
-                    className={`min-w-0 max-w-[82%] rounded-2xl px-4 py-2.5 text-start text-sm leading-7 shadow-sm sm:max-w-[86%] ${message.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-bl-md border border-slate-200/80 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+                    className={`min-w-0 max-w-[82%] rounded-2xl px-4 py-2.5 text-start text-sm leading-7 shadow-sm sm:max-w-[86%] ${message.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-emerald-200 dark:text-slate-950" : "rounded-bl-md border border-slate-200/80 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
                   >
                     {message.role === "assistant" ? (
                       <MarkdownMessage content={cleanAssistantContent(message.content)} />
                     ) : (
-                      <div className="whitespace-pre-wrap break-words text-white">{message.content}</div>
+                      <div className="whitespace-pre-wrap break-words">{message.content}</div>
                     )}
                   </div>
                 </div>
@@ -363,7 +363,7 @@ export default function FloatingAssistant() {
               <button
                 type="button"
                 onClick={scrollToBottom}
-                className="absolute bottom-4 left-4 z-10 rounded-full bg-civic p-2 text-white shadow-lg transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+                className="absolute bottom-4 left-4 z-10 rounded-full bg-civic p-2 text-white shadow-lg transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 dark:bg-emerald-200 dark:text-slate-950 dark:hover:bg-emerald-100"
                 aria-label={t("chat.scrollBottom")}
               >
                 <ArrowDown className="h-4 w-4" />
@@ -389,7 +389,7 @@ export default function FloatingAssistant() {
               disabled={loading}
               aria-label={t("chat.inputLabel")}
             />
-            <button type="submit" disabled={loading || !input.trim()} className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic text-white shadow-sm hover:bg-civic/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]" aria-label={t("chat.send")}>
+            <button type="submit" disabled={loading || !input.trim()} className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic text-white shadow-sm hover:bg-civic/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-emerald-200 dark:text-slate-950 dark:hover:bg-emerald-100" aria-label={t("chat.send")}>
               <Send className="h-4 w-4" />
             </button>
           </form>

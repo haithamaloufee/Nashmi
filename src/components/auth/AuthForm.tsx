@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { invalidateClientUser } from "@/lib/useClientUser";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
@@ -15,34 +16,34 @@ type FieldErrors = {
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validateName(value: string) {
+function validateName(value: string, en: boolean) {
   const clean = value.trim();
-  if (!clean) return "الاسم مطلوب ولا يمكن أن يكون فارغا.";
-  if (clean.length < 3) return "اكتب اسما من 3 أحرف على الأقل.";
-  if (clean.length > 20) return "الاسم طويل جدا.";
+  if (!clean) return en ? "Enter your name." : "الاسم مطلوب ولا يمكن أن يكون فارغا.";
+  if (clean.length < 3) return en ? "Use at least 3 characters." : "اكتب اسما من 3 أحرف على الأقل.";
+  if (clean.length > 20) return en ? "Use no more than 20 characters." : "الاسم طويل جدا.";
   return "";
 }
 
-function validateEmail(value: string) {
+function validateEmail(value: string, en: boolean) {
   const clean = value.trim();
-  if (!clean) return "البريد الإلكتروني مطلوب.";
-  if (/\s/.test(value)) return "البريد الإلكتروني لا يقبل المسافات.";
-  if (!emailPattern.test(clean)) return "اكتب بريدا إلكترونيا صحيحا، مثل name@example.com.";
+  if (!clean) return en ? "Enter your email address." : "البريد الإلكتروني مطلوب.";
+  if (/\s/.test(value)) return en ? "Email addresses cannot contain spaces." : "البريد الإلكتروني لا يقبل المسافات.";
+  if (!emailPattern.test(clean)) return en ? "Enter a valid email, such as name@example.com." : "اكتب بريدا إلكترونيا صحيحا، مثل name@example.com.";
   return "";
 }
 
-function validatePassword(value: string) {
-  if (!value.trim()) return "كلمة المرور مطلوبة.";
-  if (/\s/.test(value)) return "كلمة المرور لا تقبل المسافات.";
-  if (value.length < 12) return "كلمة المرور يجب أن تكون 12 حرفًا على الأقل.";
-  if (value.length > 128) return "كلمة المرور طويلة جدا.";
-  if (!/[a-z]/.test(value) || !/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[^A-Za-z0-9]/.test(value)) return "استخدم حرفًا كبيرًا وصغيرًا ورقمًا ورمزًا.";
+function validatePassword(value: string, en: boolean) {
+  if (!value.trim()) return en ? "Enter your password." : "كلمة المرور مطلوبة.";
+  if (/\s/.test(value)) return en ? "Passwords cannot contain spaces." : "كلمة المرور لا تقبل المسافات.";
+  if (value.length < 12) return en ? "Use at least 12 characters." : "كلمة المرور يجب أن تكون 12 حرفًا على الأقل.";
+  if (value.length > 128) return en ? "Use no more than 128 characters." : "كلمة المرور طويلة جدا.";
+  if (!/[a-z]/.test(value) || !/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[^A-Za-z0-9]/.test(value)) return en ? "Use uppercase, lowercase, a number and a symbol." : "استخدم حرفًا كبيرًا وصغيرًا ورقمًا ورمزًا.";
   return "";
 }
 
-function validateConfirmPassword(password: string, confirmPassword: string) {
-  if (!confirmPassword) return "تأكيد كلمة المرور مطلوب.";
-  if (password !== confirmPassword) return "كلمتا المرور غير متطابقتين.";
+function validateConfirmPassword(password: string, confirmPassword: string, en: boolean) {
+  if (!confirmPassword) return en ? "Confirm your password." : "تأكيد كلمة المرور مطلوب.";
+  if (password !== confirmPassword) return en ? "Passwords do not match." : "كلمتا المرور غير متطابقتين.";
   return "";
 }
 
@@ -57,15 +58,15 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   const errors = useMemo<FieldErrors>(() => {
     return {
-      name: mode === "signup" ? validateName(values.name) : "",
-      email: validateEmail(values.email),
-      password: validatePassword(values.password),
-      confirmPassword: mode === "signup" ? validateConfirmPassword(values.password, values.confirmPassword) : ""
+      name: mode === "signup" ? validateName(values.name, language === "en") : "",
+      email: validateEmail(values.email, language === "en"),
+      password: mode === "signup" ? validatePassword(values.password, language === "en") : (!values.password ? (language === "ar" ? "كلمة المرور مطلوبة." : "Enter your password.") : values.password.length > 128 ? (language === "ar" ? "كلمة المرور طويلة جدا." : "Password is too long.") : ""),
+      confirmPassword: mode === "signup" ? validateConfirmPassword(values.password, values.confirmPassword, language === "en") : ""
     };
-  }, [mode, values]);
+  }, [mode, values, language]);
 
   const hasErrors = Boolean(errors.email || errors.password || (mode === "signup" && (errors.name || errors.confirmPassword)));
-  const hasVisibleErrors = hasErrors && Object.values(touched).some(Boolean);
+
 
   function updateField(field: "name" | "email" | "password" | "confirmPassword", value: string) {
     const nextValue = field === "email" ? value.trim() : value;
@@ -80,7 +81,11 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
     setTouched({ name: true, email: true, password: true });
     if (mode === "signup") setTouched({ name: true, email: true, password: true, confirmPassword: true });
-    if (hasErrors) return;
+    if (hasErrors) {
+      const field = Object.entries(errors).find(([, message]) => message)?.[0];
+      if (field) event.currentTarget.querySelector<HTMLInputElement>('[name="' + field + '"]')?.focus();
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -107,7 +112,8 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         }
         return;
       }
-      router.push(mode === "signup" ? `/verify-email?email=${encodeURIComponent(values.email.trim())}&sent=${json.data?.emailSent ? "1" : "0"}` : "/");
+      invalidateClientUser();
+      router.push(mode === "signup" ? `/verify-email?email=${encodeURIComponent(values.email.trim())}&sent=${json.data?.emailSent ? "1" : "0"}` : "/updates");
       router.refresh();
     } catch {
       setError("تعذر الاتصال بالخادم. حاول مرة أخرى بعد قليل.");
@@ -121,7 +127,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="card mx-auto mt-10 max-w-md space-y-5 p-5 sm:p-6">
+    <form onSubmit={submit} noValidate className="card mx-auto w-full max-w-md space-y-5 p-5 sm:p-7">
       <div>
         <h1 className="text-3xl font-black leading-tight">{mode === "login" ? t("auth.login") : t("auth.signup")}</h1>
       </div>
@@ -176,6 +182,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
             type="button"
             onClick={() => setShowPassword((value) => !value)}
             className="focus-ring absolute inset-y-0 end-3 grid h-full w-11 place-items-center rounded-full text-ink/55 hover:bg-civic/10 hover:text-civic dark:text-white/62 dark:hover:text-emerald-200"
+            aria-pressed={showPassword}
             aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -185,8 +192,8 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       </label>
       {mode === "login" ? (
         <div className="-mt-2 flex flex-wrap items-center justify-between gap-3 text-sm">
-          <Link className="font-semibold text-civic underline-offset-4 hover:underline" href="/forgot-password">نسيت كلمة المرور؟</Link>
-          <Link className="text-ink/65 underline-offset-4 hover:text-civic hover:underline dark:text-slate-300" href="/verify-email">إعادة إرسال رسالة التفعيل</Link>
+          <Link className="font-semibold text-civic underline-offset-4 hover:underline" href="/forgot-password">{language === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}</Link>
+          <Link className="text-ink/65 underline-offset-4 hover:text-civic hover:underline dark:text-slate-300" href="/verify-email">{language === "ar" ? "إعادة إرسال رسالة التفعيل" : "Resend verification email"}</Link>
         </div>
       ) : null}
       {mode === "signup" ? (
@@ -216,7 +223,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       ) : null}
       <button
         type="submit"
-        disabled={loading || hasVisibleErrors}
+        disabled={loading}
         className="w-full rounded-2xl bg-civic px-4 py-3 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-200 dark:text-[#101820] dark:hover:bg-emerald-100"
       >
         {loading ? t("auth.processing") : mode === "login" ? t("auth.submitLogin") : t("auth.submitSignup")}

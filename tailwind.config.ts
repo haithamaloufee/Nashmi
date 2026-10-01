@@ -8,11 +8,11 @@ const config: Config = {
     extend: {
       colors: {
         ink: "#17212b",
-        paper: "#f7f5ef",
+        paper: "#f2f4f7",
         civic: "#126b6f",
-        olive: "#617044",
-        clay: "#a85d3c",
-        line: "#d8d4c8"
+        olive: "#52633a",
+        clay: "#914a30",
+        line: "#dfe3e8"
       },
       fontFamily: {
         sans: ["var(--font-sans)", "Tahoma", "Arial", "sans-serif"]

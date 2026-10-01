@@ -51,7 +51,7 @@ export function ProfileAccordionCard({ title, children, defaultOpen = false }: {
         <span className="text-xl">{title}</span>
         <ChevronDown className={`h-5 w-5 shrink-0 text-civic transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
-      <div id={panelId} className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+      <div id={panelId} inert={!open} aria-hidden={!open} className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="min-h-0 overflow-hidden">
           <div className="border-t border-line px-5 py-5 dark:border-slate-800">{children}</div>
         </div>

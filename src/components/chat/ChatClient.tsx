@@ -529,15 +529,15 @@ export default function ChatClient({
         ) : null}
 
         <div className="relative">
-          <div ref={scrollRef} className={`assistant-scrollbar h-[min(560px,calc(100vh-18rem))] space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#071217] ${anchorActiveTurn ? "pb-[min(560px,calc(100vh-18rem))]" : ""}`} aria-live="polite">
+          <div ref={scrollRef} tabIndex={0} role="log" aria-label={t("nav.chat")} className={`assistant-scrollbar focus-ring h-[min(560px,calc(100vh-18rem))] space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#071217] ${anchorActiveTurn ? "pb-[min(560px,calc(100vh-18rem))]" : ""}`} aria-live="polite">
             {messages.map((item, index) => (
               <div key={item._id || `${item.role}-${index}`} ref={index === latestUserIndex ? latestUserRef : undefined} dir="ltr" className={`flex items-end gap-2 ${item.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
                 <ChatAvatar role={item.role} name={item.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={item.role === "user" ? userAvatarUrl(currentUser) : null} />
                 <div
                   dir={dir}
-                  className={`min-w-0 max-w-[78%] rounded-2xl p-4 text-start leading-8 shadow-sm sm:max-w-[84%] ${item.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-[#1b8f89]" : "rounded-bl-md border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+                  className={`min-w-0 max-w-[78%] rounded-2xl p-4 text-start leading-8 shadow-sm sm:max-w-[84%] ${item.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-emerald-200 dark:text-slate-950" : "rounded-bl-md border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
                 >
-                  {item.role === "assistant" ? <MarkdownMessage content={cleanAssistantContent(item.content)} /> : <div className="whitespace-pre-wrap break-words text-white">{item.content}</div>}
+                  {item.role === "assistant" ? <MarkdownMessage content={cleanAssistantContent(item.content)} /> : <div className="whitespace-pre-wrap break-words">{item.content}</div>}
                   {item.role === "assistant" && item.groundingSources?.length ? (
                     <div className="mt-3 border-t border-slate-200 pt-2 text-xs dark:border-slate-700">
                       <p className="mb-1 font-bold text-slate-600 dark:text-slate-300">{language === "en" ? "Sources" : "المصادر"}</p>
@@ -594,7 +594,7 @@ export default function ChatClient({
             <button
               type="button"
               onClick={scrollToBottom}
-              className="absolute bottom-4 left-4 z-10 rounded-full bg-civic p-2 text-white shadow-lg transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+              className="absolute bottom-4 left-4 z-10 rounded-full bg-civic p-2 text-white shadow-lg transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 dark:bg-emerald-200 dark:text-slate-950 dark:hover:bg-emerald-100"
               aria-label={t("chat.scrollBottom")}
             >
               <ArrowDown className="h-4 w-4" />
@@ -616,7 +616,7 @@ export default function ChatClient({
           <button
             type="submit"
             disabled={loading || newsSessionLoading || !clientReady || !message.trim()}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-civic text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-civic text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-200 dark:text-slate-950 dark:hover:bg-emerald-100"
             aria-label={t("chat.send")}
           >
             <Send className="h-4 w-4" />

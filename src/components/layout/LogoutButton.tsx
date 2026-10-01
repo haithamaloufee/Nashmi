@@ -1,6 +1,7 @@
 "use client";
 
 import { LogOut } from "lucide-react";
+import { invalidateClientUser } from "@/lib/useClientUser";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 
@@ -9,6 +10,7 @@ export default function LogoutButton() {
   const { t } = useTranslation();
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
+    invalidateClientUser();
     router.push("/");
     router.refresh();
   }

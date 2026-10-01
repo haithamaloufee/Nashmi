@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useId, useMemo, useRef, useState } from "react";
+import { useDialog } from "@/lib/useDialog";
+import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { useRouter } from "next/navigation";
 import { Edit3, Loader2, Plus, X } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -41,10 +43,14 @@ function parseTags(value: FormDataEntryValue | null) {
 
 export default function LawManagementControls({ mode, law }: { mode: "create" | "edit"; law?: LawFormData }) {
   const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const { dir } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState(law?.thumbnailUrl || "");
   const router = useRouter();
   const { showToast } = useToast();
+  useDialog(open, panelRef, () => { if (!saving) setOpen(false); });
   const isEdit = mode === "edit";
   const title = isEdit ? "تعديل القانون" : "إضافة قانون";
   const defaultTags = useMemo(() => (law?.tags || []).join(", "), [law?.tags]);
@@ -98,22 +104,22 @@ export default function LawManagementControls({ mode, law }: { mode: "create" | 
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="focus-ring inline-flex items-center justify-center gap-2 rounded bg-civic px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-civic/90 active:scale-[0.98] dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]"
+        onClick={event => { event.currentTarget.focus(); setOpen(true); }}
+        className="focus-ring inline-flex items-center justify-center gap-2 rounded bg-civic px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-civic/90 active:scale-[0.98] dark:bg-emerald-200 dark:text-slate-950 dark:hover:bg-emerald-100"
       >
         {isEdit ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
         {title}
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/55 px-3 py-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="law-form-title">
-          <form onSubmit={submit} className="mx-auto w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:p-6" dir="rtl">
+        <div className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/55 px-3 py-5 backdrop-blur-sm" ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+          <form onSubmit={submit} className="mx-auto w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:p-6" dir={dir}>
             <div className="mb-5 flex items-start justify-between gap-3">
               <div>
-                <h2 id="law-form-title" className="text-2xl font-black">{title}</h2>
-                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">الحقول محفوظة بنفس نموذج القوانين الحالي، والصلاحيات محمية من الخادم.</p>
+                <h2 id={titleId} className="text-2xl font-black">{title}</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">أضف شرحًا واضحًا ومصدرًا رسميًا ليسهل الوصول إلى المعلومة.</p>
               </div>
-              <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-10 w-10 place-items-center rounded-full border border-slate-200 text-slate-500 hover:border-civic hover:text-civic dark:border-slate-700 dark:text-slate-300" aria-label="إغلاق نموذج القانون">
+              <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-11 w-11 place-items-center rounded-full border border-slate-200 text-slate-500 hover:border-civic hover:text-civic dark:border-slate-700 dark:text-slate-300" aria-label="إغلاق نموذج القانون">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -165,7 +171,7 @@ export default function LawManagementControls({ mode, law }: { mode: "create" | 
 
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button type="button" onClick={() => setOpen(false)} className="rounded border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 hover:border-civic hover:text-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">إلغاء</button>
-              <button type="submit" disabled={saving} className="inline-flex min-w-28 items-center justify-center gap-2 rounded bg-civic px-4 py-2 font-bold text-white hover:bg-civic/90 disabled:opacity-60 dark:bg-[#1b8f89] dark:hover:bg-[#20a59e]">
+              <button type="submit" disabled={saving} className="inline-flex min-w-28 items-center justify-center gap-2 rounded bg-civic px-4 py-2 font-bold text-white hover:bg-civic/90 disabled:opacity-60 dark:bg-emerald-200 dark:text-slate-950 dark:hover:bg-emerald-100">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 حفظ
               </button>

@@ -78,7 +78,7 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
               </span>
               <SurveyStatusBadge status={survey.lifecycleStatus || survey.status} />
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400" data-visual-dynamic>
               {timeReady && publishedAt ? formatRelativeTime(publishedAt, language) : ""}
             </p>
           </div>
@@ -102,7 +102,7 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
       </div>
 
       {href ? (
-        <Link href={href} className="mt-4 inline-flex items-center gap-2 rounded bg-civic px-4 py-2 text-sm font-bold text-white hover:bg-civic/90">
+        <Link href={href} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded bg-civic px-4 py-2 text-sm font-bold text-white hover:bg-civic/90">
           {isOpen ? t("survey.participate") : t("survey.view")}
           <ArrowLeft className="h-4 w-4" />
         </Link>

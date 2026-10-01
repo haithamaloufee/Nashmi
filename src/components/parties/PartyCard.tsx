@@ -32,11 +32,11 @@ export default function PartyCard({ party }: { party: Party }) {
   const fallback = <div className="grid h-12 w-12 shrink-0 place-items-center rounded bg-civic/10 text-lg font-bold text-civic">{party.name.slice(0, 1)}</div>;
 
   return (
-    <Link href={`/parties/${party.slug}`} prefetch={false} className="card card-hover flex h-full flex-col p-5">
+    <Link href={`/parties/${party.slug}`} prefetch={false} className="card card-hover flex h-full min-w-0 flex-col border-t-4 border-t-civic/30 p-5">
       <div className="mb-4 flex items-center gap-3">
-        <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="h-12 w-12 shrink-0 rounded object-contain ring-1 ring-line" fallback={fallback} />
-        <div>
-          <h3 className="font-bold">{party.name}</h3>
+        <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="h-12 w-12 shrink-0 rounded-full object-contain ring-1 ring-line" fallback={fallback} />
+        <div className="min-w-0">
+          <h3 className="break-words text-lg font-bold">{party.name}</h3>
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink/65">
             {party.isVerified ? (
               <DelayedTooltipBadge tooltip={t("party.verifiedTooltip")} className="rounded-full border border-olive/20 bg-olive/10 px-2.5 py-1 font-bold text-olive shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-civic/25 dark:border-emerald-200/35 dark:bg-emerald-200/12 dark:text-emerald-100 dark:shadow-none">

@@ -143,7 +143,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
   if (deleted) return null;
 
   return (
-    <article className="card card-hover overflow-visible bg-white p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+    <article className="card feed-card overflow-visible bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           {author.href ? (
@@ -174,7 +174,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
                 {t("content.post")}
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{timeReady ? formatRelativeTime(currentPost.publishedAt || currentPost.createdAt, language) : ""}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400" data-visual-dynamic>{timeReady ? formatRelativeTime(currentPost.publishedAt || currentPost.createdAt, language) : ""}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -185,9 +185,9 @@ export default function PostCard({ post, compact = false, showModerationActions 
       </div>
 
       {currentPost.title ? <h4 className="mt-4 text-lg font-bold leading-8 text-slate-950 dark:text-white">{currentPost.title}</h4> : null}
-      <p className="mt-3 whitespace-pre-line break-words leading-8 text-slate-800 dark:text-slate-200"><HashtagText text={text} /></p>
+      <p className={`mt-3 whitespace-pre-line break-words text-[15px] leading-7 text-slate-800 dark:text-slate-200 ${isLong && !expandedText ? "line-clamp-4" : ""}`}><HashtagText text={text} /></p>
       {isLong ? (
-        <button type="button" onClick={() => setExpandedText((value) => !value)} className="mt-1 text-sm font-semibold text-civic hover:underline">
+        <button type="button" onClick={() => setExpandedText((value) => !value)} aria-expanded={expandedText} className="focus-ring mt-1 min-h-11 rounded px-1 text-sm font-semibold text-civic hover:underline">
           {expandedText ? t("common.showLess") : t("common.showMore")}
         </button>
       ) : null}
@@ -223,17 +223,18 @@ export default function PostCard({ post, compact = false, showModerationActions 
         </div>
       ) : null}
 
-      <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-        <span>{formatNumber(commentsCount, language)} {t("comments.label")}</span>
+      <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-0 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
+        <button type="button" onClick={() => setCommentsExpanded(value => !value)} aria-expanded={commentsExpanded} className="focus-ring min-h-11 rounded px-1 hover:underline">{formatNumber(commentsCount, language)} {t("comments.label")}</button>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="mt-2 feed-actions">
         <ReactionButtons targetType="posts" targetId={currentPost._id} likesCount={currentPost.likesCount} dislikesCount={currentPost.dislikesCount} />
         {!compact ? (
           <button
             type="button"
+            aria-controls={"comments-" + currentPost._id}
             onClick={() => setCommentsExpanded((value) => !value)}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-civic/10 hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-95 dark:text-slate-300 dark:hover:bg-emerald-200/10 dark:hover:text-emerald-200"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-civic/10 hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic active:scale-95 dark:text-slate-300 dark:hover:bg-emerald-200/10 dark:hover:text-emerald-200"
             aria-expanded={commentsExpanded}
           >
             <MessageCircle className="h-4 w-4" />

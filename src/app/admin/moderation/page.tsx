@@ -108,7 +108,7 @@ export default async function AdminModerationPage({ searchParams }: PageProps) {
             className="rounded border-line"
             placeholder="ابحث في المنشورات أو التعليقات أو التصويتات..."
           />
-          <select name="status" defaultValue={status} className="rounded border-line">
+          <select aria-label="الحالة" name="status" defaultValue={status} className="rounded border-line">
             {statusOptions(type).map((option) => (
               <option key={option || "all"} value={option}>{statusOptionLabel(option)}</option>
             ))}

@@ -24,32 +24,42 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
   const funnel = state?.lastStats?.rejectionReasons;
 
   async function loadDiagnostics(q = "") {
-    const response = await fetch(`/api/admin/news/diagnostics?q=${encodeURIComponent(q)}`, { cache: "no-store" });
-    const json = await response.json().catch(() => null);
-    if (response.ok && json?.ok) setDiagnostics(json.data);
+    try {
+      const response = await fetch(`/api/admin/news/diagnostics?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.ok) setDiagnostics(json.data);
+      else setMessage("تعذر تحميل التشخيص. حاول مرة أخرى.");
+    } catch { setMessage("تعذر تحميل التشخيص. حاول مرة أخرى."); }
   }
 
   useEffect(() => { void loadDiagnostics(); }, []);
 
   async function toggle(item: AdminNews) {
+    if (busy) return;
     setBusy(item._id);
-    const response = await fetch(`/api/admin/news/${item._id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hidden: item.status !== "hidden" }) });
-    const json = await response.json().catch(() => ({}));
-    setBusy(null);
-    if (!response.ok || !json.ok) return setMessage("تعذر تحديث حالة الخبر.");
-    setItems((current) => current.map((entry) => entry._id === item._id ? json.data.item : entry));
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/admin/news/${item._id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hidden: item.status !== "hidden" }) });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.ok) return setMessage("تعذر تحديث حالة الخبر.");
+      setItems((current) => current.map((entry) => entry._id === item._id ? json.data.item : entry));
+    } catch { setMessage("تعذر الاتصال بالخادم. حاول مرة أخرى."); }
+    finally { setBusy(null); }
   }
 
   async function refreshBatch() {
+    if (busy) return;
     setBusy("refresh");
     setMessage(null);
-    const response = await fetch("/api/admin/news/refresh", { method: "POST" });
-    const json = await response.json().catch(() => ({}));
-    setBusy(null);
-    if (!response.ok || !json.ok) return setMessage(json.error?.message || "تعذر تحديث الأخبار.");
-    setState({ ...(state || {}), lastStatus: json.data.stats.dryRun ? "dry_run" : "success", lastStats: json.data.stats, lastDryRunCandidates: json.data.preview });
-    void loadDiagnostics(candidateQuery);
-    setMessage(json.data.stats.dryRun ? `اكتملت المعاينة الآمنة: ${json.data.stats.selected} خبر مختار، بدون نشر.` : `اكتمل التحديث: ${json.data.stats.created} خبر في الدفعة الجديدة.`);
+    try {
+      const response = await fetch("/api/admin/news/refresh", { method: "POST" });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.ok) return setMessage(json.error?.message || "تعذر تحديث الأخبار.");
+      setState({ ...(state || {}), lastStatus: json.data.stats.dryRun ? "dry_run" : "success", lastStats: json.data.stats, lastDryRunCandidates: json.data.preview });
+      void loadDiagnostics(candidateQuery);
+      setMessage(json.data.stats.dryRun ? `اكتملت المعاينة الآمنة: ${json.data.stats.selected} خبر مختار، بدون نشر.` : `اكتمل التحديث: ${json.data.stats.created} خبر في الدفعة الجديدة.`);
+    } catch { setMessage("تعذر الاتصال بالخادم. حاول مرة أخرى."); }
+    finally { setBusy(null); }
   }
 
   return (
@@ -79,7 +89,7 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
             </div>
           </div>
         ) : null}
-        {message ? <p className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm font-bold text-civic">{message}</p> : null}
+        {message ? <p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm font-bold text-civic">{message}</p> : null}
       </section>
 
       <section className="card p-5">

@@ -41,7 +41,7 @@ export default function UtilityMenu() {
         type="button"
         disabled={!clientReady}
         onClick={() => setOpen((value) => !value)}
-        className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.16] bg-white/[0.08] text-white/[0.88] hover:border-emerald-200/[0.45] hover:bg-white/[0.14] hover:text-white"
+        className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-full border border-line bg-paper text-ink hover:border-civic/40 hover:bg-civic/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
         aria-label={language === "ar" ? "إعدادات العرض واللغة" : "Display and language settings"}
         aria-expanded={open}
         aria-controls="navbar-utility-menu"
