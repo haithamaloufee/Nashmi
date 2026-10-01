@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { authenticate } from "./helpers";
+import { authenticate, fixtures } from "./helpers";
 
 for (const role of ["iec", "admin", "super_admin"]) test(`baseline ${role}: public law create/edit dialogs and failed save`, async ({ page, context }) => {
   await authenticate(context, role);
@@ -35,9 +35,10 @@ test("baseline floating assistant, IEC accordions, party search and admin news r
   await assistant.getByRole("button", { name: /إغلاق/ }).click();
   await expect(assistant).toHaveCount(0);
   await page.goto("/parties");
-  await page.locator('main input').fill("جهة");
+  const publisherName = fixtures().publisherName || "جهة مدنية تجريبية";
+  await page.locator('main input').fill(publisherName);
   await page.getByRole("button", { name: "بحث", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "جهة مدنية تجريبية", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: publisherName, exact: true })).toBeVisible();
   await authenticate(context, "super_admin");
   await page.route("**/api/admin/news/refresh", route => route.fulfill({ status: 503, json: { ok: false, error: { message: "QA news refresh unavailable" } } }));
   await page.goto("/admin/news");

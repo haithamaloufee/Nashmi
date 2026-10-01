@@ -24,7 +24,7 @@ export async function seedSocialFixtures(partyId: mongoose.Types.ObjectId, autho
   for (const asset of source.assets) {
     const bytes = readFileSync(`public/uploads/qa-social/${asset.file}`);
     if (createHash("sha256").update(bytes).digest("hex") !== asset.sha256) throw Error("QA media checksum mismatch");
-    const stored = await MediaAsset.create({ ownerUserId: authorUserId, url: `/uploads/qa-social/${asset.file}`, storageKey: `qa-social/${asset.file}`, mimeType: asset.mimeType, sizeBytes: asset.sizeBytes, sha256: asset.sha256, width: asset.width, height: asset.height, type: asset.type, purpose: "post", resourceType: "post", visibility: "public", provider: "local_dev", status: "active", sourceProvider: "pexels", sourceUrl: asset.page });
+    const stored = await MediaAsset.create({ ownerUserId: authorUserId, url: `/uploads/qa-social/${asset.file}`, storageKey: `qa-social/${asset.file}`, mimeType: asset.mimeType, sizeBytes: asset.sizeBytes, sha256: asset.sha256, width: asset.width, height: asset.height, type: asset.type, purpose: "post", resourceType: "post", visibility: "public", provider: "local_dev", status: "active", sourceProvider: "pexels", sourceUrl: asset.download });
     media.set(asset.file, stored._id);
   }
   const timestamp = Date.parse("2026-10-01T10:00:00Z");

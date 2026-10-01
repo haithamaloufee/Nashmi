@@ -26,6 +26,10 @@ for (const language of ["ar", "en"]) for (const theme of ["light", "dark"]) for 
     await composer.press("Enter");
     await expect(card.getByRole("alert")).toContainText("QA composer outage");
     await expect(composer).toHaveValue("سطر تجريبي\n".repeat(8).trim());
+    await card.locator('button[aria-controls^="comments-"]').click();
+    await expect(composer).toHaveCount(0);
+    await card.locator('button[aria-controls^="comments-"]').click();
+    await expect(composer).toHaveValue("سطر تجريبي\n".repeat(8).trim());
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false);
     const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     expect(axe.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => n.target) }))).toEqual([]);

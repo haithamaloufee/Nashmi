@@ -3,6 +3,7 @@ import { authenticate, protectedRoutes, fixtures } from "./helpers";
 import { mkdirSync, writeFileSync } from "node:fs";
 
 const roles = ["guest", "citizen", "party", "iec", "admin", "super_admin"];
+const evidenceDirectory = process.env.UX_QA_PHASE?.startsWith("phase2") ? "test-results/phase2/preservation" : "test-results/baseline";
 for (const role of roles) {
   test(`baseline ${role}: route permissions, navigation and social controls`, async ({ page, context }, info) => {
     test.setTimeout(300_000);
@@ -17,10 +18,11 @@ for (const role of roles) {
       else if (response.status() === 307) expect(new URL(response.headers().location, "http://127.0.0.1:3020").pathname).toBe("/login");
       else expect(await response.text(), `${role} ${route} streamed redirect`).toMatch(/NEXT_REDIRECT[^<]*\/login/);
     }
-    mkdirSync("test-results/baseline", { recursive: true });
-    writeFileSync(`test-results/baseline/permissions-${role}.json`, JSON.stringify(policy, null, 2));
+    mkdirSync(evidenceDirectory, { recursive: true });
+    writeFileSync(`${evidenceDirectory}/permissions-${role}.json`, JSON.stringify(policy, null, 2));
     await info.attach("role-policy", { body: JSON.stringify(policy), contentType: "application/json" });
-    await page.goto("/updates");
+    // Target the original long-form fixture even when rich social entries lead.
+    await page.goto("/updates?search=" + encodeURIComponent("تحديث مدني تجريبي 1"));
     await expect(page.locator('button[aria-controls="mobile-navigation"]')).toBeEnabled();
     const card = page.locator("article").first();
     await card.getByRole("button", { name: "عرض المزيد", exact: true }).click();
@@ -75,7 +77,7 @@ for (const role of roles) {
     await expect(page.locator("#mobile-navigation")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator("#mobile-navigation")).toHaveCount(0);
-    await page.screenshot({ path: `test-results/baseline/interactions-${role}-mobile.png` });
+    await page.screenshot({ path: `${evidenceDirectory}/interactions-${role}-mobile.png` });
   });
 }
 
@@ -97,7 +99,7 @@ test("baseline public filters, authentication validation, recovery links and dis
   await expect(dialog).toHaveCount(0);
   const sort = page.locator("main select").first(); for (const value of ["oldest", "mostCommented", "mostLiked", "pollsEndingSoon", "newest"]) { await sort.selectOption(value); await expect(sort).toHaveValue(value); }
   await page.goto("/laws");
-  await page.locator('input[name="search"]').fill("تجريبية");
+  await page.locator('main input[name="search"]').fill("تجريبية");
   await page.locator('select[name="category"]').selectOption({ index: 1 });
   await page.getByRole("button", { name: "بحث", exact: true }).click();
   await expect(page).toHaveURL(/search=/);
@@ -179,6 +181,6 @@ for (const role of ["party", "iec", "admin", "super_admin"]) test(`baseline ${ro
     await modal.getByRole("button", { name: "تجاهل التغييرات", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   }
-  mkdirSync("test-results/baseline", { recursive: true });
-  writeFileSync(`test-results/baseline/form-interactions-${role}.json`, JSON.stringify({ dashboard, interactions }, null, 2));
+  mkdirSync(evidenceDirectory, { recursive: true });
+  writeFileSync(`${evidenceDirectory}/form-interactions-${role}.json`, JSON.stringify({ dashboard, interactions }, null, 2));
 });
