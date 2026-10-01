@@ -139,12 +139,20 @@ test("search dialog traps focus and returns it; share menu is keyboard accessibl
 
 test("login accepts existing passwords and enters social Home with real local auth", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.locator('button[aria-controls="mobile-navigation"]')).toBeEnabled();
+  // Navbar and AuthForm hydrate independently. A real password-toggle state
+  // change proves this form is interactive before entering the synthetic data.
+  const form = page.locator("main form");
+  await form.getByRole("button", { name: "إظهار كلمة المرور", exact: true }).click();
+  await expect(form.locator('input[name="password"]')).toHaveAttribute("type", "text");
   await page.locator('input[name="email"]').fill("legacy@nashmi.test");
   await page.locator('input[name="password"]').fill("legacy-pass");
+  await expect(form.locator('input[name="email"]')).toHaveValue("legacy@nashmi.test");
+  await expect(form.locator('input[name="password"]')).toHaveValue("legacy-pass");
   await expect(page.getByRole("button", { name: "دخول", exact: true }).last()).toBeEnabled();
   // A synthetic verified account has this pre-existing password; submit it through the real API.
+  const response = page.waitForResponse(response => response.url().endsWith("/api/auth/login") && response.request().method() === "POST");
   await page.getByRole("button", { name: "دخول", exact: true }).last().click();
+  expect((await response).status()).toBe(200);
   await expect(page).toHaveURL(/\/updates$/);
 });
 
