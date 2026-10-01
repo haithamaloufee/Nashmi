@@ -9,7 +9,7 @@ assert.match(expectedSha || '', /^[a-f0-9]{40}$/);
 assert.equal(repository, 'haithamaloufee/Nashmi');
 const output = 'test-results/release-preview';
 mkdirSync(output, { recursive: true });
-const results = { expectedSha, preview: null, pages: [], feeds: [], media: [], consoleErrors: [] };
+const results = { expectedSha, preview: null, http: [], pages: [], feeds: [], media: [], consoleErrors: [] };
 const save = () => writeFileSync(`${output}/results.json`, JSON.stringify(results, null, 2));
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 async function github(path) {
@@ -22,6 +22,11 @@ async function github(path) {
 }
 async function getJson(base, path) {
   const response = await fetch(`${base}${path}`, { cache: 'no-store', redirect: 'manual', signal: AbortSignal.timeout(20000) });
+  const location = response.headers.get('location');
+  const redirect = location ? new URL(location, base) : null;
+  // Omit query strings: SSO state and authenticated URLs must not enter logs.
+  results.http.push({ path, status: response.status, redirect: redirect ? redirect.origin + redirect.pathname : null });
+  save();
   assert.equal(response.status, 200, `${path}: HTTP ${response.status}; authorized Preview access required if protected`);
   return response.json();
 }
