@@ -287,7 +287,7 @@ export default function FloatingAssistant() {
   }
 
   return (
-    <div className="fixed left-2 right-auto z-40 flex max-w-[calc(100vw-1rem)] justify-start print:hidden sm:left-6" style={{ bottom: bottomOffset }}>
+    <div className="floating-assistant fixed left-2 right-auto z-40 flex max-w-[calc(100vw-1rem)] justify-start print:hidden sm:left-6" style={{ bottom: bottomOffset }}>
       {open ? (
         <section
           className="flex min-h-[340px] w-[calc(100vw-1rem)] max-w-[400px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-slate-900 shadow-[0_24px_70px_rgba(5,18,22,.28)] ring-1 ring-white/60 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 dark:ring-slate-700 sm:w-[400px]"

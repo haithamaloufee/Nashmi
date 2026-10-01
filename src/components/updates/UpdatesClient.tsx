@@ -120,8 +120,8 @@ export default function UpdatesClient({
       </aside>
       <section className="min-w-0 space-y-4" data-feed-region aria-busy={loading || loadingMore} aria-label={t("updates.title")}>
         <div className="card p-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
-            <label className="relative col-span-2 block sm:col-span-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_110px_44px] gap-2 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
+            <label className="relative block">
               <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/60" />
               <input
                 disabled={!ready}
@@ -144,10 +144,11 @@ export default function UpdatesClient({
               onClick={event => { event.currentTarget.focus(); setAdvancedFiltersOpen(true); }}
               aria-haspopup="dialog"
               aria-expanded={advancedFiltersOpen}
+              aria-label={t("updates.advancedSearch")}
               className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-civic/30 bg-civic/10 px-3 py-2.5 text-sm font-bold text-civic hover:border-civic hover:bg-civic hover:text-white dark:border-emerald-200/[0.35] dark:bg-emerald-200/10 dark:text-emerald-100 dark:hover:bg-emerald-200 dark:hover:text-slate-950"
             >
               <SlidersHorizontal className="h-4 w-4" />
-              {t("updates.advancedSearch")}
+              <span className="hidden sm:inline">{t("updates.advancedSearch")}</span>
             </button>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">

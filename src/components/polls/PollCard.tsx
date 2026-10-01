@@ -7,6 +7,7 @@ import { MessageCircle } from "lucide-react";
 import PollVote from "@/components/polls/PollVote";
 import PollCountdown from "@/components/polls/PollCountdown";
 import PollStatusBadge from "@/components/polls/PollStatusBadge";
+import PostMedia from "@/components/posts/PostMedia";
 import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import ShareMenu from "@/components/ui/ShareMenu";
@@ -130,7 +131,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
               ) : (
                 <h3 className="font-bold">{author.name}</h3>
               )}
-              <span className="rounded border border-civic/15 bg-civic/10 px-2 py-0.5 text-xs font-bold text-civic dark:border-emerald-200/30 dark:bg-emerald-200/12 dark:text-emerald-100">{author.type}</span>
+              <span className="sr-only">{author.type}</span>
               <span className="rounded-full bg-clay/10 px-2.5 py-1 text-xs font-bold text-clay dark:bg-amber-200/10 dark:text-amber-200">{t("poll.type")}</span>
               <PollStatusBadge poll={currentPoll} />
             </div>
@@ -147,32 +148,13 @@ export default function PollCard({ poll, compact = false, showModerationActions 
       <h3 className="text-lg font-bold leading-8 text-slate-950 dark:text-white"><HashtagText text={currentPoll.question} /></h3>
       {currentPoll.description ? <p className="mt-2 whitespace-pre-line break-words leading-7 text-slate-700 dark:text-slate-300"><HashtagText text={currentPoll.description} /></p> : null}
       <PollCountdown poll={currentPoll} onEnded={markEnded} />
-      {media.length ? (
-        <div className={`mt-4 grid gap-2 overflow-hidden rounded border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900 ${media.length > 1 ? "sm:grid-cols-2" : ""}`}>
-          {media.slice(0, 4).map((item) =>
-            item.type === "video" || item.mimeType?.startsWith("video/") ? (
-              <video key={item._id || item.url} className="aspect-video max-h-[520px] w-full bg-black object-contain" controls preload="metadata">
-                <source src={item.url} type={item.mimeType || "video/mp4"} />
-              </video>
-            ) : (
-              <SafeImage
-                key={item._id || item.url}
-                src={item.url}
-                alt={currentPoll.question || t("content.poll")}
-                className="aspect-video max-h-[520px] w-full bg-white object-contain p-3 dark:bg-slate-950"
-                fallback={<div className="grid aspect-video place-items-center text-sm text-slate-500 dark:text-slate-400">{t("common.error")}</div>}
-                localPrefixes={["/uploads/", "/images/", "/related/"]}
-              />
-            )
-          )}
-        </div>
-      ) : null}
+      {media.length ? <PostMedia media={media} title={currentPoll.question} /> : null}
       <PollVote poll={currentPoll} />
       <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
         <span>{formatNumber(commentsCount, language)} {t("poll.comments")}</span>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <ReactionButtons targetType="polls" targetId={currentPoll._id} likesCount={currentPoll.likesCount} dislikesCount={currentPoll.dislikesCount} />
+      <div className="mt-2 feed-actions">
+        <ReactionButtons targetType="polls" targetId={currentPoll._id} likesCount={currentPoll.likesCount} dislikesCount={currentPoll.dislikesCount} social />
         {!compact ? (
           <button
             type="button"

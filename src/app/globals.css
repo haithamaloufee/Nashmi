@@ -654,3 +654,16 @@ html[dir="ltr"] .home-hero-overlay {
 .dark .comment-composer textarea { background: transparent; border: 0; border-radius: 24px; color: var(--foreground); box-shadow: none; }
 .comment-composer textarea:focus-visible { outline: none; }
 @media(max-width: 639px) { .feed-card { padding: 12px; } .feed-actions button { gap: 4px; } }
+
+/* Stable, bounded media frames; full image remains available in the viewer. */
+.post-media { margin-inline: -16px; overflow: hidden; background: var(--surface-muted); }
+.post-media > button { height: min(360px, 70vw); }
+.post-media-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2px; height: 300px; }
+.post-media-grid > button { min-height: 0; height: 100%; }
+.post-media-grid > button:first-child:nth-last-child(3) { grid-row: span 2; }
+.post-media video { max-height: 350px; }
+@media(max-width:639px) { .post-media { margin-inline: -12px; } .post-media-grid { height: 260px; } }
+
+@media (max-width:639px) { body:has(.comment-composer textarea:focus) .floating-assistant { visibility: hidden; } }
+.social-profile-cover { height: 260px; background: linear-gradient(120deg, #126b6f, #263f48); }
+@media (max-width:639px) { .social-profile-cover { height: 160px; } }

@@ -31,8 +31,6 @@ export function useSocialFeed(initialUpdates: UpdateItem[], initialSearch: strin
   const requestRef = useRef<AbortController | null>(null);
   const pagingRef = useRef(false);
   const generation = useRef(0);
-  const skipInitial = useRef(true);
-  const restored = useRef(false);
   const restoring = useRef(false);
   const snapshot = useRef<any>(null);
   const errorText = useRef(connectionError);
@@ -50,6 +48,8 @@ export function useSocialFeed(initialUpdates: UpdateItem[], initialSearch: strin
     if (since) params.set("since", since);
     return params;
   }, [debouncedSearch, filter, sort, fromDate, toDate, hashtag]);
+  // Replaying mount effects must not refetch and replace an SSR/restored page.
+  const bootstrapQuery = useRef<string | null>(initialUpdates.length ? buildParams().toString() : null);
 
   const load = useCallback(async (cursor?: string | null) => {
     if (cursor && pagingRef.current) return;
@@ -80,11 +80,11 @@ export function useSocialFeed(initialUpdates: UpdateItem[], initialSearch: strin
   }, [buildParams]);
 
   useEffect(() => {
-    if (skipInitial.current) { skipInitial.current = false; if (initialUpdates.length) return; }
-    if (restored.current) { restored.current = false; return; }
+    if (restoring.current || bootstrapQuery.current === buildParams().toString()) return;
+    bootstrapQuery.current = null;
     void load();
     return () => { requestRef.current?.abort(); pagingRef.current = false; };
-  }, [load, initialUpdates.length]);
+  }, [load, buildParams]);
 
   // Persist only public feed content, bounded to 100 entries and five minutes.
   // Never save a session token, a comment draft or a publisher form.
@@ -94,8 +94,12 @@ export function useSocialFeed(initialUpdates: UpdateItem[], initialSearch: strin
       const cached = JSON.parse(sessionStorage.getItem(storageKey) || "null");
       if (cached && cached.filter !== "followed" && Date.now() - cached.savedAt < lifetime && Array.isArray(cached.updates) && cached.updates.length <= 100) {
         restoring.current = true;
-        const changed = cached.search !== initialSearch || cached.filter !== initialFilter || cached.fromDate || cached.toDate || cached.hashtag || cached.sort !== "newest";
-        restored.current = Boolean(changed);
+        const params = new URLSearchParams({ limit: String(pageSize), filter: cached.filter, sort: cached.sort });
+        if (cached.search.trim()) params.set("search", cached.search.trim());
+        if (cached.fromDate) params.set("from", cached.fromDate);
+        if (cached.toDate) params.set("to", cached.toDate);
+        if (cached.hashtag.trim()) params.set("hashtag", normalizeHashtag(cached.hashtag));
+        bootstrapQuery.current = params.toString();
         setUpdates(cached.updates); setNextCursor(cached.nextCursor); setTotalCount(cached.totalCount);
         setSearch(cached.search); setDebouncedSearch(cached.search.trim()); setFilter(cached.filter);
         setFromDate(cached.fromDate); setToDate(cached.toDate); setHashtag(cached.hashtag); setSort(cached.sort);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -12,9 +12,11 @@ type Props = {
   targetId: string;
   likesCount: number;
   dislikesCount: number;
+  social?: boolean;
+  onCountsChange?: (counts: { like: number; dislike: number }) => void;
 };
 
-export default function ReactionButtons({ targetType, targetId, likesCount, dislikesCount }: Props) {
+export default function ReactionButtons({ targetType, targetId, likesCount, dislikesCount, social = false, onCountsChange }: Props) {
   const { language, t } = useTranslation();
   const [reaction, setReaction] = useState<"like" | "dislike" | null>(null);
   const [counts, setCounts] = useState({ like: likesCount, dislike: dislikesCount });
@@ -22,6 +24,8 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
   const [pending, setPending] = useState(false);
   const lock = useRef(false);
   const { showToast } = useToast();
+  useEffect(() => { setCounts({ like: likesCount, dislike: dislikesCount }); }, [likesCount, dislikesCount]);
+  useEffect(() => { onCountsChange?.(counts); }, [counts, onCountsChange]);
 
   function calculateCounts(current: typeof counts, previous: typeof reaction, next: typeof reaction) {
     const updated = { ...current };
@@ -86,7 +90,7 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
         aria-pressed={reaction === "like"}
       >
         <ThumbsUp className="h-4 w-4" />
-        {formatNumber(counts.like, language)}
+        {social ? <><span className="hidden sm:inline">{t("reaction.like")}</span><span className="sm:hidden">{formatNumber(counts.like, language)}</span></> : formatNumber(counts.like, language)}
       </button>
       <button
         onClick={() => send(reaction === "dislike" ? null : "dislike")}
@@ -99,7 +103,7 @@ export default function ReactionButtons({ targetType, targetId, likesCount, disl
         aria-pressed={reaction === "dislike"}
       >
         <ThumbsDown className="h-4 w-4" />
-        {formatNumber(counts.dislike, language)}
+        {social ? <><span className="hidden sm:inline">{t("reaction.dislike")}</span><span className="sm:hidden">{formatNumber(counts.dislike, language)}</span></> : formatNumber(counts.dislike, language)}
       </button>
       <LoginPrompt open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
