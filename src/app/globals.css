@@ -627,8 +627,8 @@ html[dir="ltr"] .home-hero-overlay {
 /* Shared social surfaces: neutral content, Nashmi teal, logical RTL/LTR spacing. */
 :root { --surface: #fff; --surface-muted: #f2f4f7; --surface-border: #dfe3e8; --foreground: #17212b; --foreground-muted: #58636f; --brand: #126b6f; }
 .dark { --surface: #15212c; --surface-muted: #0b141b; --surface-border: #344454; --foreground: #f1f5f9; --foreground-muted: #bac7d4; --brand: #62d3c8; }
-:root { --navbar-height: 109px; }
-@media (min-width: 1024px) { :root { --navbar-height: 65px; } }
+:root { --navbar-height: 101px; }
+@media (min-width: 1024px) { :root { --navbar-height: 57px; } }
 .social-navbar { background: var(--surface); color: var(--foreground); border-color: var(--surface-border); box-shadow: 0 1px 6px #17212b12; }
 .nav-tab { display: flex; min-width: 0; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-bottom: 3px solid transparent; color: var(--foreground-muted); border-radius: 8px 8px 0 0; }
 @media (min-width: 1024px) { .nav-tab { min-width: 80px; max-width: 140px; } }
@@ -645,4 +645,12 @@ html[dir="ltr"] .home-hero-overlay {
 .dashboard-link { display: flex; align-items: center; min-height: 44px; padding: 10px 14px; border-radius: 10px; white-space: nowrap; }
 .dashboard-link[aria-current="page"] { background: #126b6f14; color: var(--brand); font-weight: 800; box-shadow: inset 3px 0 var(--brand); }
 .comment-bubble { background: var(--surface-muted); border: 0; box-shadow: none; border-radius: 18px; }
+.social-search-input,
+.dark .social-search-input { min-height: 44px; border: 1px solid transparent; border-radius: 9999px; background: var(--surface-muted); color: var(--foreground); box-shadow: none; }
+.social-search-input:focus { background: var(--surface); border-color: var(--brand); box-shadow: 0 0 0 3px #126b6f20; }
+.comment-composer { background: var(--surface-muted); border: 1px solid transparent; }
+.comment-composer:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px #126b6f20; }
+.comment-composer textarea,
+.dark .comment-composer textarea { background: transparent; border: 0; border-radius: 24px; color: var(--foreground); box-shadow: none; }
+.comment-composer textarea:focus-visible { outline: none; }
 @media(max-width: 639px) { .feed-card { padding: 12px; } .feed-actions button { gap: 4px; } }

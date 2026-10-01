@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Home, Landmark, BookOpen, BarChart3, Info, Bot, Compass, Loader2, Search, SlidersHorizontal } from "lucide-react";
+import { Home, Landmark, BookOpen, Info, Bot, Compass, Loader2, Search, SlidersHorizontal } from "lucide-react";
 import PostCard from "@/components/posts/PostCard";
 import PollCard from "@/components/polls/PollCard";
 import SurveyFeedCard from "@/components/surveys/SurveyFeedCard";
@@ -112,22 +112,22 @@ export default function UpdatesClient({
         onApply={closeAdvancedFilters}
         onClose={closeAdvancedFilters}
       />
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[190px_minmax(0,680px)] xl:grid-cols-[210px_minmax(0,680px)_270px] lg:justify-center">
+      <div className="mt-0 grid grid-cols-1 gap-5 lg:grid-cols-[190px_minmax(0,680px)] xl:grid-cols-[210px_minmax(0,620px)_270px] lg:justify-center">
       <aside className="hidden space-y-4 lg:sticky lg:top-20 lg:block lg:self-start" aria-label={t("social.explore")}>
         <h2 className="px-3 text-sm font-black text-ink/65">{t("social.explore")}</h2>
-        <nav className="grid gap-1">{[{href:"/updates", key:"nav.home", icon:Home},{href:"/parties",key:"nav.parties",icon:Landmark},{href:"/iec",key:"content.authority",icon:Landmark},{href:"/laws",key:"nav.laws",icon:BookOpen},{href:"/surveys",key:"nav.surveys",icon:BarChart3},{href:"/about-nashmi",key:"nav.aboutNashmi",icon:Info}].map(({href,key,icon:Icon}) => <Link key={href} href={href} aria-current={href === "/updates" ? "page" : undefined} className="focus-ring flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold hover:bg-civic/10"><Icon className="h-6 w-6 text-civic dark:text-emerald-200"/>{t(key as any)}</Link>)}</nav>
+        <nav className="grid gap-1">{[{href:"/updates", key:"nav.home", icon:Home},{href:"/parties",key:"nav.parties",icon:Landmark},{href:"/iec",key:"content.authority",icon:Landmark},{href:"/laws",key:"nav.laws",icon:BookOpen},{href:"/about-nashmi",key:"nav.aboutNashmi",icon:Info}].map(({href,key,icon:Icon}) => <Link key={href} href={href} aria-current={href === "/updates" ? "page" : undefined} className="focus-ring flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold hover:bg-civic/10"><Icon className="h-6 w-6 text-civic dark:text-emerald-200"/>{t(key as any)}</Link>)}</nav>
         <p className="border-t border-line px-3 pt-4 text-xs leading-6 text-ink/65">{t("social.neutral")}</p>
       </aside>
       <section className="min-w-0 space-y-4" data-feed-region aria-busy={loading || loadingMore} aria-label={t("updates.title")}>
         <div className="card p-3">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
             <label className="relative col-span-2 block sm:col-span-1">
-              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/[0.45]" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/60" />
               <input
                 disabled={!ready}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="w-full rounded border-line bg-white py-3 ps-10 text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white"
+                className="social-search-input w-full py-3 ps-10 pe-4"
                 placeholder={t("updates.search")}
                 aria-label={t("updates.search")}
               />

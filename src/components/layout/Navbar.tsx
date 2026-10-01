@@ -1,4 +1,5 @@
 import PrimaryNavigation from "@/components/layout/PrimaryNavigation";
+import NavbarSearch from "@/components/layout/NavbarSearch";
 import Image from "next/image";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
@@ -13,8 +14,7 @@ import type { TranslationKey } from "@/lib/i18n";
 const primaryLinks: Array<{ href: string; labelKey: TranslationKey }> = [
   { href: "/updates", labelKey: "nav.home" },
   { href: "/laws", labelKey: "nav.laws" },
-  { href: "/parties", labelKey: "nav.parties" },
-  { href: "/surveys", labelKey: "nav.surveys" }
+  { href: "/parties", labelKey: "nav.parties" }
 ];
 
 export default async function Navbar() {
@@ -30,18 +30,19 @@ export default async function Navbar() {
 
   return (
     <NavbarChrome>
-      <div className="container-page flex min-h-16 flex-wrap items-center justify-between gap-x-2 lg:flex-nowrap">
+      <div className="container-page flex min-h-14 flex-wrap items-center justify-between gap-x-2 lg:flex-nowrap">
         <NavbarPrefetcher routes={["/", ...primaryLinks.map((link) => link.href)]} />
-        <Link href="/" prefetch={false} data-navbar-prefetch="/" className="focus-ring group flex h-16 shrink-0 items-center rounded-xl" aria-label="Nashmi home">
+        <Link href="/" prefetch={false} data-navbar-prefetch="/" className="focus-ring group flex h-14 shrink-0 items-center rounded-xl" aria-label="Nashmi home">
           <Image
             src="/images/nashmi logo_transparent.png"
             alt="شعار منصة نشمي"
             width={86}
             height={86}
             priority
-            className="h-14 w-14 object-contain"
+            className="h-12 w-12 object-contain"
           />
         </Link>
+        <NavbarSearch />
 
         <PrimaryNavigation links={primaryLinks} />
 
@@ -54,7 +55,7 @@ export default async function Navbar() {
               <Link href="/login" className="focus-ring hidden min-h-11 items-center rounded-xl px-3 text-sm font-bold text-civic hover:bg-civic/10 dark:text-emerald-100 sm:inline-flex">
                 <I18nText id="nav.login" />
               </Link>
-              <Link href="/signup" className="focus-ring inline-flex min-h-11 items-center rounded-xl bg-civic px-3 text-sm font-bold text-white shadow-sm hover:bg-civic/90 dark:bg-emerald-200 dark:text-slate-950 sm:px-4">
+              <Link href="/signup" className="focus-ring hidden min-h-11 items-center rounded-full bg-civic px-3 text-sm font-bold text-white hover:bg-civic/90 dark:bg-emerald-200 dark:text-slate-950 lg:inline-flex">
                 <span className="hidden min-[360px]:inline"><I18nText id="auth.signup" /></span>
                 <span className="min-[360px]:hidden"><I18nText id="auth.submitSignup" /></span>
               </Link>

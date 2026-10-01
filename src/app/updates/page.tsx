@@ -50,9 +50,9 @@ export default async function UpdatesPage({ searchParams }: { searchParams: Prom
     getUpdatesPublisher()
   ]);
   return (
-    <main className="container-page py-5 sm:py-6">
-      <h1 className="text-2xl font-black sm:text-3xl"><I18nText id="updates.title" /></h1>
-      <p className="mt-1 max-w-2xl text-sm leading-7 text-ink/70"><I18nText id="updates.subtitle" /></p>
+    <main className="container-page py-3 sm:py-5">
+      <h1 className="sr-only"><I18nText id="updates.title" /></h1>
+      <p className="sr-only"><I18nText id="updates.subtitle" /></p>
       <UpdatesClient initialSearch={params.search || ""} initialFilter={params.filter || "all"} initialUpdates={(initialUpdates as any[]).slice(0, 10)} publisher={publisher} />
     </main>
   );

@@ -6,13 +6,16 @@ import type { TranslationKey } from "@/lib/i18n";
 
 export function TranslatedSearchInput({ name = "search", defaultValue = "", placeholderKey, className = "w-64" }: { name?: string; defaultValue?: string; placeholderKey: TranslationKey; className?: string }) {
   const { t } = useTranslation();
-  return <input name={name} defaultValue={defaultValue} className={`${className} rounded border-line focus:border-civic focus:ring-civic`} placeholder={t(placeholderKey)} />;
+  return <span className={`social-search relative block max-w-full ${className}`}>
+    <Search aria-hidden="true" className="pointer-events-none absolute start-3 top-3 h-5 w-5 text-ink/60" />
+    <input type="search" name={name} defaultValue={defaultValue} className="social-search-input w-full ps-10 pe-4" placeholder={t(placeholderKey)} aria-label={t(placeholderKey)} />
+  </span>;
 }
 
 export function SearchSubmitButton({ labelKey = "common.search" }: { labelKey?: TranslationKey }) {
   const { t } = useTranslation();
   return (
-    <button className="rounded bg-civic px-4 py-2 text-white hover:bg-civic/90" aria-label={t(labelKey)}>
+    <button type="submit" className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic text-white hover:bg-civic/90" aria-label={t(labelKey)}>
       <Search className="h-4 w-4" />
     </button>
   );

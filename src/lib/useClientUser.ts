@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-type ClientUser = { id: string; role: string } | null;
+type ClientUser = { id: string; role: string; name?: string; avatarUrl?: string | null; image?: string | null } | null;
 let cached: { expires: number; request: Promise<ClientUser> } | null = null;
 export function invalidateClientUser() {
   cached = null;
