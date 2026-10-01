@@ -79,7 +79,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
 
       <section className="border-b border-line bg-white/70 pt-5 dark:border-slate-800 dark:bg-slate-950/70">
         <div className="container-page">
-          <div className="overflow-hidden rounded-t-3xl border border-b-0 border-line bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <div className="overflow-hidden rounded-t-2xl border border-b-0 border-line bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
             {coverUrl ? (
               <SafeImage src={coverUrl} alt={`غلاف ${party.name}`} className="h-44 w-full object-cover sm:h-56 lg:h-64" fallback={<div className="h-44 bg-[linear-gradient(135deg,#126b6f,#dcebe5)] sm:h-56 lg:h-64" />} localPrefixes={["/images/", "/uploads/"]} />
             ) : (
@@ -89,7 +89,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
             <div className="px-4 pb-4 sm:px-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
-                  <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="-mt-14 h-28 w-28 shrink-0 rounded-2xl border-4 border-white bg-white object-contain p-1 shadow-md dark:border-slate-950" fallback={logoFallback} />
+                  <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="-mt-14 h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white object-contain p-1 shadow-md dark:border-slate-950" fallback={logoFallback} />
                   <div className="min-w-0 pb-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h1 className="text-2xl font-black sm:text-3xl">{party.name}</h1>
@@ -115,7 +115,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
       </section>
 
       <div className="container-page mt-6">
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,820px)_minmax(280px,360px)] lg:justify-center">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,680px)_minmax(280px,360px)] lg:justify-center">
           <section id="profile-posts" className="min-w-0 scroll-mt-24">
             <h2 className="sr-only">آخر تحديثات الحزب</h2>
 

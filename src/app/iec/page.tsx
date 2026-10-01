@@ -75,7 +75,7 @@ export default async function IecPage() {
 
       <section className="border-b border-line bg-white/70 pt-5 dark:border-slate-800 dark:bg-slate-950/70">
         <div className="container-page">
-          <div className="overflow-hidden rounded-t-3xl border border-b-0 border-line bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <div className="overflow-hidden rounded-t-2xl border border-b-0 border-line bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
             {coverUrl ? (
               <SafeImage src={coverUrl} alt="غلاف الهيئة المستقلة للانتخاب" className="h-44 w-full object-cover sm:h-56 lg:h-64" fallback={<div className="h-44 bg-[linear-gradient(135deg,#126b6f,#dcebe5)] sm:h-56 lg:h-64" />} localPrefixes={["/images/", "/uploads/", "/related/"]} />
             ) : (
@@ -84,7 +84,7 @@ export default async function IecPage() {
 
             <div className="px-4 pb-4 sm:px-6">
               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
-                <SafeImage src={logoUrl} alt="شعار الهيئة المستقلة للانتخاب" className="-mt-14 h-28 w-28 shrink-0 rounded-2xl border-4 border-white bg-white object-contain p-1 shadow-md dark:border-slate-950" fallback={logoFallback} localPrefixes={["/images/", "/uploads/", "/related/"]} />
+                <SafeImage src={logoUrl} alt="شعار الهيئة المستقلة للانتخاب" className="-mt-14 h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white object-contain p-1 shadow-md dark:border-slate-950" fallback={logoFallback} localPrefixes={["/images/", "/uploads/", "/related/"]} />
                 <div className="min-w-0 pb-1">
                   <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-civic/10 px-2.5 py-1 text-xs font-bold text-civic dark:bg-emerald-200/10 dark:text-emerald-100">
                     <Building2 className="h-4 w-4" />
@@ -106,7 +106,7 @@ export default async function IecPage() {
         </div>
       </section>
 
-      <div className="container-page mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,820px)_minmax(280px,360px)] lg:justify-center">
+      <div className="container-page mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,680px)_minmax(280px,360px)] lg:justify-center">
         <section id="profile-posts" className="min-w-0 scroll-mt-24">
           <h2 className="sr-only">آخر تحديثات الهيئة</h2>
           {timeline.length > 0 ? (

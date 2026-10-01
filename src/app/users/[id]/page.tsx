@@ -30,9 +30,9 @@ export default async function PublicUserProfilePage({ params }: PageProps) {
   const user = result.user;
 
   return (
-    <main className="container-page py-8">
-      <section className="overflow-hidden rounded border border-line bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950/95">
-        <div className="h-28 bg-[linear-gradient(135deg,#126b6f,#263f48)] sm:h-36" />
+    <main className="container-page max-w-5xl py-5">
+      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950/95">
+        <div className="social-profile-cover" />
         <div className="px-5 pb-6 sm:px-7">
           <div className="-mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex min-w-0 items-end gap-4">
@@ -56,7 +56,7 @@ export default async function PublicUserProfilePage({ params }: PageProps) {
             <ReportButton targetType="user" targetId={user.id} />
           </div>
 
-          <section className="mt-6 rounded border border-line bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/80">
+          <section className="mt-6 rounded-2xl border border-line bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/80">
             <h2 className="text-lg font-bold text-slate-950 dark:text-white">نبذة عني</h2>
             {user.bio ? (
               <p className="mt-3 whitespace-pre-line break-words leading-8 text-slate-700 dark:text-slate-200">{user.bio}</p>

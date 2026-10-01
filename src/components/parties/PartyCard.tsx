@@ -32,7 +32,7 @@ export default function PartyCard({ party }: { party: Party }) {
   const fallback = <div className="grid h-12 w-12 shrink-0 place-items-center rounded bg-civic/10 text-lg font-bold text-civic">{party.name.slice(0, 1)}</div>;
 
   return (
-    <Link href={`/parties/${party.slug}`} prefetch={false} className="card card-hover flex h-full min-w-0 flex-col border-t-4 border-t-civic/30 p-5">
+    <Link href={`/parties/${party.slug}`} prefetch={false} className="card card-hover flex h-full min-w-0 flex-col p-5">
       <div className="mb-4 flex items-center gap-3">
         <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="h-12 w-12 shrink-0 rounded-full object-contain ring-1 ring-line" fallback={fallback} />
         <div className="min-w-0">
@@ -59,7 +59,7 @@ export default function PartyCard({ party }: { party: Party }) {
           <Users className="me-1 inline h-4 w-4" />
           {formatNumber(party.followersCount, language)} {party.followersCount === 1 ? t("party.follower") : t("party.followers")}
         </span>
-        <span className="rounded bg-civic px-4 py-2 text-sm font-semibold text-white">
+        <span className="rounded-full bg-civic/10 px-4 py-2 text-sm font-semibold text-civic">
           {t("common.view")}
         </span>
       </div>

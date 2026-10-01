@@ -123,6 +123,11 @@ select:disabled {
   border-color: rgba(18, 107, 111, 0.42);
 }
 
+/* Override legacy square utilities; search/composer rules below keep their pills. */
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select)[class] {
+  border-radius: 12px;
+}
+
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea, select):focus {
   border-color: #126b6f;
   box-shadow: 0 0 0 3px rgba(18, 107, 111, 0.18), 0 10px 24px rgba(23, 33, 43, 0.05);

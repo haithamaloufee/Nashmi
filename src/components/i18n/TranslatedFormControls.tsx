@@ -1,15 +1,13 @@
 "use client";
 
 import { Search } from "lucide-react";
+import SearchField from "@/components/ui/SearchField";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import type { TranslationKey } from "@/lib/i18n";
 
 export function TranslatedSearchInput({ name = "search", defaultValue = "", placeholderKey, className = "w-64" }: { name?: string; defaultValue?: string; placeholderKey: TranslationKey; className?: string }) {
   const { t } = useTranslation();
-  return <span className={`social-search relative block max-w-full ${className}`}>
-    <Search aria-hidden="true" className="pointer-events-none absolute start-3 top-3 h-5 w-5 text-ink/60" />
-    <input type="search" name={name} defaultValue={defaultValue} className="social-search-input w-full ps-10 pe-4" placeholder={t(placeholderKey)} aria-label={t(placeholderKey)} />
-  </span>;
+  return <SearchField name={name} defaultValue={defaultValue} className={className} placeholder={t(placeholderKey)} label={t(placeholderKey)} />;
 }
 
 export function SearchSubmitButton({ labelKey = "common.search" }: { labelKey?: TranslationKey }) {

@@ -39,7 +39,7 @@ export default function AccountProfileForm({ user }: { user: SafeUser }) {
   }
 
   return (
-    <div className="card max-w-3xl space-y-5 p-6">
+    <div className="card mx-auto max-w-3xl space-y-5 p-5 sm:p-7">
       <MediaUploadField
         label="الصورة الشخصية"
         value={avatarUrl}
@@ -82,7 +82,7 @@ export default function AccountProfileForm({ user }: { user: SafeUser }) {
           <input value={user.role} readOnly className="mt-1 w-full rounded border-line bg-slate-50 text-ink/70 dark:bg-slate-900 dark:text-slate-300" />
         </label>
       </div>
-      <button type="button" onClick={saveProfile} disabled={saving || !name.trim() || bio.length > 500} className="rounded bg-civic px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
+      <button type="button" onClick={saveProfile} disabled={saving || !name.trim() || bio.length > 500} className="min-h-11 rounded-full bg-civic px-5 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
         {saving ? "جار الحفظ..." : "حفظ"}
       </button>
       {message ? <p className="text-sm text-ink/60">{message}</p> : null}

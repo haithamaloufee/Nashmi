@@ -1,4 +1,5 @@
 "use client";
+import SearchField from "@/components/ui/SearchField";
 
 import { useEffect, useState } from "react";
 import { ExternalLink, Eye, EyeOff, RefreshCw } from "lucide-react";
@@ -96,7 +97,7 @@ export default function NewsAdminClient({ initialItems, initialState }: { initia
         <h2 className="text-lg font-black">تشخيص الرصد الجديد</h2>
         <p className="mt-1 text-sm text-ink/60">المواد المرصودة لا تظهر في الشريط حتى تُختار وتُنشر في دفعة معتمدة.</p>
         <div className="mt-3 flex gap-2">
-          <input className="input flex-1" value={candidateQuery} onChange={(event) => setCandidateQuery(event.target.value)} placeholder="ابحث بالرابط أو عنوان الناشر" aria-label="البحث عن خبر مرصود" />
+          <SearchField className="flex-1" value={candidateQuery} onChange={(event) => setCandidateQuery(event.target.value)} placeholder="ابحث بالرابط أو عنوان الناشر" label="البحث عن خبر مرصود" />
           <button type="button" className="btn-primary" onClick={() => void loadDiagnostics(candidateQuery)}>بحث</button>
         </div>
         {diagnostics ? <>

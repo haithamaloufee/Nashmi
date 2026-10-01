@@ -9,7 +9,7 @@ export default async function AccountPage() {
   if (!user) redirect("/login");
 
   return (
-    <main className="container-page py-8">
+    <main className="container-page max-w-5xl py-6">
       <div className="mb-6">
         <h1 className="text-3xl font-black">حسابي</h1>
         <p className="mt-2 text-ink/70">إدارة الاسم والصورة الشخصية للحساب.</p>
