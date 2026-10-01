@@ -1,0 +1,25 @@
+# Nashmi social interface foundations
+
+The shared styles are implemented in `src/app/globals.css`, `tailwind.config.ts` and the existing UI components. No additional UI library is required.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| Surface | `#ffffff` | `#15212c` |
+| Muted surface | `#f2f4f7` | `#0b141b` |
+| Border | `#dfe3e8` | `#344454` |
+| Foreground | `#17212b` | `#f1f5f9` |
+| Secondary text | `#58636f` | `#bac7d4` |
+| Brand | `#126b6f` | `#62d3c8` |
+
+- Typography: self-hosted Cairo variable font for Arabic and Latin; Segoe UI, Tahoma and Arial fallbacks. Preserve readable line heights for Arabic body text. Font license and source URLs live in `public/fonts/cairo`.
+- Navigation: 64px desktop header content; mobile adds a 44px row of four direct tabs. `--navbar-height` includes the border and also positions the fixed news ticker and sticky feed notice. Active destinations expose `aria-current="page"`; logo opens `/`, Home opens `/updates`.
+- Loading: preload the two local Cairo subsets. Navbar prefetch uses user intent on mobile/touch or constrained connections and idle work on desktop. The feed section has a readable heading hierarchy in the accessibility tree.
+- Surfaces: feed cards use 14px corners and 12px mobile / 16px desktop padding. Comment bubbles use the muted surface and 18px corners. Feed cards remain stationary on hover.
+- Layout: mobile reading column; desktop explorer, bounded 680px reading column and contextual column. Dashboard columns have `min-width: 0`; wide tables scroll inside accessible regions.
+- Controls: primary social actions and tabs provide at least 44px targets. Preserve both positive and negative reactions. Active filters expose `aria-pressed`; expanding comments/content expose their state.
+- Dialogs: use `useDialog` for Escape, focus trapping, scroll lock and return focus. Label the panel, its fields and close button. Menus use keyboard arrows, Home/End, Escape and return focus after selection.
+- Feedback: retain drafts after failed submissions, clear busy state on network errors, announce feedback, offer retry and avoid replacing newer results with stale responses. New feed items appear behind an explicit user action rather than moving the reader automatically.
+- Direction: use logical `start`, `end`, `text-start` and inline spacing. Keep publisher names and content neutral; colors identify interface roles and status, never political preference.
+- Verification: isolated local role fixtures, Playwright across three browser engines, axe A/AA checks, RTL/LTR and light/dark viewport audits, and separately recorded visual reference creation/comparison. These checks complement actual browser visual review.
+
+Contrast and accessibility are verified against rendered states. A token alone does not prove every composited text/background pair is accessible.
