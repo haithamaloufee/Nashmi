@@ -15,6 +15,8 @@ import SafeImage from "@/components/ui/SafeImage";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import HashtagText from "@/components/hashtags/HashtagText";
 import { formatNumber, formatRelativeTime } from "@/lib/localization";
+import { useClientUser } from "@/lib/useClientUser";
+import { canEditOwnPoll } from "@/lib/permissions";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
@@ -81,11 +83,14 @@ function authorInfo(poll: Poll, t: ReturnType<typeof useTranslation>["t"]) {
   return { name: user?.name || t("content.user"), image: user?.avatarUrl || user?.image || null, href: null, type: t("content.user"), fallback: "م" };
 }
 
-export default function PollCard({ poll, compact = false, showModerationActions = false }: { poll: Poll; compact?: boolean; showModerationActions?: boolean }) {
+export default function PollCard({ poll, compact = false, showModerationActions = false, priorityMedia = false }: { poll: Poll; compact?: boolean; showModerationActions?: boolean; priorityMedia?: boolean }) {
   const { language, t } = useTranslation();
+  const user = useClientUser();
   const [currentPoll, setCurrentPoll] = useState(poll);
   const [deleted, setDeleted] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [commentsStarted, setCommentsStarted] = useState(false);
+  useEffect(() => { if (commentsExpanded) setCommentsStarted(true); }, [commentsExpanded]);
   const [commentsCount, setCommentsCount] = useState(poll.commentsCount || 0);
   const [timeReady, setTimeReady] = useState(false);
   useEffect(() => {
@@ -105,6 +110,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
     <SafeImage
       src={author.image}
       alt={author.name}
+      sizes="44px"
       className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line dark:bg-slate-900"
       fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic/10 text-lg font-bold text-civic ring-1 ring-line">{author.fallback}</div>}
       localPrefixes={["/uploads/", "/images/", "/related/"]}
@@ -139,7 +145,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <OwnerContentMenu type="poll" item={currentPoll} onUpdated={(updated) => setCurrentPoll(updated)} onDeleted={() => setDeleted(true)} />
+          {user && canEditOwnPoll(user, currentPoll) ? <OwnerContentMenu type="poll" item={currentPoll} onUpdated={(updated) => setCurrentPoll(updated)} onDeleted={() => setDeleted(true)} /> : null}
           {showModerationActions ? <InlineModerationActions targetType="poll" targetId={currentPoll._id} /> : null}
           <ReportButton targetType="poll" targetId={currentPoll._id} compact />
         </div>
@@ -148,7 +154,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
       <h3 className="text-lg font-bold leading-8 text-slate-950 dark:text-white"><HashtagText text={currentPoll.question} /></h3>
       {currentPoll.description ? <p className="mt-2 whitespace-pre-line break-words leading-7 text-slate-700 dark:text-slate-300"><HashtagText text={currentPoll.description} /></p> : null}
       <PollCountdown poll={currentPoll} onEnded={markEnded} />
-      {media.length ? <PostMedia media={media} title={currentPoll.question} /> : null}
+      {media.length ? <PostMedia media={media} title={currentPoll.question} priority={priorityMedia} /> : null}
       <PollVote poll={currentPoll} />
       <div className="mt-4 flex items-center justify-between border-y border-slate-200 py-1 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
         <span>{formatNumber(commentsCount, language)} {t("poll.comments")}</span>
@@ -168,7 +174,7 @@ export default function PollCard({ poll, compact = false, showModerationActions 
         ) : null}
         <ShareMenu url={`/updates?poll=${currentPoll._id}`} title={currentPoll.question} text={currentPoll.description || currentPoll.question} />
       </div>
-      {!compact ? <CommentBox targetType="polls" targetId={currentPoll._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
+      {!compact && (commentsExpanded || commentsStarted) ? <CommentBox targetType="polls" targetId={currentPoll._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>
   );
 }

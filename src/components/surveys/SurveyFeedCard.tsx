@@ -45,6 +45,7 @@ export default function SurveyFeedCard({ survey }: { survey: SurveyFeedItem }) {
     <SafeImage
       src={publisher?.imageUrl || null}
       alt={publisher?.name || t("content.survey")}
+      sizes="44px"
       className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line dark:bg-slate-900"
       fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-clay/10 text-lg font-bold text-clay ring-1 ring-line dark:bg-amber-200/10 dark:text-amber-100">{(publisher?.name || t("content.survey")).slice(0, 1)}</div>}
       localPrefixes={["/uploads/", "/images/", "/related/"]}

@@ -36,8 +36,9 @@ export default async function Navbar() {
           <Image
             src="/images/nashmi logo_transparent.png"
             alt="شعار منصة نشمي"
-            width={86}
-            height={86}
+            width={48}
+            height={48}
+            sizes="48px"
             priority
             className="h-12 w-12 object-contain"
           />

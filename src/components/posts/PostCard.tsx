@@ -13,6 +13,8 @@ import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import HashtagText from "@/components/hashtags/HashtagText";
 import { formatNumber, formatRelativeTime, normalizeHashtag } from "@/lib/localization";
+import { useClientUser } from "@/lib/useClientUser";
+import { canEditOwnPost } from "@/lib/permissions";
 
 const CommentBox = dynamic(() => import("@/components/comments/CommentBox"), { ssr: false });
 const InlineModerationActions = dynamic(() => import("@/components/admin/InlineModerationActions"), { ssr: false });
@@ -110,12 +112,15 @@ function mediaItems(post: Post) {
   return (post.mediaIds || []).filter((media): media is Media => typeof media === "object" && media.status !== "deleted" && Boolean(media.url));
 }
 
-export default function PostCard({ post, compact = false, showModerationActions = false }: { post: Post; compact?: boolean; showModerationActions?: boolean }) {
+export default function PostCard({ post, compact = false, showModerationActions = false, priorityMedia = false }: { post: Post; compact?: boolean; showModerationActions?: boolean; priorityMedia?: boolean }) {
   const { language, t } = useTranslation();
+  const user = useClientUser();
   const [currentPost, setCurrentPost] = useState(post);
   const [deleted, setDeleted] = useState(false);
   const [expandedText, setExpandedText] = useState(false);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
+  const [commentsStarted, setCommentsStarted] = useState(false);
+  useEffect(() => { if (commentsExpanded) setCommentsStarted(true); }, [commentsExpanded]);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
   const [reactionCounts, setReactionCounts] = useState({ like: post.likesCount || 0, dislike: post.dislikesCount || 0 });
   const [timeReady, setTimeReady] = useState(false);
@@ -136,6 +141,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
     <SafeImage
       src={author.image}
       alt={author.name}
+      sizes="44px"
       className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:bg-slate-900 dark:group-hover:ring-emerald-200/50"
       fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic/10 text-lg font-bold text-civic ring-1 ring-line transition group-hover:scale-[1.03] group-hover:ring-civic/45 dark:group-hover:ring-emerald-200/50">{author.fallback}</div>}
       localPrefixes={["/uploads/", "/images/", "/related/"]}
@@ -170,7 +176,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <OwnerContentMenu type="post" item={currentPost} onUpdated={(updated) => setCurrentPost(updated)} onDeleted={() => setDeleted(true)} />
+          {user && canEditOwnPost(user, currentPost) ? <OwnerContentMenu type="post" item={currentPost} onUpdated={(updated) => setCurrentPost(updated)} onDeleted={() => setDeleted(true)} /> : null}
           {showModerationActions ? <InlineModerationActions targetType="post" targetId={currentPost._id} /> : null}
           <ReportButton targetType="post" targetId={currentPost._id} compact />
         </div>
@@ -194,7 +200,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
         </div>
       ) : null}
 
-      {media.length ? <PostMedia media={media} title={currentPost.title || t("content.post")} /> : null}
+      {media.length ? <PostMedia media={media} title={currentPost.title || t("content.post")} priority={priorityMedia} /> : null}
 
       <div data-visual-counts className="mt-3 flex items-center justify-between gap-3 border-b border-line text-sm text-ink/60">
         <span className="inline-flex items-center gap-1.5 text-xs"><ThumbsUp aria-hidden="true" className="h-4 w-4 text-civic" />{formatNumber(reactionCounts.like + reactionCounts.dislike, language)} {t("social.reactions")}</span>
@@ -218,7 +224,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
         <ShareMenu url={shareUrl} title={currentPost.title || author.name} text={currentPost.content.slice(0, 140)} />
       </div>
 
-      {!compact ? <CommentBox targetType="posts" targetId={currentPost._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
+      {!compact && (commentsExpanded || commentsStarted) ? <CommentBox targetType="posts" targetId={currentPost._id} expanded={commentsExpanded} showModerationActions={showModerationActions} onCountChange={(delta) => setCommentsCount((value) => Math.max(0, value + delta))} /> : null}
     </article>
   );
 }

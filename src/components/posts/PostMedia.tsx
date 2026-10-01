@@ -7,7 +7,7 @@ import { normalizeSafeImageUrl } from "@/lib/imageUrls";
 export type FeedMedia = { _id?: string; url: string; type?: "image" | "video" | "document"; mimeType?: string; status?: string };
 const MediaViewer = dynamic(() => import("./MediaViewer"), { ssr: false });
 
-export default function PostMedia({ media, title }: { media: FeedMedia[]; title: string }) {
+export default function PostMedia({ media, title, priority = false }: { media: FeedMedia[]; title: string; priority?: boolean }) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState<number | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
@@ -22,7 +22,7 @@ export default function PostMedia({ media, title }: { media: FeedMedia[]; title:
         </video> : item.type === "document" || item.mimeType?.startsWith("application/") ?
         <a key={item._id || item.url} href={item.url} target="_blank" rel="noopener noreferrer" className="focus-ring flex min-h-11 items-center justify-center px-4 text-civic underline">{t("social.openDocument")}</a> :
         <button key={item._id || item.url} type="button" className="focus-ring relative block w-full overflow-hidden" aria-haspopup="dialog" aria-label={`${t("social.openImage")} ${index + 1}`} onClick={event => { opener.current = event.currentTarget; setSelected(images.indexOf(item)); }}>
-          <SafeImage src={item.url} alt={`${title} — ${index + 1}`} className="h-full max-h-[360px] w-full object-contain" sizes={media.length > 1 ? "(max-width: 640px) 50vw, 310px" : "(max-width: 640px) 100vw, 620px"} localPrefixes={["/uploads/", "/images/", "/related/"]} fallback={<span className="grid min-h-44 place-items-center text-sm text-ink/60">{t("common.error")}</span>} />
+          <SafeImage src={item.url} alt={`${title} — ${index + 1}`} priority={priority && index === 0} quality={60} className="h-full max-h-[360px] w-full object-contain" sizes={media.length > 1 ? "(max-width: 640px) 50vw, 310px" : "(max-width: 640px) 100vw, 620px"} localPrefixes={["/uploads/", "/images/", "/related/"]} fallback={<span className="grid min-h-44 place-items-center text-sm text-ink/60">{t("common.error")}</span>} />
           {index === 3 && media.length > 4 ? <span className="absolute inset-0 grid place-items-center bg-black/55 text-3xl font-bold text-white">+{media.length - 4}</span> : null}
         </button>)}
     </div>

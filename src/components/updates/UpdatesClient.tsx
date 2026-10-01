@@ -120,8 +120,8 @@ export default function UpdatesClient({
       </aside>
       <section className="min-w-0 space-y-4" data-feed-region aria-busy={loading || loadingMore} aria-label={t("updates.title")}>
         <div className="card p-3">
-          <div className="grid grid-cols-[minmax(0,1fr)_110px_44px] gap-2 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
-            <label className="relative block">
+          <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2 sm:grid-cols-[minmax(0,1fr)_220px_44px]">
+            <label className="relative col-span-2 block sm:col-span-1">
               <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/60" />
               <input
                 disabled={!ready}
@@ -134,7 +134,7 @@ export default function UpdatesClient({
             </label>
             <label className="grid gap-1 text-sm font-semibold xl:block">
               <span className="sr-only">{t("updates.sortBy")}</span>
-              <select disabled={!ready} value={sort} onChange={(event) => setSort(event.target.value)} className="h-full w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white">
+              <select disabled={!ready} value={sort} onChange={(event) => setSort(event.target.value)} className="h-full min-h-11 w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white">
                 {sortOptions.map((item) => <option key={item} value={item}>{t(sortLabelKeys[item])}</option>)}
               </select>
             </label>
@@ -148,7 +148,7 @@ export default function UpdatesClient({
               className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-civic/30 bg-civic/10 px-3 py-2.5 text-sm font-bold text-civic hover:border-civic hover:bg-civic hover:text-white dark:border-emerald-200/[0.35] dark:bg-emerald-200/10 dark:text-emerald-100 dark:hover:bg-emerald-200 dark:hover:text-slate-950"
             >
               <SlidersHorizontal className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("updates.advancedSearch")}</span>
+              <span className="sr-only">{t("updates.advancedSearch")}</span>
             </button>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -199,8 +199,8 @@ export default function UpdatesClient({
         <h2 className="sr-only">{t("updates.subtitle")}</h2>
         {!loading ? (
           <div className="space-y-4">
-            {updates.map((update) => <div key={update.type + "-" + update.item._id} data-feed-item={update.type + "-" + update.item._id}>
-              {update.type === "post" ? <PostCard post={update.item}/> : update.type === "poll" ? <PollCard poll={update.item}/> : <SurveyFeedCard survey={update.item}/>}
+            {updates.map((update, index) => <div key={update.type + "-" + update.item._id} data-feed-item={update.type + "-" + update.item._id}>
+              {update.type === "post" ? <PostCard post={update.item} priorityMedia={index === 0}/> : update.type === "poll" ? <PollCard poll={update.item} priorityMedia={index === 0}/> : <SurveyFeedCard survey={update.item}/>}
             </div>)}
           </div>
         ) : null}
