@@ -148,7 +148,13 @@ export default function ChatClient({
   useEffect(() => {
     const workspace = workspaceRef.current;
     if (!workspace) return;
-    const measure = () => workspace.style.setProperty("--chat-top", `${Math.max(0, document.querySelector(".chat-page")!.getBoundingClientRect().top + window.scrollY)}px`);
+    const chatPage = workspace.closest<HTMLElement>(".chat-page");
+    if (!chatPage) return;
+    let active = true;
+    const measure = () => {
+      if (!active || !chatPage.isConnected || !workspace.isConnected) return;
+      workspace.style.setProperty("--chat-top", `${Math.max(0, chatPage.getBoundingClientRect().top + window.scrollY)}px`);
+    };
     const observer = new ResizeObserver(measure);
     const header = document.querySelector("body header");
     const ticker = document.querySelector(".news-ticker-shell");
@@ -158,7 +164,7 @@ export default function ChatClient({
     mutation.observe(document.body, { childList: true, subtree: true });
     measure();
     window.addEventListener("resize", measure);
-    return () => { observer.disconnect(); mutation.disconnect(); window.removeEventListener("resize", measure); };
+    return () => { active = false; observer.disconnect(); mutation.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
   const keyboardOpen = Boolean(visibleViewport && typeof window !== "undefined" && visibleViewport.height < window.innerHeight - 120 && window.innerWidth < 640);
   const sidebarLabel = language === "en" ? "Conversation history" : "سجل المحادثات";
