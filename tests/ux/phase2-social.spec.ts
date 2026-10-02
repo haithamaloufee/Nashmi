@@ -7,7 +7,7 @@ test("rich QA media opens uncropped viewer, restores focus, and plays real local
   const fixtures = JSON.parse(readFileSync("test-results/phase2/social-fixtures.json", "utf8"));
   expect(fixtures.entries).toHaveLength(10);
   await page.goto("/updates");
-  await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+  await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
   const post = (kind: string) => page.locator(`[data-feed-item="post-${fixtures.entries.find((entry: any) => entry.kind === kind).id}"]`);
   const gallery = post("gallery");
   await gallery.scrollIntoViewIfNeeded();
@@ -28,7 +28,7 @@ test("rich QA media opens uncropped viewer, restores focus, and plays real local
   await expect(video).toHaveAttribute("preload", "none");
   expect(await video.evaluate((el: HTMLVideoElement) => el.autoplay)).toBe(false);
   await video.scrollIntoViewIfNeeded();
-  await video.evaluate(async (el: HTMLVideoElement) => { el.muted = true; await el.play(); });
+  await post("video").getByRole("button", { name: "تشغيل الفيديو", exact: true }).last().click();
   await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(0.1);
   expect(await video.evaluate((el: HTMLVideoElement) => el.videoWidth / el.videoHeight)).toBeCloseTo(16 / 9, 1);
   await video.evaluate((el: HTMLVideoElement) => el.pause());
@@ -56,7 +56,7 @@ for (const language of ["ar", "en"]) for (const theme of ["light", "dark"]) for 
     for (const route of ["/updates", "/login", "/signup", "/parties", "/parties/qa-civic", "/iec", "/laws", "/chat"]) {
       await page.goto(route);
       await expect(page.locator('button[aria-controls="mobile-navigation"]')).toBeEnabled();
-      if (route === "/updates") await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+      if (route === "/updates") await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
       await page.evaluate(() => document.fonts.ready);
       expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false);
       const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();

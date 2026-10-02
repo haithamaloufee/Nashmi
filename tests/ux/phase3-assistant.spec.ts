@@ -23,7 +23,7 @@ test("mobile keyboard geometry keeps floating header and composer in visible vie
   await page.setViewportSize({ width: 390, height: 844 });
   await simulateKeyboard(page);
   await page.goto("/updates");
-  await expect(page.locator('[data-feed-region] input[aria-label]')).toBeEnabled();
+  await expect(page.locator('[data-feed-region] input.social-search-input[aria-label]')).toBeEnabled();
   await page.getByRole("button", { name: assistantName, exact: true }).click();
   const panel = page.locator(`section[aria-label="${assistantName}"]`);
   await expect(panel).toBeVisible();
@@ -42,7 +42,7 @@ test("mobile keyboard geometry keeps floating header and composer in visible vie
 test("mobile floating assistant blocks background scrolling and restores reading position", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/updates");
-  await expect(page.locator('[data-feed-region] input[aria-label]')).toBeEnabled();
+  await expect(page.locator('[data-feed-region] input.social-search-input[aria-label]')).toBeEnabled();
   await page.evaluate(() => window.scrollTo({ top: 700, behavior: "instant" }));
   const previous = await page.evaluate(() => window.scrollY);
   await page.getByRole("button", { name: assistantName, exact: true }).click();
@@ -63,7 +63,7 @@ test("dismissed launcher stays unmounted during navigation, full chat remains ac
   page.on("request", request => { if (new URL(request.url()).pathname === "/api/chat") chatRequests++; });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/updates");
-  await expect(page.locator('[data-feed-region] input[aria-label]')).toBeEnabled();
+  await expect(page.locator('[data-feed-region] input.social-search-input[aria-label]')).toBeEnabled();
   expect(chatRequests).toBe(0);
   await page.getByRole("button", { name: "إخفاء المساعد حتى إعادة تحميل الصفحة", exact: true }).click();
   await expect(page.locator(".floating-assistant")).toHaveCount(0);

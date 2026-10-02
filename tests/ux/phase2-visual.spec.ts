@@ -10,7 +10,7 @@ for (const language of ["ar", "en"]) for (const theme of ["light", "dark"]) for 
     for (const route of ["/updates", "/login", "/signup", "/parties", "/parties/qa-civic", "/iec"]) {
       await page.goto(route);
       await expect(page.locator('button[aria-controls="mobile-navigation"]')).toBeEnabled();
-      if (route === "/updates") await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+      if (route === "/updates") await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
       await page.evaluate(() => document.fonts.ready);
       await expect.poll(() => page.locator('main img').evaluateAll(nodes => nodes.filter(el => el.getBoundingClientRect().top < innerHeight && el.getBoundingClientRect().bottom > 0).every(el => (el as HTMLImageElement).complete))).toBe(true);
       await expect(page).toHaveScreenshot(`${route.replaceAll('/', '_')}-${language}-${theme}-${width}.png`, { animations: "disabled", maxDiffPixelRatio: 0.005, mask: [page.locator('[data-visual-dynamic]'), page.locator('[data-visual-counts]'), page.locator('nextjs-portal'), page.locator('video')] });

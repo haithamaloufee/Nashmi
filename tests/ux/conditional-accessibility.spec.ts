@@ -12,7 +12,7 @@ for (const theme of ["light", "dark"]) test(`populated comments, vote, chat and 
     await info.attach(`axe-${state}`, { body: JSON.stringify(states.at(-1), null, 2), contentType: "application/json" });
   };
   await page.goto("/updates");
-  await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+  await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
   const post = page.locator("article").first();
   await post.getByRole("button", { name: "تعليق", exact: true }).click();
   await post.getByRole("textbox", { name: "كتابة تعليق", exact: true }).fill("مسودة اصطناعية لفحص التباين، لا يتم إرسالها");
