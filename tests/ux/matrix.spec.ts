@@ -25,7 +25,7 @@ for (const language of ["ar", "en"]) for (const theme of ["light", "dark"]) test
       if (route === "/register") await page.waitForURL("**/signup");
       await expect(page.locator('button[aria-controls="mobile-navigation"]')).toBeEnabled();
       if (route === "/updates") {
-        await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+        await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
         await expect.poll(() => page.locator('[data-feed-region] button[aria-pressed="true"]').evaluate(element => getComputedStyle(element).opacity)).toBe("1");
       }
       await page.evaluate(() => document.fonts.ready);
@@ -56,7 +56,7 @@ for (const language of ["ar", "en"]) for (const theme of ["light", "dark"]) for 
       await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
       await expect(page.locator("html")).toHaveClass(theme === "dark" ? /dark/ : /^(?!.*dark).*$/);
       if (route === "/updates") {
-        await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+        await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
         await expect.poll(() => page.locator('[data-feed-region] button[aria-pressed="true"]').evaluate(element => getComputedStyle(element).opacity)).toBe("1");
       }
       await page.evaluate(() => document.fonts.ready);

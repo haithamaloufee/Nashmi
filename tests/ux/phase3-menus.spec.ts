@@ -85,7 +85,7 @@ for (const role of ["guest", "citizen", "party", "iec", "admin", "super_admin"])
   const details = `phase3-menu-${role}-${Date.now()}`;
   try {
     await page.goto("/updates");
-    await expect(page.locator('[data-feed-region] input[aria-label]')).toBeEnabled();
+    await expect(page.locator('[data-feed-region] input.social-search-input[aria-label]')).toBeEnabled();
     const card = page.locator("article").filter({ has: page.getByRole("button", { name: "خيارات المنشور", exact: true }) }).first();
     await card.getByRole("button", { name: "خيارات المنشور", exact: true }).click();
     await card.getByRole("menuitem", { name: "إبلاغ", exact: true }).click();

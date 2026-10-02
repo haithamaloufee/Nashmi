@@ -9,7 +9,7 @@ test("mobile feed avoids eager full-route preloads, preserves intent navigation 
     if (url.pathname === "/laws" && url.searchParams.has("_rsc")) lawRequests.push(url.pathname);
   });
   await page.goto("/updates");
-  await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+  await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
   const result = await new AxeBuilder({ page }).withRules(["heading-order"]).analyze();
   expect(result.violations).toEqual([]);
   // Exceed the former 2.5s idle timeout; unrelated full pages must not be fetched.

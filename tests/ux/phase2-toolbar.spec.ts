@@ -8,7 +8,7 @@ for (const language of ["ar", "en"]) for (const width of [320, 390, 1440]) {
     await page.addInitScript(language => localStorage.setItem("nashmi-language", language), language);
     await page.setViewportSize({ width, height: 844 });
     await page.goto("/updates");
-    await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+    await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
     await page.evaluate(() => document.fonts.ready);
     const fits = (el: HTMLInputElement | HTMLSelectElement) => {
       const style = getComputedStyle(el);
@@ -18,7 +18,7 @@ for (const language of ["ar", "en"]) for (const width of [320, 390, 1440]) {
       const text = el instanceof HTMLSelectElement ? el.selectedOptions[0].text : el.placeholder;
       return { textWidth: drawing.measureText(text).width, available: el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) };
     };
-    const search = page.locator("[data-feed-region] input[aria-label]");
+    const search = page.locator("[data-feed-region] input.social-search-input[aria-label]");
     const result = await search.evaluate(fits);
     expect(result.textWidth).toBeLessThanOrEqual(result.available);
     const sort = page.locator("[data-feed-region] select").first();

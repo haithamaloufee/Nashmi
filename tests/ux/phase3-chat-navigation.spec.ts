@@ -16,7 +16,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole("textbox", { name: "رسالة إلى المساعد الذكي", exact: true })).toBeEnabled();
     await page.locator('nav[aria-label] a[href="/updates"]').first().click();
     await expect(page).toHaveURL(/\/updates$/);
-    await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+    await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
     expect(errors).toEqual([]);
   });
 }

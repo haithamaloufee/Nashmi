@@ -4,7 +4,7 @@ test("touch-only phone controls, media and short viewport composer stay usable",
   try {
     const page = await context.newPage();
     await page.goto("/updates");
-    await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+    await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
     await page.locator('button[aria-controls="mobile-navigation"]').tap();
     await expect(page.locator("#mobile-navigation")).toBeVisible();
     await page.keyboard.press("Escape");

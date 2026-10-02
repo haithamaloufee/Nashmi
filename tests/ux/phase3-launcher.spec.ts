@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 for (const width of [390, 1440]) test(`icon-only launcher drags, docks and still opens and dismisses ${width}`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 900 });
   await page.goto("/updates");
-  await expect(page.locator('[data-feed-region] input[aria-label]')).toBeEnabled();
+  await expect(page.locator('[data-feed-region] input.social-search-input[aria-label]')).toBeEnabled();
   const launcher = page.locator(".floating-assistant");
   const button = launcher.getByRole("button", { name: "المساعد الذكي", exact: true });
   await expect(launcher.getByRole("button")).toHaveCount(2);
@@ -64,7 +64,7 @@ test("touch-emulated launcher docks without opening after a drag", async ({ brow
       }, true);
     });
     await page.goto("/updates");
-    await expect(page.locator('[data-feed-region] input[aria-label]')).toBeEnabled();
+    await expect(page.locator('[data-feed-region] input.social-search-input[aria-label]')).toBeEnabled();
     const button = page.locator(".floating-assistant").getByRole("button", { name: "المساعد الذكي", exact: true });
     const box = (await button.boundingBox())!;
     const cdp = await context.newCDPSession(page);

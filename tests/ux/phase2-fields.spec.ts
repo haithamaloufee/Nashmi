@@ -10,7 +10,7 @@ for (const language of ["ar", "en"]) for (const theme of ["light", "dark"]) for 
     await page.addInitScript(({ language, theme }) => { localStorage.setItem("nashmi-language", language); localStorage.setItem("nashmi-theme", theme); }, { language, theme });
     await page.setViewportSize({ width, height: 844 });
     await page.goto("/updates");
-    await expect(page.locator("[data-feed-region] input[aria-label]")).toBeEnabled();
+    await expect(page.locator("[data-feed-region] input.social-search-input[aria-label]")).toBeEnabled();
     const search = page.locator('header input[type="search"]');
     await expect(search).toBeVisible();
     expect(await search.evaluate(el => getComputedStyle(el).borderRadius)).toBe("9999px");
