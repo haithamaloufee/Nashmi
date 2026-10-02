@@ -89,7 +89,7 @@ export default async function PartyDetailsPage({ params }: { params: Promise<{ s
             <div className="px-4 pb-4 sm:px-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
-                  <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="-mt-14 h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white object-contain p-1 shadow-md dark:border-slate-950" fallback={logoFallback} />
+                  <SafeImage src={getPartyLogoSrc(party)} alt={party.name} sizes="112px" className="-mt-14 h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white object-contain p-1 shadow-md dark:border-slate-950" fallback={logoFallback} />
                   <div className="min-w-0 pb-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h1 className="text-2xl font-black sm:text-3xl">{party.name}</h1>

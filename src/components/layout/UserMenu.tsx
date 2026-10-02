@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { LayoutDashboard, LogOut, Settings, UserRound } from "lucide-react";
+import { LayoutDashboard, LogOut, UserRound } from "lucide-react";
 import { invalidateClientUser } from "@/lib/useClientUser";
 import { useRouter } from "next/navigation";
 import SafeImage from "@/components/ui/SafeImage";
@@ -18,7 +18,7 @@ function dashboardHref(role: SafeUser["role"]) {
 
 export default function UserMenu({ user }: { user: SafeUser }) {
   const router = useRouter();
-  const { language, t } = useTranslation();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -54,7 +54,7 @@ export default function UserMenu({ user }: { user: SafeUser }) {
   return (
     <div ref={rootRef} className="relative">
       <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className="focus-ring flex min-h-11 items-center gap-2 rounded-full border border-line bg-paper px-1.5 text-ink hover:border-civic/40 hover:bg-civic/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white" aria-expanded={open} aria-controls="account-menu">
-        <SafeImage src={avatarSrc} alt={user.name} className="h-9 w-9 rounded-full object-cover" fallback={fallback} localPrefixes={["/uploads/avatars/", "/uploads/", "/images/"]} />
+        <SafeImage src={avatarSrc} alt={user.name} sizes="36px" className="h-9 w-9 rounded-full object-cover" fallback={fallback} localPrefixes={["/uploads/avatars/", "/uploads/", "/images/"]} />
         <span className="hidden max-w-28 truncate pe-2 text-sm font-bold text-ink dark:text-white xl:inline">{user.name.split(" ")[0]}</span>
       </button>
       {open ? (
@@ -64,14 +64,10 @@ export default function UserMenu({ user }: { user: SafeUser }) {
             <UserRound className="h-4 w-4" />
             {t("nav.account")}
           </Link>
-          <Link href={dashboardHref(user.role)} className="focus-ring flex min-h-11 items-center gap-2 rounded-xl px-3 text-white/80 hover:bg-white/10 hover:text-white" onClick={() => setOpen(false)}>
+          {dashboardHref(user.role) !== "/account" ? <Link href={dashboardHref(user.role)} className="focus-ring flex min-h-11 items-center gap-2 rounded-xl px-3 text-white/80 hover:bg-white/10 hover:text-white" onClick={() => setOpen(false)}>
             <LayoutDashboard className="h-4 w-4" />
             {t("nav.dashboard")}
-          </Link>
-          <Link href="/account" className="focus-ring flex min-h-11 items-center gap-2 rounded-xl px-3 text-white/80 hover:bg-white/10 hover:text-white" onClick={() => setOpen(false)}>
-            <Settings className="h-4 w-4" />
-            {language === "ar" ? "الإعدادات" : "Settings"}
-          </Link>
+          </Link> : null}
           <div className="my-1 h-px bg-white/10" />
           <button type="button" onClick={logout} className="focus-ring flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-right text-red-200 hover:bg-red-400/10 hover:text-red-100">
             <LogOut className="h-4 w-4" />

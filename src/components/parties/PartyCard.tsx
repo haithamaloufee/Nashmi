@@ -34,7 +34,7 @@ export default function PartyCard({ party }: { party: Party }) {
   return (
     <Link href={`/parties/${party.slug}`} prefetch={false} className="card card-hover flex h-full min-w-0 flex-col p-5">
       <div className="mb-4 flex items-center gap-3">
-        <SafeImage src={getPartyLogoSrc(party)} alt={party.name} className="h-12 w-12 shrink-0 rounded-full object-contain ring-1 ring-line" fallback={fallback} />
+        <SafeImage src={getPartyLogoSrc(party)} alt={party.name} sizes="48px" className="h-12 w-12 shrink-0 rounded-full object-contain ring-1 ring-line" fallback={fallback} />
         <div className="min-w-0">
           <h3 className="break-words text-lg font-bold">{party.name}</h3>
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink/65">

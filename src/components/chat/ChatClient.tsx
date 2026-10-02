@@ -2,15 +2,24 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Archive, ArrowDown, Loader2, MessageSquare, Plus, Send, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Archive, ArrowDown, Loader2, MessageSquare, PanelLeftClose, PanelLeftOpen, Plus, Send, Sparkles, Trash2, X } from "lucide-react";
 import ChatAvatar from "@/components/chat/ChatAvatar";
-import MarkdownMessage from "@/components/chat/MarkdownMessage";
 import TypingIndicator from "@/components/chat/TypingIndicator";
+import MessageInput from "@/components/chat/MessageInput";
+import { useMobileAssistantScrollLock, useVisibleViewport } from "@/components/chat/useVisibleViewport";
 import { LoginPrompt } from "@/components/ui/LoginPrompt";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { formatNumber } from "@/lib/localization";
 import { cleanAssistantContent } from "@/lib/chatDisplay";
 import NewsContextCard, { type ClientNewsContext } from "@/components/chat/NewsContextCard";
+
+const MarkdownMessage = dynamic(() => import("@/components/chat/MarkdownMessage"));
+
+// Network failures follow the same visible recovery path as service failures.
+function chatRequest(url: string, options?: RequestInit) {
+  return fetch(url, options).catch(() => new Response(JSON.stringify({ ok: false, error: { messageKey: "chat.connectionError" } }), { status: 503, headers: { "Content-Type": "application/json" } }));
+}
 
 type GroundingSource = {
   title: string;
@@ -125,9 +134,64 @@ export default function ChatClient({
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [anchorActiveTurn, setAnchorActiveTurn] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollContentRef = useRef<HTMLDivElement | null>(null);
   const latestUserRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLFormElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const sidebarRef = useRef<HTMLElement | null>(null);
+  const sidebarToggleRef = useRef<HTMLButtonElement | null>(null);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const visibleViewport = useVisibleViewport(true);
+  useMobileAssistantScrollLock(mobileSidebarOpen, 1023);
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    const measure = () => workspace.style.setProperty("--chat-top", `${Math.max(0, document.querySelector(".chat-page")!.getBoundingClientRect().top + window.scrollY)}px`);
+    const observer = new ResizeObserver(measure);
+    const header = document.querySelector("body header");
+    const ticker = document.querySelector(".news-ticker-shell");
+    if (header) observer.observe(header);
+    if (ticker) observer.observe(ticker);
+    const mutation = new MutationObserver(measure);
+    mutation.observe(document.body, { childList: true, subtree: true });
+    measure();
+    window.addEventListener("resize", measure);
+    return () => { observer.disconnect(); mutation.disconnect(); window.removeEventListener("resize", measure); };
+  }, []);
+  const keyboardOpen = Boolean(visibleViewport && typeof window !== "undefined" && visibleViewport.height < window.innerHeight - 120 && window.innerWidth < 640);
+  const sidebarLabel = language === "en" ? "Conversation history" : "سجل المحادثات";
+  const toggleLabel = language === "en" ? "Toggle conversation history" : "فتح وإغلاق سجل المحادثات";
+
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const sync = () => { if (desktop.matches) setMobileSidebarOpen(false); };
+    desktop.addEventListener("change", sync);
+    return () => desktop.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const opener = sidebarToggleRef.current;
+    sidebarRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileSidebarOpen(false);
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(sidebarRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],[tabindex="0"]') || []).filter(element => element.getClientRects().length);
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      // Safari does not necessarily focus a clicked button; restore the opener explicitly.
+      (opener || previousFocus)?.focus({ preventScroll: true });
+    };
+  }, [mobileSidebarOpen]);
 
   const activeSession = useMemo(() => sessions.find((session) => session._id === activeSessionId) || null, [sessions, activeSessionId]);
   const activeNewsContext = currentNewsContext;
@@ -143,7 +207,7 @@ export default function ChatClient({
     let cancelled = false;
     async function loadUsage() {
       setClientReady(true);
-      const response = await fetch("/api/chat", { cache: "no-store", headers: { "x-nashmi-language": language } });
+      const response = await chatRequest("/api/chat", { cache: "no-store", headers: { "x-nashmi-language": language } });
       const json = await response.json().catch(() => ({}));
       if (!cancelled && response.ok && json.ok) setUsage(json.data.usage);
     }
@@ -161,7 +225,7 @@ export default function ChatClient({
         return;
       }
       setSessionsLoading(true);
-      const response = await fetch("/api/chat/sessions", { cache: "no-store" });
+      const response = await chatRequest("/api/chat/sessions", { cache: "no-store" });
       const json = await response.json().catch(() => ({}));
       if (cancelled) return;
       setSessionsLoading(false);
@@ -177,7 +241,7 @@ export default function ChatClient({
       setSessions(nextSessions);
       if (!lawId && !newsId && nextSessions[0]?._id) {
         setActiveSessionId(nextSessions[0]._id);
-        const messagesResponse = await fetch(`/api/chat/sessions/${nextSessions[0]._id}/messages`, { cache: "no-store" });
+        const messagesResponse = await chatRequest(`/api/chat/sessions/${nextSessions[0]._id}/messages`, { cache: "no-store" });
         const messagesJson = await messagesResponse.json().catch(() => ({}));
         if (!cancelled && messagesResponse.ok && messagesJson.ok) {
           setMessages(messagesJson.data.messages?.length ? messagesJson.data.messages : [introMessage]);
@@ -195,7 +259,7 @@ export default function ChatClient({
     let cancelled = false;
     async function createNewsConversation() {
       setNewsSessionLoading(true);
-      const response = await fetch("/api/chat/sessions", {
+      const response = await chatRequest("/api/chat/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newsId })
@@ -223,14 +287,17 @@ export default function ChatClient({
     if (!container) return;
 
     const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      const nearBottom = scrollTop + clientHeight >= scrollHeight - 120;
+      const content = scrollContentRef.current;
+      const nearBottom = !content || content.getBoundingClientRect().bottom <= container.getBoundingClientRect().bottom + 32;
       setShowScrollToBottom(!nearBottom);
     };
 
     container.addEventListener("scroll", handleScroll);
+    const observer = new ResizeObserver(handleScroll);
+    observer.observe(container);
+    if (scrollContentRef.current) observer.observe(scrollContentRef.current);
     handleScroll();
-    return () => container.removeEventListener("scroll", handleScroll);
+    return () => { container.removeEventListener("scroll", handleScroll); observer.disconnect(); };
   }, []);
 
   useEffect(() => {
@@ -255,12 +322,16 @@ export default function ChatClient({
   }, [newsId, newsSessionLoading]);
 
   const scrollToBottom = () => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const container = scrollRef.current;
+    const content = scrollContentRef.current;
+    if (!container || !content) return;
+    const top = container.scrollTop + content.getBoundingClientRect().bottom - container.getBoundingClientRect().bottom + 24;
+    container.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   };
 
   async function refreshSessions(selectedId?: string) {
     if (!authenticated) return;
-    const response = await fetch("/api/chat/sessions", { cache: "no-store" });
+    const response = await chatRequest("/api/chat/sessions", { cache: "no-store" });
     const json = await response.json().catch(() => ({}));
     if (response.ok && json.ok) {
       setSessions(json.data.sessions || []);
@@ -269,13 +340,14 @@ export default function ChatClient({
   }
 
   async function openSession(sessionId: string) {
+    setMobileSidebarOpen(false);
     if (!authenticated) return;
     setError(null);
     setLastFailedPrompt(null);
     setAnchorActiveTurn(false);
     setActiveSessionId(sessionId);
     setCurrentNewsContext(sessions.find((session) => session._id === sessionId)?.newsContext || null);
-    const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, { cache: "no-store" });
+    const response = await chatRequest(`/api/chat/sessions/${sessionId}/messages`, { cache: "no-store" });
     const json = await response.json().catch(() => ({}));
     if (response.status === 401) {
       setLoginOpen(true);
@@ -289,6 +361,7 @@ export default function ChatClient({
   }
 
   async function newConversation() {
+    setMobileSidebarOpen(false);
     setError(null);
     setLastFailedPrompt(null);
     setAnchorActiveTurn(false);
@@ -298,7 +371,7 @@ export default function ChatClient({
     setCurrentNewsContext(null);
     if (!authenticated) return;
 
-    const response = await fetch("/api/chat/sessions", {
+    const response = await chatRequest("/api/chat/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: t("chat.newConversation") })
@@ -327,7 +400,7 @@ export default function ChatClient({
     if (!window.confirm(language === "en" ? "Delete this conversation?" : "هل أنت متأكد من حذف هذه المحادثة؟")) return;
 
     setError(null);
-    const response = await fetch(`/api/chat/sessions/${sessionId}`, { method: "DELETE" });
+    const response = await chatRequest(`/api/chat/sessions/${sessionId}`, { method: "DELETE" });
     const json = await response.json().catch(() => ({}));
     if (response.status === 401) {
       setLoginOpen(true);
@@ -372,7 +445,7 @@ export default function ChatClient({
 
     let response: Response;
     try {
-      response = await fetch(url, {
+      response = await chatRequest(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-nashmi-language": language },
         body: JSON.stringify({
@@ -428,10 +501,12 @@ export default function ChatClient({
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-10rem)] gap-4 lg:grid-cols-[280px_1fr]" dir={dir}>
-      <aside className="rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+    <div ref={workspaceRef} className={`chat-workspace ${desktopSidebarOpen ? "chat-workspace-sidebar" : ""}`} dir={dir} style={keyboardOpen && visibleViewport ? { position: "fixed", top: visibleViewport.top + 8, insetInline: 8, height: Math.max(180, visibleViewport.height - 16), zIndex: 70 } : undefined}>
+      {mobileSidebarOpen ? <button type="button" className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden" aria-label={language === "en" ? "Close conversation history" : "إغلاق سجل المحادثات"} onClick={() => setMobileSidebarOpen(false)} /> : null}
+      <aside ref={sidebarRef} id="chat-history" aria-label={sidebarLabel} role={mobileSidebarOpen ? "dialog" : undefined} aria-modal={mobileSidebarOpen || undefined} className={`chat-history ${mobileSidebarOpen ? "chat-history-mobile" : "hidden"} ${desktopSidebarOpen ? "lg:flex" : "lg:hidden"}`}>
         <div className="flex items-center justify-between border-b border-line p-3 dark:border-slate-700">
-          <h2 className="text-sm font-bold text-ink dark:text-white">{t("chat.conversations")}</h2>
+          <h2 className="text-sm font-bold text-ink dark:text-white">{sidebarLabel}</h2>
+          <button type="button" onClick={() => setMobileSidebarOpen(false)} className="focus-ring grid h-11 w-11 place-items-center rounded-xl hover:bg-civic/10 lg:hidden" aria-label={language === "en" ? "Close conversation history" : "إغلاق سجل المحادثات"}><X className="h-5 w-5" /></button>
           <button
             type="button"
             onClick={newConversation}
@@ -442,7 +517,7 @@ export default function ChatClient({
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        <div className="max-h-[calc(100vh-16rem)] space-y-2 overflow-auto p-2">
+        <div className="min-h-0 flex-1 space-y-2 overscroll-contain overflow-auto p-2">
           {authenticated && sessionsLoading ? (
             <div className="flex items-center gap-2 p-3 text-sm text-slate-600 dark:text-slate-300">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -486,31 +561,39 @@ export default function ChatClient({
         </div>
       </aside>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-soft dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
-        <div className="flex flex-col justify-between gap-3 border-b border-white/10 bg-[linear-gradient(135deg,#0f555a,#10252b)] p-4 text-white sm:flex-row sm:items-center">
-          <div>
-            <h2 className="font-black text-white">{activeSession?.title || t("chat.newConversation")}</h2>
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100" aria-label={t("nav.chat")}>
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2 dark:border-slate-800 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2">
+            <button ref={sidebarToggleRef} type="button" className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-xl hover:bg-civic/10 lg:hidden" onClick={() => setMobileSidebarOpen(value => !value)} aria-label={toggleLabel} aria-expanded={mobileSidebarOpen} aria-controls="chat-history"><PanelLeftOpen className="h-5 w-5 rtl:rotate-180" /></button>
+            <button type="button" className="focus-ring hidden h-11 w-11 shrink-0 place-items-center rounded-xl hover:bg-civic/10 lg:grid" onClick={() => setDesktopSidebarOpen(value => !value)} aria-label={toggleLabel} aria-expanded={desktopSidebarOpen} aria-controls="chat-history">{desktopSidebarOpen ? <PanelLeftClose className="h-5 w-5 rtl:rotate-180" /> : <PanelLeftOpen className="h-5 w-5 rtl:rotate-180" />}</button>
+            <Sparkles className="h-5 w-5 shrink-0 text-civic dark:text-emerald-200" aria-hidden="true" />
+            <div className="min-w-0">
+            <h2 className="truncate text-sm font-black">{activeSession?.title || t("nav.chat")}</h2>
             {usage ? (
-              <p className="mt-1 text-xs font-semibold text-white/[0.72]">
+              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                 {t("chat.remaining")} {formatNumber(usage.remaining, language)} {t("chat.remainingMessages")}
               </p>
             ) : null}
+            </div>
           </div>
+          <div className="flex shrink-0 items-center gap-1">
+          <button type="button" onClick={newConversation} className="focus-ring grid h-11 w-11 place-items-center rounded-xl hover:bg-civic/10" aria-label={t("chat.newConversation")}><Plus className="h-5 w-5" /></button>
           {activeSessionId ? (
             <button
               type="button"
               onClick={deleteConversation}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/80 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-700 dark:text-slate-400 dark:hover:bg-red-950/30"
               title={language === "en" ? "Delete conversation" : "حذف المحادثة"}
               aria-label={language === "en" ? "Delete conversation" : "حذف المحادثة"}
             >
               <Trash2 className="h-4 w-4" />
             </button>
           ) : null}
+          </div>
         </div>
 
         {usage?.subjectType === "guest" ? (
-          <div className="border-b border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-7 text-civic dark:border-emerald-200/20 dark:bg-emerald-200/10 dark:text-emerald-100">
+          <div className="shrink-0 border-b border-emerald-200 bg-emerald-50 px-4 py-2 text-xs leading-6 text-civic dark:border-emerald-200/20 dark:bg-emerald-200/10 dark:text-emerald-100">
             {t("chat.guestCta")} <Link href="/login" className="font-black underline">{t("chat.loginCta")}</Link>
           </div>
         ) : null}
@@ -528,16 +611,17 @@ export default function ChatClient({
           </div>
         ) : null}
 
-        <div className="relative">
-          <div ref={scrollRef} tabIndex={0} role="log" aria-label={t("nav.chat")} className={`assistant-scrollbar focus-ring h-[min(560px,calc(100vh-18rem))] space-y-4 overflow-auto bg-slate-50 p-4 dark:bg-[#071217] ${anchorActiveTurn ? "pb-[min(560px,calc(100vh-18rem))]" : ""}`} aria-live="polite">
-            {messages.map((item, index) => (
-              <div key={item._id || `${item.role}-${index}`} ref={index === latestUserIndex ? latestUserRef : undefined} dir="ltr" className={`flex items-end gap-2 ${item.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <div ref={scrollRef} tabIndex={0} role="log" aria-label={t("nav.chat")} className="assistant-scrollbar focus-ring h-full overscroll-contain overflow-auto px-4 py-6 focus-visible:outline-offset-[-3px] sm:px-8" aria-live="polite">
+            <div ref={scrollContentRef} className="space-y-6">
+            {messages.map((item, index) => showSuggestions && !activeNewsContext && item.content === introMessage.content ? null : (
+              <div key={item._id || `${item.role}-${index}`} ref={index === latestUserIndex ? latestUserRef : undefined} dir="ltr" className={`mx-auto flex max-w-3xl items-start gap-3 ${item.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
                 <ChatAvatar role={item.role} name={item.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={item.role === "user" ? userAvatarUrl(currentUser) : null} />
                 <div
                   dir={dir}
-                  className={`min-w-0 max-w-[78%] rounded-2xl p-4 text-start leading-8 shadow-sm sm:max-w-[84%] ${item.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-emerald-200 dark:text-slate-950" : "rounded-bl-md border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
+                  className={`min-w-0 text-start leading-8 ${item.role === "user" ? "max-w-[85%] rounded-3xl bg-slate-100 px-4 py-3 text-slate-900 dark:bg-slate-800 dark:text-slate-100" : "flex-1 py-1 text-slate-900 dark:text-slate-100"}`}
                 >
-                  {item.role === "assistant" ? <MarkdownMessage content={cleanAssistantContent(item.content)} /> : <div className="whitespace-pre-wrap break-words">{item.content}</div>}
+                  {item.role === "assistant" && item.content !== introMessage.content ? <MarkdownMessage content={cleanAssistantContent(item.content)} /> : <div className="whitespace-pre-wrap break-words">{item.content}</div>}
                   {item.role === "assistant" && item.groundingSources?.length ? (
                     <div className="mt-3 border-t border-slate-200 pt-2 text-xs dark:border-slate-700">
                       <p className="mb-1 font-bold text-slate-600 dark:text-slate-300">{language === "en" ? "Sources" : "المصادر"}</p>
@@ -561,9 +645,14 @@ export default function ChatClient({
             ))}
 
             {showSuggestions ? (
-              <div className="rounded border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100">
+              <div className="mx-auto flex min-h-[min(440px,55dvh)] max-w-2xl flex-col justify-center py-8 dark:text-slate-100">
+                {!activeNewsContext ? <div className="mb-7 text-center">
+                  <Sparkles className="mx-auto mb-4 h-9 w-9 text-civic dark:text-emerald-200" aria-hidden="true" />
+                  <h3 className="text-2xl font-bold sm:text-3xl">{language === "en" ? "How can Nashmi help?" : "كيف أقدر أساعدك؟"}</h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{introMessage.content}</p>
+                </div> : null}
                 <p className="mb-3 text-sm font-bold text-slate-600 dark:text-slate-200">{language === "en" ? "Suggested questions" : "أسئلة مقترحة"}</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {(activeNewsContext
                     ? (language === "en"
                       ? ["What happened?", "How could this affect citizens?", "What do the saved sources say?", "What is the latest status?"]
@@ -573,7 +662,7 @@ export default function ChatClient({
                       key={question}
                       type="button"
                       onClick={() => sendMessage(question)}
-                      className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-civic hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-emerald-300 dark:hover:text-emerald-200"
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-start text-sm leading-6 text-slate-700 transition-colors hover:border-civic hover:bg-civic/5 hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-emerald-300 dark:hover:text-emerald-200"
                     >
                       {question}
                     </button>
@@ -588,6 +677,8 @@ export default function ChatClient({
                 <TypingIndicator label={t("chat.sending")} />
               </div>
             ) : null}
+            </div>
+            {anchorActiveTurn ? <div aria-hidden="true" className="h-[min(560px,50dvh)]" /> : null}
           </div>
 
           {showScrollToBottom && (
@@ -602,16 +693,14 @@ export default function ChatClient({
           )}
         </div>
 
-        <form id="chat-composer" ref={composerRef} onSubmit={submit} className="flex gap-2 border-t border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/95">
-          <input
+        <form id="chat-composer" ref={composerRef} onSubmit={submit} autoComplete="off" className="mx-auto flex w-full max-w-3xl shrink-0 items-end gap-2 px-3 pb-4 pt-2 sm:px-5">
+          <MessageInput
             ref={inputRef}
             value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            className="min-w-0 flex-1 rounded-full border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
-            maxLength={1500}
+            onChange={setMessage}
             placeholder={t("chat.placeholder")}
             disabled={newsSessionLoading || !clientReady}
-            aria-label={t("chat.inputLabel")}
+            label={t("chat.inputLabel")}
           />
           <button
             type="submit"

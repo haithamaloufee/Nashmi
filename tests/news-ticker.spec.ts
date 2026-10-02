@@ -6,7 +6,8 @@ for (const count of [0, 1, 10, 15, 20, 25]) {
     await page.route("**/api/news/live", (route) => route.fulfill({ json: { ok: true, data: { items } } }));
     for (const width of [390, 1440]) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto("/", { waitUntil: "domcontentloaded" });
+      await page.goto("/welcome", { waitUntil: "domcontentloaded" });
+      await expect(page.locator('button[aria-controls="mobile-navigation"]')).toBeEnabled();
       const ticker = page.getByRole("region", { name: "آخر الأخبار" });
       if (!count) { await expect(ticker).toHaveCount(0); continue; }
       await expect(ticker).toBeVisible();
@@ -15,6 +16,7 @@ for (const count of [0, 1, 10, 15, 20, 25]) {
       const first = ticker.locator('[data-original="true"]').first();
       await expect(first).toHaveAttribute("href", `/chat?news=${items[0].id}&fresh=1#chat-composer`);
       await first.focus();
+      await expect(first).toBeFocused();
       await expect(ticker.locator(".news-ticker-track")).toHaveCSS("animation-play-state", "paused");
       await first.blur();
       await ticker.hover();

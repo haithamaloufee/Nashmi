@@ -7,9 +7,11 @@ type DropdownMenuProps = {
   children: ReactNode;
   align?: "start" | "end";
   label: string;
+  triggerClassName?: string;
+  keepMounted?: boolean;
 };
 
-export default function DropdownMenu({ trigger, children, align = "end", label }: DropdownMenuProps) {
+export default function DropdownMenu({ trigger, children, align = "end", label, triggerClassName, keepMounted = false }: DropdownMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -17,6 +19,7 @@ export default function DropdownMenu({ trigger, children, align = "end", label }
 
   useEffect(() => {
     if (!open) return;
+    ref.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     function onPointerDown(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
     }
@@ -53,11 +56,12 @@ export default function DropdownMenu({ trigger, children, align = "end", label }
         aria-controls={open ? id : undefined}
         onKeyDown={event => { if (!open && ["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); setOpen(true); } }}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line bg-white px-2.5 py-2 text-ink/70 transition hover:border-civic hover:text-civic active:scale-95 focus-ring dark:bg-slate-900 dark:text-slate-200"
+        className={triggerClassName || "inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line bg-white px-2.5 py-2 text-ink/70 transition hover:border-civic hover:text-civic active:scale-95 focus-ring dark:bg-slate-900 dark:text-slate-200"}
       >
         {trigger}
       </button>
-      {open ? <div
+      {open || keepMounted ? <div
+        hidden={!open}
         id={id}
         role="menu"
         aria-label={label}

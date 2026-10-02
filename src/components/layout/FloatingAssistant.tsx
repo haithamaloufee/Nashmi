@@ -1,418 +1,91 @@
 "use client";
 
-import { FormEvent, PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowDown, Bot, MoveVertical, Send, Sparkles, X } from "lucide-react";
-import ChatAvatar from "@/components/chat/ChatAvatar";
-import TypingIndicator from "@/components/chat/TypingIndicator";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { Sparkles, X } from "lucide-react";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
-import { formatNumber } from "@/lib/localization";
-import { cleanAssistantContent } from "@/lib/chatDisplay";
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
+// History, message rendering and viewport listeners load only after explicit opening.
+const AssistantPanel = dynamic(() => import("./FloatingAssistantPanel"), { ssr: false });
 
-type Usage = {
-  subjectType: "guest" | "user";
-  limit: number;
-  used: number;
-  remaining: number;
-  resetAt: string;
-};
-
-type AssistantUser = {
-  name?: string | null;
-  image?: string | null;
-  imageUrl?: string | null;
-  avatarUrl?: string | null;
-  profileImage?: string | null;
-} | null;
-
-const DEFAULT_PANEL_HEIGHT = 560;
-const MIN_PANEL_HEIGHT = 340;
-const DEFAULT_BOTTOM_OFFSET = 16;
-const MarkdownMessage = dynamic(() => import("@/components/chat/MarkdownMessage"), { ssr: false });
-
-function fallbackError(json: unknown, fallback: string, tFunc: (k: any) => string) {
-  if (typeof json === "object" && json !== null && "error" in json) {
-    const error = (json as { error?: { message?: string; code?: string; messageKey?: string } }).error || {};
-    if (error.messageKey) return tFunc(error.messageKey);
-    if (error.code === "MESSAGE_TOO_LONG") return tFunc("chat.errors.messageTooLong");
-    if (error.code === "PAYLOAD_TOO_LARGE") return tFunc("chat.errors.payloadTooLarge");
-    if (error.code === "RATE_LIMITED" && (error as any).messageKey) return tFunc((error as any).messageKey);
-    if (typeof error.message === "string" && error.message.trim()) return error.message;
-  }
-  return fallback;
-}
-
-function userAvatarUrl(user: AssistantUser) {
-  return user?.avatarUrl || user?.image || user?.imageUrl || user?.profileImage || null;
+function clampBottom(offset: number) {
+  const headerHeight = document.querySelector("header")?.getBoundingClientRect().height || 64;
+  return Math.min(Math.max(16, window.innerHeight - headerHeight - 72), Math.max(16, offset));
 }
 
 export default function FloatingAssistant() {
-  const { dir, language, t } = useTranslation();
   const pathname = usePathname();
+  const { t, language } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: t("chat.welcome") }]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [showLoginCta, setShowLoginCta] = useState(false);
-  const [usage, setUsage] = useState<Usage | null>(null);
-  const [currentUser, setCurrentUser] = useState<AssistantUser>(null);
-  const [currentUserLoading, setCurrentUserLoading] = useState(false);
-  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  const [panelHeight, setPanelHeight] = useState(DEFAULT_PANEL_HEIGHT);
-  const [bottomOffset, setBottomOffset] = useState(DEFAULT_BOTTOM_OFFSET);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const messagesRef = useRef<HTMLDivElement | null>(null);
-  const latestAssistantRef = useRef<HTMLDivElement | null>(null);
-  const latestUserRef = useRef<HTMLDivElement | null>(null);
-  const isNearBottomRef = useRef(true);
-  const pendingAssistantFocusRef = useRef(false);
-
-  const hidden = pathname === "/chat" || pathname?.startsWith("/login") || pathname?.startsWith("/signup");
-
-  const getSafeTop = useCallback(() => {
-    if (typeof window === "undefined") return 88;
-    const headerHeight = document.querySelector("header")?.getBoundingClientRect().height || 64;
-    return Math.ceil(headerHeight + 12);
+  const [dismissed, setDismissed] = useState(false);
+  const [bottomOffset, setBottomOffset] = useState(16);
+  const [dock, setDock] = useState<"left" | "right">("left");
+  const [dragLeft, setDragLeft] = useState<number | null>(null);
+  const drag = useRef<{ x: number; y: number; left: number; bottom: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => setOpen(false), [pathname]);
+  const close = useCallback(() => {
+    setOpen(false);
+    window.requestAnimationFrame(() => launcherRef.current?.focus({ preventScroll: true }));
   }, []);
-
-  const clampPanelHeight = useCallback((value: number) => {
-    if (typeof window === "undefined") return value;
-    const maxHeight = Math.max(MIN_PANEL_HEIGHT, Math.min(window.innerHeight - getSafeTop() - DEFAULT_BOTTOM_OFFSET, 720));
-    return Math.min(Math.max(value, MIN_PANEL_HEIGHT), maxHeight);
-  }, [getSafeTop]);
-
-  const clampBottomOffset = useCallback((value: number, elementHeight = panelHeight) => {
-    if (typeof window === "undefined") return value;
-    const maxOffset = Math.max(DEFAULT_BOTTOM_OFFSET, window.innerHeight - elementHeight - getSafeTop());
-    return Math.min(Math.max(value, DEFAULT_BOTTOM_OFFSET), maxOffset);
-  }, [getSafeTop, panelHeight]);
-
-  useEffect(() => {
-    setMessages((items) => (items.length === 1 && items[0]?.role === "assistant" ? [{ role: "assistant", content: t("chat.welcome") }] : items));
-  }, [t]);
-
-  useEffect(() => {
-    if (!open) return;
-    setSessionId(null);
-    setMessages([{ role: "assistant", content: t("chat.welcome") }]);
-    setInput("");
-    setError("");
-    setShowLoginCta(false);
-    setShowScrollToBottom(false);
-    window.setTimeout(() => inputRef.current?.focus(), 80);
-  }, [open, t]);
-
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    async function loadUsage() {
-      const response = await fetch("/api/chat", { cache: "no-store", headers: { "x-nashmi-language": language } });
-      const json = await response.json().catch(() => ({}));
-      if (!cancelled && response.ok && json.ok) setUsage(json.data.usage);
-    }
-    void loadUsage();
-    return () => {
-      cancelled = true;
-    };
-  }, [language, open]);
-
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    async function loadCurrentUser() {
-      setCurrentUserLoading(true);
-      try {
-        const response = await fetch("/api/auth/me", { cache: "no-store" });
-        const json = await response.json().catch(() => ({}));
-        if (!cancelled) setCurrentUser(response.ok && json.ok ? json.data.user : null);
-      } catch {
-        if (!cancelled) setCurrentUser(null);
-      } finally {
-        if (!cancelled) setCurrentUserLoading(false);
-      }
-    }
-    void loadCurrentUser();
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open]);
-
-  useEffect(() => {
-    const container = messagesRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      const nearBottom = scrollTop + clientHeight >= scrollHeight - 100;
-      isNearBottomRef.current = nearBottom;
-      setShowScrollToBottom(!nearBottom);
-    };
-
-    container.addEventListener("scroll", handleScroll);
-    handleScroll();
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [open]);
-
-  useEffect(() => {
-    if (pendingAssistantFocusRef.current && messages.length > 1 && messages[messages.length - 1].role === "assistant") {
-      if (isNearBottomRef.current) {
-        latestAssistantRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-      pendingAssistantFocusRef.current = false;
-    }
-  }, [messages]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleResize = () => {
-      setPanelHeight((height) => clampPanelHeight(height));
-      setBottomOffset((offset) => clampBottomOffset(offset, open ? panelHeight : 64));
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [clampBottomOffset, clampPanelHeight, open, panelHeight]);
-
-  const scrollToBottom = () => {
-    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: "smooth" });
-  };
-
-  function startResize(event: PointerEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    const startY = event.clientY;
-    const startHeight = panelHeight;
-
-    const handlePointerMove = (moveEvent: globalThis.PointerEvent) => {
-      setPanelHeight(clampPanelHeight(startHeight + startY - moveEvent.clientY));
-    };
-
-    const stopResize = () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", stopResize);
-      window.removeEventListener("pointercancel", stopResize);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", stopResize);
-    window.addEventListener("pointercancel", stopResize);
+  function startDrag(event: PointerEvent<HTMLButtonElement>) {
+    if (!event.isPrimary || event.button !== 0) return;
+    suppressClick.current = false;
+    drag.current = { x: event.clientX, y: event.clientY, left: event.currentTarget.getBoundingClientRect().left, bottom: bottomOffset, moved: false };
+    event.currentTarget.setPointerCapture(event.pointerId);
   }
-
-  function startVerticalDrag(event: PointerEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    const startY = event.clientY;
-    const startBottom = bottomOffset;
-    const draggedHeight = open ? panelHeight : 64;
-
-    const handlePointerMove = (moveEvent: globalThis.PointerEvent) => {
-      const deltaY = moveEvent.clientY - startY;
-      setBottomOffset(clampBottomOffset(startBottom - deltaY, draggedHeight));
-    };
-
-    const stopDrag = () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", stopDrag);
-      window.removeEventListener("pointercancel", stopDrag);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", stopDrag);
-    window.addEventListener("pointercancel", stopDrag);
+  function moveDrag(event: PointerEvent<HTMLButtonElement>) {
+    const start = drag.current;
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (!start.moved && Math.hypot(dx, dy) < 6) return;
+    start.moved = true;
+    setDragLeft(Math.max(8, Math.min(window.innerWidth - 64, start.left + dx)));
+    setBottomOffset(clampBottom(start.bottom - dy));
   }
-
-  if (hidden) return null;
-
-  async function sendMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const clean = input.trim();
-    if (!clean || loading) return;
-
-    setError("");
-    setShowLoginCta(false);
-    setInput("");
-    setMessages((items) => [...items, { role: "user", content: clean }]);
-    setLoading(true);
-    window.requestAnimationFrame(() => {
-      latestUserRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      scrollToBottom();
-    });
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-nashmi-language": language },
-        body: JSON.stringify({
-          message: clean,
-          sessionId: sessionId || undefined,
-          language,
-          history: messages.slice(-8).map((item) => ({ role: item.role, content: item.content }))
-        })
-      });
-      const json = await response.json().catch(() => ({}));
-        if (!response.ok || !json.ok) {
-        const friendly = fallbackError(json, t("chat.error"), t);
-        const usageData = json.error?.usage as Usage | undefined;
-        if (usageData) setUsage(usageData);
-        setShowLoginCta(json.error?.messageKey === "chat.limit.guestReached");
-        setError(friendly);
-        return;
-      }
-      setSessionId(json.data.session?._id || null);
-      if (json.data.usage) setUsage(json.data.usage);
-      pendingAssistantFocusRef.current = true;
-      setMessages((items) => [...items, { role: "assistant", content: json.data.message?.content || t("chat.welcome") }]);
-    } catch {
-      const friendly = t("chat.connectionError");
-      setError(friendly);
-    } finally {
-      setLoading(false);
+  function finishDrag(event: PointerEvent<HTMLButtonElement>) {
+    const start = drag.current;
+    if (!start) return;
+    if (start.moved) {
+      const center = start.left + event.clientX - start.x + 28;
+      setDock(center < window.innerWidth / 2 ? "left" : "right");
+      suppressClick.current = true;
+    } else if (event.type === "pointerup" && event.pointerType === "touch") {
+      // A touch tap need not synthesize a mouse click after pointer capture.
+      event.preventDefault();
+      setOpen(true);
     }
+    drag.current = null;
+    setDragLeft(null);
   }
-
-  return (
-    <div className="floating-assistant fixed left-2 right-auto z-40 flex max-w-[calc(100vw-1rem)] justify-start print:hidden sm:left-6" style={{ bottom: bottomOffset }}>
-      {open ? (
-        <section
-          className="flex min-h-[340px] w-[calc(100vw-1rem)] max-w-[400px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-slate-900 shadow-[0_24px_70px_rgba(5,18,22,.28)] ring-1 ring-white/60 dark:border-slate-700 dark:bg-slate-950/95 dark:text-slate-100 dark:ring-slate-700 sm:w-[400px]"
-          style={{ height: `min(${panelHeight}px, calc(100vh - ${getSafeTop() + DEFAULT_BOTTOM_OFFSET}px))` }}
-          aria-label={t("nav.chat")}
-          dir={dir}
-        >
-          <button
-            type="button"
-            onPointerDown={startResize}
-            className="hidden h-4 w-full cursor-ns-resize touch-none items-center justify-center bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-civic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic dark:bg-slate-900 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-emerald-200 sm:flex"
-            aria-label={t("chat.resize")}
-            title={t("chat.resize")}
-          >
-            <span className="h-1 w-12 rounded-full bg-current" />
-          </button>
-          <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-[linear-gradient(135deg,#0f555a,#10252b)] px-4 py-3 text-white">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/[0.12] ring-1 ring-white/[0.16]">
-                <Bot className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-base font-black leading-6">{t("nav.chat")}</h2>
-                {usage ? (
-                  <p className="mt-0.5 text-xs font-semibold text-white/[0.72]">
-                    {t("chat.remaining")} {formatNumber(usage.remaining, language)} {t("chat.remainingMessages")}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <button type="button" onPointerDown={startVerticalDrag} className="focus-ring grid h-9 w-9 touch-none place-items-center rounded-full text-white/90 hover:bg-white/[0.15] hover:text-white active:scale-95" aria-label={t("chat.move")} title={t("chat.move")}>
-                <MoveVertical className="h-4 w-4" />
-              </button>
-              <button type="button" onClick={() => setOpen(false)} className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/90 hover:bg-white/[0.15] hover:text-white active:scale-95" aria-label={t("chat.close")}>
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </header>
-
-          {usage?.subjectType === "guest" ? (
-            <div className="border-b border-line bg-emerald-50 px-4 py-2 text-xs font-semibold leading-5 text-civic dark:border-slate-700 dark:bg-emerald-200/10 dark:text-emerald-100">
-              {t("chat.guestCta")} <Link href="/login" className="font-black underline">{t("chat.loginCta")}</Link>
-            </div>
-          ) : null}
-
-          <div className="relative min-h-0 flex-1">
-            <div ref={messagesRef} tabIndex={0} role="log" aria-label={t("nav.chat")} className="assistant-scrollbar focus-ring h-full space-y-3 overflow-auto bg-[#f5f7f6] p-3.5 dark:bg-[#101820]" aria-live="polite">
-              {messages.map((message, index) => (
-                <div key={`${message.role}-${index}`} dir="ltr" className={`flex items-end gap-2 ${message.role === "user" ? "justify-end [&>:first-child]:order-2 [&>:last-child]:order-1" : "justify-start"}`}>
-                  <ChatAvatar role={message.role} name={message.role === "user" ? currentUser?.name : "Nashmi AI"} imageUrl={message.role === "user" ? userAvatarUrl(currentUser) : null} loading={message.role === "user" && currentUserLoading} compact />
-                  <div
-                    ref={message.role === "user" && index === messages.length - 1 ? latestUserRef : message.role === "assistant" && index === messages.length - 1 ? latestAssistantRef : null}
-                    dir={dir}
-                    className={`min-w-0 max-w-[82%] rounded-2xl px-4 py-2.5 text-start text-sm leading-7 shadow-sm sm:max-w-[86%] ${message.role === "user" ? "rounded-br-md bg-civic text-white dark:bg-emerald-200 dark:text-slate-950" : "rounded-bl-md border border-slate-200/80 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"}`}
-                  >
-                    {message.role === "assistant" ? (
-                      <MarkdownMessage content={cleanAssistantContent(message.content)} />
-                    ) : (
-                      <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {loading ? (
-                <div dir="ltr" className="flex items-end justify-start gap-2">
-                  <ChatAvatar role="assistant" compact />
-                  <TypingIndicator label={t("chat.sending")} />
-                </div>
-              ) : null}
-            </div>
-            {showScrollToBottom && (
-              <button
-                type="button"
-                onClick={scrollToBottom}
-                className="absolute bottom-4 left-4 z-10 rounded-full bg-civic p-2 text-white shadow-lg transition hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 active:scale-95 dark:bg-emerald-200 dark:text-slate-950 dark:hover:bg-emerald-100"
-                aria-label={t("chat.scrollBottom")}
-              >
-                <ArrowDown className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
-          {error ? (
-            <div className="border-t border-line bg-red-50 px-4 py-3 text-sm leading-7 text-red-700 dark:border-slate-700 dark:bg-red-950/30 dark:text-red-200">
-              {error}{" "}
-              {showLoginCta ? <Link href="/login" className="font-bold underline">{t("chat.loginCta")}</Link> : null}
-            </div>
-          ) : null}
-
-          <form onSubmit={sendMessage} className="flex items-end gap-2 border-t border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-950/95">
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              className="min-w-0 flex-1 rounded-full border-slate-300 bg-white px-4 text-sm leading-6 text-slate-900 placeholder:text-slate-400 focus:border-civic focus:ring-civic dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
-              placeholder={t("chat.placeholder")}
-              maxLength={1500}
-              disabled={loading}
-              aria-label={t("chat.inputLabel")}
-            />
-            <button type="submit" disabled={loading || !input.trim()} className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-full bg-civic text-white shadow-sm hover:bg-civic/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-emerald-200 dark:text-slate-950 dark:hover:bg-emerald-100" aria-label={t("chat.send")}>
-              <Send className="h-4 w-4" />
-            </button>
-          </form>
-        </section>
-      ) : (
-        <div className="inline-flex items-center overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#126b6f,#0f555a)] font-semibold text-white shadow-[0_12px_34px_rgba(5,18,22,.24)] ring-1 ring-white/25">
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="focus-ring inline-flex items-center gap-2 px-3 py-2.5 transition hover:bg-white/10 active:scale-95"
-            aria-label={t("nav.chat")}
-          >
-            <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-white/[0.14]">
-              <Bot className="h-5 w-5" />
-              <Sparkles className="absolute -right-1 -top-1 h-3.5 w-3.5 text-white" />
-            </span>
-            <span className="hidden text-sm sm:inline">{t("nav.chat")}</span>
-          </button>
-          <button type="button" onPointerDown={startVerticalDrag} className="focus-ring grid h-[52px] w-10 touch-none place-items-center border-r border-white/15 text-white/90 hover:bg-white/10" aria-label={t("chat.move")} title={t("chat.move")}>
-            <MoveVertical className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  useEffect(() => {
+    const resize = () => setBottomOffset(offset => clampBottom(offset));
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+  const hidden = pathname === "/chat" || pathname.startsWith("/login") || pathname.startsWith("/signup");
+  if (hidden || dismissed) return null;
+  if (open) return <AssistantPanel onClose={close} initialBottomOffset={bottomOffset} onBottomOffsetChange={setBottomOffset} dock={dock} />;
+  const hideLabel = language === "en" ? "Hide assistant until refresh" : "إخفاء المساعد حتى إعادة تحميل الصفحة";
+  return <div className={`floating-assistant fixed z-40 max-w-[calc(100vw-1rem)] print:hidden ${dock === "left" ? "left-2 sm:left-6" : "right-2 sm:right-6"}`} style={{ bottom: bottomOffset, ...(dragLeft !== null ? { left: dragLeft, right: "auto" } : {}) }}>
+    <button type="button" onClick={() => setDismissed(true)} aria-label={hideLabel} title={hideLabel} data-compact-control="true" className={`focus-ring absolute ${dock === "left" ? "-right-2" : "-left-2"} -top-3 z-10 grid h-8 w-8 place-items-center rounded-full border border-line bg-paper text-ink shadow-sm hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white`}>
+      <X className="h-3.5 w-3.5" />
+    </button>
+    <button ref={launcherRef} type="button" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={finishDrag} onClick={event => {
+      if (suppressClick.current && event.detail > 0) { suppressClick.current = false; return; }
+      suppressClick.current = false;
+      setOpen(true);
+    }} onKeyDown={event => {
+      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      event.preventDefault();
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") setDock(event.key === "ArrowLeft" ? "left" : "right");
+      else setBottomOffset(offset => clampBottom(offset + (event.key === "ArrowUp" ? 24 : -24)));
+    }} aria-label={t("nav.chat")} title={t("nav.chat")} aria-describedby="assistant-drag-hint" className="focus-ring grid h-14 w-14 touch-none select-none place-items-center rounded-2xl bg-[linear-gradient(135deg,#126b6f,#0f555a)] text-white shadow-[0_12px_34px_rgba(5,18,22,.24)] ring-1 ring-white/25 hover:brightness-110 active:scale-95">
+      <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.14]"><Sparkles className="h-6 w-6" aria-hidden="true" /></span>
+    </button>
+    <span id="assistant-drag-hint" className="sr-only">{language === "en" ? "Drag to either screen edge. Arrow keys move the button; Enter opens the assistant." : "اسحب إلى إحدى حافتي الشاشة. مفاتيح الأسهم تحرك الزر؛ Enter يفتح المساعد."}</span>
+  </div>;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { invalidateClientUser } from "@/lib/useClientUser";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -55,6 +55,8 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   const errors = useMemo<FieldErrors>(() => {
     return {
@@ -106,7 +108,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       });
       const json = await response.json();
       if (!json.ok) {
-        setError(json.error?.message || "تعذر تنفيذ العملية. راجع البيانات وحاول مرة أخرى.");
+        setError(json.error?.message || (language === "en" ? "Check your details and try again." : "تعذر تنفيذ العملية. راجع البيانات وحاول مرة أخرى."));
         if (json.error?.code === "EMAIL_NOT_VERIFIED") {
           router.push(`/verify-email?email=${encodeURIComponent(values.email.trim())}`);
         }
@@ -116,7 +118,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       router.push(mode === "signup" ? `/verify-email?email=${encodeURIComponent(values.email.trim())}&sent=${json.data?.emailSent ? "1" : "0"}` : "/updates");
       router.refresh();
     } catch {
-      setError("تعذر الاتصال بالخادم. حاول مرة أخرى بعد قليل.");
+      setError(language === "en" ? "Unable to connect. Please try again shortly." : "تعذر الاتصال بالخادم. حاول مرة أخرى بعد قليل.");
     } finally {
       setLoading(false);
     }
@@ -136,6 +138,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {t("auth.name")}
           <input
             name="name"
+            disabled={!ready}
             value={values.name}
             onChange={(event) => updateField("name", event.target.value)}
             onBlur={() => setTouched((current) => ({ ...current, name: true }))}
@@ -152,6 +155,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         {t("auth.email")}
         <input
           name="email"
+          disabled={!ready}
           type="email"
           value={values.email}
           onChange={(event) => updateField("email", event.target.value)}
@@ -169,6 +173,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <span className="relative mt-1 block">
           <input
             name="password"
+            disabled={!ready}
             type={showPassword ? "text" : "password"}
             value={values.password}
             onChange={(event) => updateField("password", event.target.value)}
@@ -193,7 +198,6 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       {mode === "login" ? (
         <div className="-mt-2 flex flex-wrap items-center justify-between gap-3 text-sm">
           <Link className="font-semibold text-civic underline-offset-4 hover:underline" href="/forgot-password">{language === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}</Link>
-          <Link className="text-ink/65 underline-offset-4 hover:text-civic hover:underline dark:text-slate-300" href="/verify-email">{language === "ar" ? "إعادة إرسال رسالة التفعيل" : "Resend verification email"}</Link>
         </div>
       ) : null}
       {mode === "signup" ? (
@@ -202,6 +206,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <span className="relative mt-1 block">
             <input
               name="confirmPassword"
+              disabled={!ready}
               type={showPassword ? "text" : "password"}
               value={values.confirmPassword}
               onChange={(event) => updateField("confirmPassword", event.target.value)}
@@ -223,7 +228,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       ) : null}
       <button
         type="submit"
-        disabled={loading}
+        disabled={!ready || loading}
         className="w-full rounded-2xl bg-civic px-4 py-3 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-civic/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-civic focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-200 dark:text-[#101820] dark:hover:bg-emerald-100"
       >
         {loading ? t("auth.processing") : mode === "login" ? t("auth.submitLogin") : t("auth.submitSignup")}

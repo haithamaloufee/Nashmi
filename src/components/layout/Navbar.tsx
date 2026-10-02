@@ -14,7 +14,8 @@ import type { TranslationKey } from "@/lib/i18n";
 const primaryLinks: Array<{ href: string; labelKey: TranslationKey }> = [
   { href: "/updates", labelKey: "nav.home" },
   { href: "/laws", labelKey: "nav.laws" },
-  { href: "/parties", labelKey: "nav.parties" }
+  { href: "/parties", labelKey: "nav.parties" },
+  { href: "/chat", labelKey: "nav.chat" }
 ];
 
 export default async function Navbar() {
@@ -31,8 +32,8 @@ export default async function Navbar() {
   return (
     <NavbarChrome>
       <div className="container-page flex min-h-14 flex-wrap items-center justify-between gap-x-2 lg:flex-nowrap">
-        <NavbarPrefetcher routes={["/", ...primaryLinks.map((link) => link.href)]} />
-        <Link href="/" prefetch={false} data-navbar-prefetch="/" className="focus-ring group flex h-14 shrink-0 items-center rounded-xl" aria-label="Nashmi home">
+        <NavbarPrefetcher routes={["/welcome", ...primaryLinks.map((link) => link.href)]} />
+        <Link href="/welcome" prefetch={false} data-navbar-prefetch="/welcome" className="focus-ring group flex h-14 shrink-0 items-center rounded-xl" aria-label="Nashmi home">
           <Image
             src="/images/nashmi logo_transparent.png"
             alt="شعار منصة نشمي"

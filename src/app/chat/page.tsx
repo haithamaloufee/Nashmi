@@ -11,8 +11,8 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
   const newsContext = params.news ? await getNewsSnapshot(params.news).catch(() => null) : null;
   const serializedNews = newsContext ? serialize({ ...newsContext, publishedAt: newsContext.publishedAt.toISOString() }) : null;
   return (
-    <main className="container-page max-w-6xl py-4">
-      <div className="mb-3">
+    <main className="chat-page">
+      <div className="sr-only">
         <h1 className="text-xl font-bold"><I18nText id="chat.title" /></h1>
       </div>
       <ChatClient

@@ -635,10 +635,21 @@ html[dir="ltr"] .home-hero-overlay {
 :root { --navbar-height: 101px; }
 @media (min-width: 1024px) { :root { --navbar-height: 57px; } }
 .social-navbar { background: var(--surface); color: var(--foreground); border-color: var(--surface-border); box-shadow: 0 1px 6px #17212b12; }
-.nav-tab { display: flex; min-width: 0; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-bottom: 3px solid transparent; color: var(--foreground-muted); border-radius: 8px 8px 0 0; }
+.nav-tab { position: relative; display: flex; min-width: 0; flex: 1; flex-direction: column; align-items: center; justify-content: center; border-bottom: 3px solid transparent; color: var(--foreground-muted); border-radius: 8px 8px 0 0; }
+.nav-tab-icon { transition: transform 220ms cubic-bezier(.2,.8,.2,1); transform: translateY(0) scale(1); }
+.nav-tab-label { position: absolute; inset-block-end: 2px; max-width: 100%; font-size: 10px; line-height: 14px; white-space: nowrap; opacity: 0; transform: translateY(5px); transition: opacity 180ms ease, transform 220ms cubic-bezier(.2,.8,.2,1); pointer-events: none; }
+.nav-tab-active .nav-tab-icon { transform: translateY(-6px) scale(.82); }
+.nav-tab-active .nav-tab-label { opacity: 1; transform: translateY(0); }
+@media (min-width: 1024px) { .nav-tab-label { inset-block-end: 4px; font-size: 11px; } }
+@media (prefers-reduced-motion: reduce) { .nav-tab-icon, .nav-tab-label { transition: none; } }
 @media (min-width: 1024px) { .nav-tab { min-width: 80px; max-width: 140px; } }
 .nav-tab:hover { background: var(--surface-muted); }
 .nav-tab-active { color: var(--brand); border-bottom-color: var(--brand); }
+.chat-workspace { display: flex; min-width: 0; height: calc(100dvh - var(--chat-top, var(--navbar-height, 101px))); min-height: 0; }
+.chat-history { width: 260px; flex-shrink: 0; flex-direction: column; border-inline-end: 1px solid #dfe3e8; background: #f4f6f8; color: #17212b; }
+.dark .chat-history { border-color: #334155; background: #111827; color: #f1f5f9; }
+.chat-history-mobile { position: fixed; z-index: 60; inset-block: 0; inset-inline-start: 0; display: flex; max-width: calc(100vw - 48px); box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+@media (min-width: 1024px) { .chat-history-mobile { position: static; box-shadow: none; } }
 .text-ink\/50, .text-ink\/55, .text-ink\/60, .text-ink\/65 { color: var(--foreground-muted); }
 .feed-card { background: var(--surface); padding: 16px; border-radius: 14px; }
 .feed-card:hover { transform: none; }

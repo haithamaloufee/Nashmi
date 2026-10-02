@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Hash, ImagePlus, Plus, Send, Trash2, UserRound } from "lucide-react";
 import LoadingButton from "@/components/ui/LoadingButton";
@@ -11,11 +11,13 @@ import { useTranslation } from "@/components/i18n/LanguageProvider";
 import type { TranslationKey } from "@/lib/i18n";
 import { allowedPollDurationDays, defaultPollDurationDays } from "@/lib/polls";
 
-function useApiMessage() {
+function useApiMessage(refreshAfterSave = true) {
   const router = useRouter();
   const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   async function submit(url: string, payload: unknown, method = "POST") {
     setLoading(true);
     try {
@@ -27,7 +29,7 @@ function useApiMessage() {
       const json = await response.json().catch(() => ({}));
       setLoading(false);
       setMessage(json.ok ? t("common.saved") : json.error?.message || t("common.saveFailed"));
-      if (json.ok) router.refresh();
+      if (json.ok && refreshAfterSave) router.refresh();
       return json;
     } catch {
       setLoading(false);
@@ -35,7 +37,7 @@ function useApiMessage() {
       return { ok: false };
     }
   }
-  return { message, submit, loading };
+  return { message, submit, ready, loading: !ready || loading };
 }
 
 function splitComma(value: FormDataEntryValue | null) {
@@ -111,11 +113,12 @@ export function PostCreateForm({ currentUser = null }: { currentUser?: ComposerU
         <h2 className="text-lg font-black">إنشاء منشور</h2>
       </div>
 
-      <div className="space-y-4 p-5">
+      <fieldset disabled={!api.ready} className="min-w-0 space-y-4 border-0 p-5">
         <div className="flex items-center gap-3">
           <SafeImage
             src={composerAvatarUrl(currentUser)}
             alt={displayName}
+            sizes="44px"
             className="h-11 w-11 shrink-0 rounded-full bg-white object-cover ring-1 ring-line dark:bg-slate-900"
             fallback={avatarFallback}
             localPrefixes={["/uploads/", "/images/"]}
@@ -179,7 +182,7 @@ export function PostCreateForm({ currentUser = null }: { currentUser?: ComposerU
             ))}
           </div>
         ) : null}
-      </div>
+      </fieldset>
 
       <div className="border-t border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/60">
         <LoadingButton loading={api.loading || uploadingMedia} disabled={uploadingMedia || !content.trim()} className="w-full rounded-xl bg-civic px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-civic/90 disabled:opacity-55">
@@ -400,7 +403,7 @@ export function LegacyPollCreateForm() {
           ))}
         </select>
       </label>
-      <button className="block rounded bg-civic px-4 py-2 text-white">{t("poll.create.publish")}</button>
+      <button disabled={api.loading} className="block rounded bg-civic px-4 py-2 text-white disabled:opacity-60">{t("poll.create.publish")}</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
@@ -409,6 +412,8 @@ export function LegacyPollCreateForm() {
 export function AboutNashmiAdminForm({ content }: { content: any }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const { showToast } = useToast();
   const { t } = useTranslation();
 
@@ -445,8 +450,9 @@ export function AboutNashmiAdminForm({ content }: { content: any }) {
           setLoading(false);
         }
       }}
-      className="card space-y-4 p-5"
+      className="card p-5"
     >
+      <fieldset disabled={!ready} className="space-y-4">
       <div>
         <h2 className="text-2xl font-black">{t("admin.about.title")}</h2>
         <p className="mt-1 text-sm text-ink/60">{t("admin.about.hint")}</p>
@@ -473,16 +479,17 @@ export function AboutNashmiAdminForm({ content }: { content: any }) {
         {t("admin.about.youtube")}
         <input name="youtubeUrl" defaultValue={content?.youtubeUrl || ""} className="mt-1 w-full rounded border-line" placeholder="https://www.youtube.com/watch?v=..." />
       </label>
-      <button type="submit" disabled={loading} className="rounded bg-civic px-5 py-2.5 text-sm font-bold text-white hover:bg-civic/90 disabled:opacity-60">
+      <button type="submit" disabled={!ready || loading} className="rounded bg-civic px-5 py-2.5 text-sm font-bold text-white hover:bg-civic/90 disabled:opacity-60">
         {loading ? t("common.saving") : t("common.save")}
       </button>
       {message ? <p className="text-sm font-semibold text-ink/65">{message}</p> : null}
+      </fieldset>
     </form>
   );
 }
 
 export function PartyProfileForm({ party }: { party: any }) {
-  const api = useApiMessage();
+  const api = useApiMessage(false);
   const [logoUrl, setLogoUrl] = useState(party.logoUrl || "");
   const [coverUrl, setCoverUrl] = useState(party.coverUrl || "");
   const [logoUploading, setLogoUploading] = useState(false);
@@ -490,8 +497,10 @@ export function PartyProfileForm({ party }: { party: any }) {
 
   return (
     <form
-      action={(formData) =>
-        api.submit(
+      onSubmit={async event => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        await api.submit(
           "/api/party/profile",
           {
             shortDescription: formData.get("shortDescription"),
@@ -516,14 +525,14 @@ export function PartyProfileForm({ party }: { party: any }) {
             coverUrl: formData.get("coverUrl") || coverUrl || null
           },
           "PATCH"
-        )
-      }
+        );
+      }}
       className="card space-y-4 p-5"
     >
       <h2 className="text-xl font-bold">تعديل ملف الحزب</h2>
       <MediaUploadField label="شعار الحزب" value={logoUrl} purpose="party_logo" fallbackText={party.name?.slice(0, 1) || "ح"} onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} onUploadingChange={setLogoUploading} />
       <MediaUploadField label="غلاف الحزب" value={coverUrl} purpose="party_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} onUploadingChange={setCoverUploading} />
-      <label className="block"><span>الوصف المختصر</span><textarea name="shortDescription" defaultValue={party.shortDescription} className="mt-1 w-full rounded border-line" rows={3} required /></label>
+      <label className="block"><span>الوصف المختصر</span><textarea disabled={!api.ready} name="shortDescription" defaultValue={party.shortDescription} className="mt-1 w-full rounded border-line" rows={3} required /></label>
       <label className="block"><span>الوصف الكامل</span><textarea name="description" defaultValue={party.description} className="mt-1 w-full rounded border-line" rows={5} required /></label>
       <label className="block"><span>الرؤية</span><textarea name="vision" defaultValue={party.vision} className="mt-1 w-full rounded border-line" rows={3} required /></label>
       <label className="block"><span>الأهداف</span><textarea name="goals" defaultValue={(party.goals || []).join("\n")} className="mt-1 w-full rounded border-line" rows={4} /></label>
@@ -540,7 +549,7 @@ export function PartyProfileForm({ party }: { party: any }) {
       <input name="youtube" defaultValue={party.socialLinks?.youtube} className="w-full rounded border-line" placeholder="يوتيوب" />
       <input name="headquarters" defaultValue={party.contact?.headquarters} className="w-full rounded border-line" placeholder="المقر الرئيسي" />
       <textarea name="branches" defaultValue={(party.contact?.branches || []).join("\n")} className="w-full rounded border-line" rows={3} placeholder="الفروع، كل فرع في سطر" />
-      <button type="submit" disabled={logoUploading || coverUploading} className="rounded bg-civic px-4 py-2 font-semibold text-white disabled:opacity-60">حفظ التغييرات</button>
+      <button type="submit" disabled={api.loading || logoUploading || coverUploading} className="rounded bg-civic px-4 py-2 font-semibold text-white disabled:opacity-60">حفظ التغييرات</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
@@ -558,7 +567,7 @@ export function IecProfileForm({ authority }: { authority: any }) {
       <h2 className="text-xl font-bold">ملف الهيئة</h2>
       <MediaUploadField label="شعار الهيئة" value={logoUrl} purpose="authority_logo" fallbackText="هـ" onUploaded={(asset) => setLogoUrl(asset.url)} onClear={() => setLogoUrl("")} onUploadingChange={setLogoUploading} />
       <MediaUploadField label="غلاف الهيئة" value={coverUrl} purpose="authority_cover" fallbackText="غ" onUploaded={(asset) => setCoverUrl(asset.url)} onClear={() => setCoverUrl("")} onUploadingChange={setCoverUploading} />
-      <button type="submit" disabled={logoUploading || coverUploading} className="rounded bg-civic px-4 py-2 font-semibold text-white disabled:opacity-60">حفظ</button>
+      <button type="submit" disabled={api.loading || logoUploading || coverUploading} className="rounded bg-civic px-4 py-2 font-semibold text-white disabled:opacity-60">حفظ</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
@@ -572,9 +581,9 @@ export function AdminPartyLogoForm({ party }: { party: any }) {
   return (
     <form action={(formData) => api.submit(`/api/admin/parties/${party._id}`, { logoUrl: formData.get("logoUrl") || null }, "PATCH")} className="mt-3 grid gap-2">
       <div className="flex items-center gap-2">
-        <SafeImage src={logoUrl} alt={party.name || "شعار الحزب"} className="h-10 w-10 shrink-0 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
+        <SafeImage src={logoUrl} alt={party.name || "شعار الحزب"} sizes="40px" className="h-10 w-10 shrink-0 rounded bg-white object-contain ring-1 ring-line" fallback={logoFallback} />
         <input name="logoUrl" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} className="min-w-0 flex-1 rounded border-line text-sm" placeholder="https://example.com/logo.png" />
-        <button className="rounded border border-line px-3 py-2 text-sm hover:border-civic">حفظ</button>
+        <button disabled={api.loading} className="rounded border border-line px-3 py-2 text-sm hover:border-civic disabled:opacity-60">حفظ</button>
       </div>
       {api.message ? <p className="text-xs text-ink/60">{api.message}</p> : null}
     </form>
@@ -613,7 +622,7 @@ export function PartyCreateForm() {
       <textarea name="goals" className="w-full rounded border-line" rows={3} placeholder="الأهداف، كل هدف في سطر" />
       <label className="flex items-center gap-2 text-sm"><input name="createAccount" type="checkbox" /> إنشاء حساب حزب</label>
       <input name="accountEmail" className="w-full rounded border-line" placeholder="party@example.com" />
-      <button className="rounded bg-civic px-4 py-2 text-white">إنشاء</button>
+      <button disabled={api.loading} className="rounded bg-civic px-4 py-2 text-white disabled:opacity-60">إنشاء</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
       {invitationSent ? <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">أُرسلت دعوة إعداد الحساب إلى البريد بأمان.</p> : null}
     </form>
@@ -661,16 +670,21 @@ export function LawCreateForm() {
       <textarea name="simplifiedExplanation" className="w-full rounded border-line" rows={5} placeholder="شرح مبسط" required />
       <textarea name="practicalExample" className="w-full rounded border-line" rows={2} placeholder="مثال عملي" />
       <input name="tags" className="w-full rounded border-line" placeholder="وسوم مفصولة بفواصل" />
-      <button className="rounded bg-civic px-4 py-2 text-white">حفظ</button>
+      <button disabled={api.loading} className="rounded bg-civic px-4 py-2 text-white disabled:opacity-60">حفظ</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
     </form>
   );
 }
 
-export function ReportModerationForm({ reportId }: { reportId: string }) {
-  const api = useApiMessage();
+export function ReportModerationForm({ reportId, onApplied }: { reportId: string; onApplied?: (report: any) => void }) {
+  const api = useApiMessage(!onApplied);
   return (
-    <form action={(formData) => api.submit(`/api/admin/reports/${reportId}`, { action: formData.get("action"), reason: formData.get("reason") }, "PATCH")} className="flex flex-wrap gap-2">
+    <form onSubmit={async event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const json = await api.submit(`/api/admin/reports/${reportId}`, { action: formData.get("action"), reason: formData.get("reason") }, "PATCH");
+      if (json.ok && json.data?.report) onApplied?.(json.data.report);
+    }} className="flex flex-wrap gap-2">
       <select aria-label="الإجراء" name="action" className="rounded border-line text-sm">
         <option value="dismiss_report">رفض البلاغ</option>
         <option value="hide">إخفاء الهدف</option>
@@ -678,27 +692,37 @@ export function ReportModerationForm({ reportId }: { reportId: string }) {
         <option value="restore">استعادة</option>
       </select>
       <input name="reason" className="rounded border-line text-sm" placeholder="سبب إلزامي" required />
-      <button className="rounded bg-civic px-3 py-2 text-sm text-white">تنفيذ</button>
+      <button disabled={api.loading} className="rounded bg-civic px-3 py-2 text-sm text-white disabled:opacity-60">تنفيذ</button>
       {api.message ? <span className="text-xs text-ink/60">{api.message}</span> : null}
     </form>
   );
 }
 
-export function UserControls({ user }: { user: any }) {
-  const api = useApiMessage();
+export function UserControls({ user, onUpdated }: { user: any; onUpdated?: (user: any) => void }) {
+  const api = useApiMessage(!onUpdated);
   const [invitationSent, setInvitationSent] = useState(false);
   return (
     <div className="flex flex-wrap gap-2">
-      <form action={(formData) => api.submit(`/api/admin/users/${user._id}/status`, { status: formData.get("status") }, "PATCH")} className="flex gap-1">
+      <form onSubmit={async event => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const json = await api.submit(`/api/admin/users/${user._id}/status`, { status: formData.get("status") }, "PATCH");
+        if (json.ok && json.data?.user) onUpdated?.(json.data.user);
+      }} className="flex gap-1">
         <select aria-label="الحالة" name="status" defaultValue={user.status} className="rounded border-line text-xs">
           <option value="active">active</option>
           <option value="disabled">disabled</option>
           <option value="pending">pending</option>
           <option value="locked">locked</option>
         </select>
-        <button className="rounded border border-line px-2 text-xs">حفظ</button>
+        <button disabled={api.loading} className="rounded border border-line px-2 text-xs disabled:opacity-60">حفظ</button>
       </form>
-      <form action={(formData) => api.submit(`/api/admin/users/${user._id}/role`, { role: formData.get("role") }, "PATCH")} className="flex gap-1">
+      <form onSubmit={async event => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const json = await api.submit(`/api/admin/users/${user._id}/role`, { role: formData.get("role") }, "PATCH");
+        if (json.ok && json.data?.user) onUpdated?.(json.data.user);
+      }} className="flex gap-1">
         <select aria-label="الدور" name="role" defaultValue={user.role} className="rounded border-line text-xs">
           <option value="citizen">citizen</option>
           <option value="party">party</option>
@@ -706,7 +730,7 @@ export function UserControls({ user }: { user: any }) {
           <option value="admin">admin</option>
           <option value="super_admin">super_admin</option>
         </select>
-        <button className="rounded border border-line px-2 text-xs">حفظ</button>
+        <button disabled={api.loading} className="rounded border border-line px-2 text-xs disabled:opacity-60">حفظ</button>
       </form>
       {user.setupInvitationEligible ? (
         <form
@@ -726,12 +750,15 @@ export function UserControls({ user }: { user: any }) {
   );
 }
 
-export function UserCreateForm() {
-  const api = useApiMessage();
+export function UserCreateForm({ onCreated }: { onCreated?: (user: any) => void } = {}) {
+  const api = useApiMessage(!onCreated);
   const [invitationSent, setInvitationSent] = useState(false);
   return (
     <form
-      action={async (formData) => {
+      onSubmit={async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const formData = new FormData(form);
         const json = await api.submit("/api/admin/users", {
           name: formData.get("name"),
           email: formData.get("email"),
@@ -739,11 +766,13 @@ export function UserCreateForm() {
           status: formData.get("status") || "active"
         });
         setInvitationSent(Boolean(json.ok && json.data?.invitationSent));
+        if (json.ok && json.data?.user) onCreated?.(json.data.user);
+        if (json.ok) form.reset();
       }}
       className="card space-y-3 p-5"
     >
       <h2 className="text-xl font-bold">إنشاء حساب</h2>
-      <input name="name" className="w-full rounded border-line" placeholder="الاسم" required />
+      <input disabled={!api.ready} name="name" className="w-full rounded border-line" placeholder="الاسم" required />
       <input name="email" type="email" className="w-full rounded border-line" placeholder="البريد الإلكتروني" required />
       <p className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">ستُرسل دعوة إعداد آمنة صالحة لمدة 24 ساعة بدل عرض كلمة مرور أو رابط سري.</p>
       <div className="grid gap-3 md:grid-cols-2">
@@ -761,7 +790,7 @@ export function UserCreateForm() {
           <option value="locked">locked</option>
         </select>
       </div>
-      <button className="rounded bg-civic px-4 py-2 text-white">إنشاء</button>
+      <button disabled={api.loading} className="rounded bg-civic px-4 py-2 text-white disabled:opacity-60">إنشاء</button>
       {api.message ? <p className="text-sm text-ink/60">{api.message}</p> : null}
       {invitationSent ? <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">أُرسلت دعوة إعداد الحساب إلى البريد بأمان.</p> : null}
     </form>

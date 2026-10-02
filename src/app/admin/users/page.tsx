@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getDashboardLists } from "@/lib/serverData";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
-import { UserControls, UserCreateForm } from "@/components/dashboard/Forms";
+import UserManagement from "@/components/admin/UserManagement";
 
 export const dynamic = "force-dynamic";
 
@@ -41,19 +41,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
   return (
     <DashboardNav title="لوحة الإدارة" links={links}>
-      <div className="grid gap-6">
-        <UserCreateForm />
-        <div className="card overflow-auto p-5">
-          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">إدارة المستخدمين</h1>
-              <p className="mt-1 text-sm text-ink/60">استخدم الفلاتر للوصول للحسابات المطلوبة بسرعة.</p>
-            </div>
-            <div className="rounded border border-line px-3 py-2 text-sm text-ink/70">
-              النتائج: <b className="text-ink">{users.length}</b>
-            </div>
-          </div>
-
+      <UserManagement key={`${role}:${q}`} users={users} role={role} q={q}>
           <form action="/admin/users" className="mb-4 grid gap-2 md:grid-cols-[1fr_auto_auto]">
             <SearchField name="q" defaultValue={q} placeholder="ابحث بالاسم أو البريد" label="ابحث بالاسم أو البريد" />
             <select aria-label="الدور" name="role" defaultValue={role} className="rounded border-line">
@@ -80,31 +68,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             ))}
           </div>
 
-          <table className="w-full min-w-[760px] text-sm">
-            <thead>
-              <tr className="text-right">
-                <th>الاسم</th>
-                <th>البريد</th>
-                <th>الدور</th>
-                <th>الحالة</th>
-                <th>إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((item) => (
-                <tr key={item._id} className="border-t border-line">
-                  <td className="py-3">{item.name}</td>
-                  <td>{item.email}</td>
-                  <td>{item.role}</td>
-                  <td>{item.status}</td>
-                  <td><UserControls user={item} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {users.length === 0 ? <p className="mt-4 rounded border border-line bg-slate-50 p-4 text-sm text-ink/70">لا توجد حسابات مطابقة.</p> : null}
-        </div>
-      </div>
+      </UserManagement>
     </DashboardNav>
   );
 }

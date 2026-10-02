@@ -34,6 +34,7 @@ export default async function SurveyDetailsPage({ params }: { params: Promise<{ 
               <SafeImage
                 src={publisher.imageUrl || null}
                 alt={publisher.name || survey.title}
+                sizes="64px"
                 className="h-16 w-16 shrink-0 rounded bg-white object-contain p-1 ring-1 ring-line dark:bg-slate-900"
                 fallback={<div className="grid h-16 w-16 shrink-0 place-items-center rounded bg-civic text-2xl font-black text-white">{(publisher.name || "N").slice(0, 1)}</div>}
                 localPrefixes={["/uploads/", "/images/", "/related/"]}

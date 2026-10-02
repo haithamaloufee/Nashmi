@@ -21,7 +21,7 @@ test("owner controls refresh through login and logout without a full browser res
   await expect(page.getByRole("button", { name: "إجراءات المحتوى", exact: true }).first()).toBeVisible();
   await page.locator('button[aria-controls="account-menu"]').click();
   await page.getByRole("button", { name: "تسجيل الخروج", exact: true }).click();
-  await expect(page).toHaveURL(/:3020\/$/);
+  await expect(page).toHaveURL(/\/updates$/);
   await page.getByRole("link", { name: "الرئيسية", exact: true }).first().click();
   await expect(page).toHaveURL(/\/updates$/);
   await expect(page.getByRole("button", { name: "إجراءات المحتوى", exact: true })).toHaveCount(0);
