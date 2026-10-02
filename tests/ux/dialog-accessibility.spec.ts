@@ -17,8 +17,9 @@ for (const theme of ["light", "dark"]) test(`mobile dialogs and menus WCAG and f
   await audit();
   await page.keyboard.press("Escape");
   await expect(search).toBeFocused();
-  const report = page.locator("article").first().getByRole("button", { name: "إرسال بلاغ", exact: true });
+  const report = page.locator("article").first().getByRole("button", { name: "خيارات المنشور", exact: true });
   await report.click();
+  await page.getByRole("menuitem", { name: "إبلاغ", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeFocused();
   await audit();
   await page.keyboard.press("Escape");

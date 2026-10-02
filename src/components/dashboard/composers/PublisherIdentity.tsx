@@ -25,6 +25,7 @@ export default function PublisherIdentity({ publisher }: { publisher: PublisherC
       <SafeImage
         src={publisher.imageUrl || null}
         alt={displayName}
+        sizes="48px"
         className="h-12 w-12 shrink-0 rounded-full bg-white object-cover ring-1 ring-line dark:bg-slate-900"
         fallback={fallback}
         localPrefixes={["/uploads/", "/images/", "/related/"]}

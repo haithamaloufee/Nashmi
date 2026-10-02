@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/Skeletons";
 
 function skeletonForPath(pathname: string) {
-  if (pathname === "/") return <HomePageSkeleton />;
+  if (pathname === "/welcome") return <HomePageSkeleton />;
   if (pathname.startsWith("/updates")) return <UpdatesPageSkeleton />;
   if (pathname.startsWith("/parties")) return <PartiesPageSkeleton />;
   if (pathname.startsWith("/laws")) return <LawsPageSkeleton />;

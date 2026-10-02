@@ -22,7 +22,7 @@ for (const theme of ["light", "dark"]) test(`populated comments, vote, chat and 
   await audit("comments and enabled vote");
   await page.route("**/api/chat", route => route.request().method() === "POST" ? route.fulfill({ json: { ok: true, data: { message: { role: "assistant", content: "رد اصطناعي محلي لاختبار العرض" } } } }) : route.continue());
   await page.goto("/chat");
-  await page.locator("main input").fill("رسالة اصطناعية لفحص التباين");
+  await page.getByRole("textbox", { name: "رسالة إلى المساعد الذكي" }).fill("رسالة اصطناعية لفحص التباين");
   await audit("enabled chat submission");
   await page.locator('main button[type="submit"]').click();
   await expect(page.getByText("رد اصطناعي محلي لاختبار العرض", { exact: true })).toBeVisible();
@@ -33,7 +33,7 @@ for (const theme of ["light", "dark"]) test(`populated comments, vote, chat and 
   await expect(page.locator('button[aria-controls="mobile-navigation"]')).toBeEnabled();
   await page.getByRole("button", { name: "المساعد الذكي", exact: true }).click();
   const assistant = page.locator('section[aria-label="المساعد الذكي"]');
-  await assistant.locator("input").fill("رسالة اصطناعية داخل المساعد");
+  await assistant.getByRole("textbox", { name: "رسالة إلى المساعد الذكي" }).fill("رسالة اصطناعية داخل المساعد");
   await assistant.getByRole("button", { name: "إرسال الرسالة", exact: true }).click();
   await expect(assistant.getByText("رد اصطناعي محلي لاختبار العرض", { exact: true })).toBeVisible();
   await assistant.getByText("رسالة اصطناعية داخل المساعد", { exact: true }).scrollIntoViewIfNeeded();

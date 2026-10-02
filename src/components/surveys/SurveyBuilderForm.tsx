@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Archive, ChevronDown, ChevronUp, Plus, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -112,6 +112,8 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
   const [loading, setLoading] = useState(false);
   const [pendingSurvey, setPendingSurvey] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   const sortedSurveys = useMemo(() => [...surveys].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()), [surveys]);
   const structureLocked = Boolean(editing && Number(editing.totalResponses || 0) > 0);
@@ -241,7 +243,8 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
 
   return (
     <div className="grid gap-6 xl:grid-cols-[460px_1fr]">
-      <form action={() => { void submit(); }} className="card h-fit space-y-4 p-5">
+      <form action={() => { void submit(); }} className="card h-fit p-5" aria-busy={!ready || loading}>
+        <fieldset disabled={!ready} className="space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-black">{editing ? "تعديل الاستبيان" : "استبيان جديد"}</h2>
@@ -363,6 +366,7 @@ export default function SurveyBuilderForm({ surveys, mode, parties = [] }: { sur
           <Save className="h-4 w-4" />
           {loading ? "جار الحفظ..." : "حفظ الاستبيان"}
         </button>
+        </fieldset>
       </form>
 
       <section className="space-y-3">

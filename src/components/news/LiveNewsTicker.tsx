@@ -13,6 +13,7 @@ function TickerItems({ items, duplicate = false, copies = 1, measureRef }: { ite
         <Link
           key={`${duplicate ? "duplicate-" : ""}${copy}-${item.id}`}
           href={`/chat?news=${encodeURIComponent(item.id)}&fresh=1#chat-composer`}
+          prefetch={false}
           tabIndex={duplicate || copy > 0 ? -1 : undefined}
           aria-hidden={duplicate || copy > 0 || undefined}
           data-original={!duplicate && copy === 0 ? "true" : undefined}
@@ -70,7 +71,7 @@ export default function LiveNewsTicker({ initialItems }: { initialItems: PublicN
   if (!items.length) return null;
 
   return (
-    <section className={`news-ticker-shell ${pathname === "/" ? "news-ticker-home" : "news-ticker-inner"}`} aria-label="آخر الأخبار">
+    <section className={`news-ticker-shell ${pathname === "/welcome" ? "news-ticker-home" : "news-ticker-inner"}`} aria-label="آخر الأخبار">
       <div className="news-ticker-label"><Radio aria-hidden="true" /><span className="news-ticker-label-desktop">آخر الأخبار</span><span className="news-ticker-label-mobile">الأخبار</span></div>
       <div className="news-ticker-window" tabIndex={0} aria-label="عناوين الأخبار؛ مرّر أفقياً أو أوقف الحركة بالتركيز">
         <div className="news-ticker-track" style={{ "--ticker-duration": `${duration}s` } as React.CSSProperties}>

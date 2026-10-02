@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MessageCircle, BadgeCheck, Globe, ThumbsUp } from "lucide-react";
+import { MessageCircle, BadgeCheck, Globe, ThumbsUp, EllipsisVertical } from "lucide-react";
 import PostMedia from "./PostMedia";
 import ReportButton from "@/components/reports/ReportButton";
 import ReactionButtons from "@/components/ui/ReactionButtons";
 import SafeImage from "@/components/ui/SafeImage";
 import ShareMenu from "@/components/ui/ShareMenu";
+import DropdownMenu from "@/components/ui/DropdownMenu";
 import DelayedTooltipBadge from "@/components/ui/DelayedTooltipBadge";
 import { useTranslation } from "@/components/i18n/LanguageProvider";
 import HashtagText from "@/components/hashtags/HashtagText";
@@ -155,7 +156,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           {author.href ? (
-            <Link href={author.href} className="focus-ring group shrink-0 cursor-pointer rounded-full" aria-label={`فتح صفحة ${author.name}`}>
+            <Link href={author.href} prefetch={false} className="focus-ring group shrink-0 cursor-pointer rounded-full" aria-label={`فتح صفحة ${author.name}`}>
               {avatar}
             </Link>
           ) : (
@@ -164,7 +165,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               {author.href ? (
-                <Link href={author.href} className="focus-ring min-w-0 cursor-pointer rounded text-ink hover:text-civic hover:underline dark:text-white dark:hover:text-emerald-200">
+                <Link href={author.href} prefetch={false} className="focus-ring min-w-0 cursor-pointer rounded text-ink hover:text-civic hover:underline dark:text-white dark:hover:text-emerald-200">
                   <h3 className="truncate font-bold">{author.name}</h3>
                 </Link>
               ) : (
@@ -178,7 +179,9 @@ export default function PostCard({ post, compact = false, showModerationActions 
         <div className="flex shrink-0 items-center gap-2">
           {user && canEditOwnPost(user, currentPost) ? <OwnerContentMenu type="post" item={currentPost} onUpdated={(updated) => setCurrentPost(updated)} onDeleted={() => setDeleted(true)} /> : null}
           {showModerationActions ? <InlineModerationActions targetType="post" targetId={currentPost._id} /> : null}
-          <ReportButton targetType="post" targetId={currentPost._id} compact />
+          <DropdownMenu keepMounted label={language === "ar" ? "خيارات المنشور" : "Post options"} trigger={<EllipsisVertical className="h-4 w-4" aria-hidden="true" />} triggerClassName="focus-ring inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm text-slate-600 hover:bg-civic/10 hover:text-civic dark:text-slate-300">
+            <ReportButton targetType="post" targetId={currentPost._id} menuItem />
+          </DropdownMenu>
         </div>
       </div>
 
@@ -193,7 +196,7 @@ export default function PostCard({ post, compact = false, showModerationActions 
       {currentPost.tags?.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {currentPost.tags.map((tag) => (
-            <Link key={tag} href={`/hashtags/${encodeURIComponent(normalizeHashtag(tag))}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-civic hover:underline dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-200">
+            <Link key={tag} href={`/hashtags/${encodeURIComponent(normalizeHashtag(tag))}`} prefetch={false} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-civic hover:underline dark:bg-slate-900 dark:text-slate-300 dark:hover:text-emerald-200">
               #{tag.replace(/^#/, "")}
             </Link>
           ))}

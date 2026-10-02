@@ -94,6 +94,8 @@ for (const role of ["admin", "super_admin"]) test(`local ${role} report actions 
       const applied = page.waitForResponse(r => r.url().endsWith(`/api/admin/reports/${id}`) && r.request().method() === "PATCH");
       await form.getByRole("button", { name: "تنفيذ", exact: true }).click();
       expect((await applied).status()).toBe(200);
+      await expect(form.getByRole("button", { name: "تنفيذ", exact: true })).toBeEnabled();
+      await expect(row.locator("div").first()).toContainText(action === "dismiss_report" ? "مرفوض" : "تم الإجراء");
       expect((await db.collection("posts").findOne({ _id: postId }))?.status).toBe(status);
       expect((await db.collection("reports").findOne({ _id: id }))?.status).toBe(action === "dismiss_report" ? "dismissed" : "action_taken");
       expect(await db.collection("moderationactions").countDocuments({ targetId: postId, action })).toBe(1);
@@ -120,7 +122,7 @@ for (const role of ["admin", "super_admin"]) test(`local ${role} news hide and s
       expect((await db.collection("newsitems").findOne({ _id: id }))?.status).toBe(status);
     }
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/");
+    await page.goto("/welcome");
     const ticker = page.getByRole("region", { name: "آخر الأخبار" });
     await expect(ticker).toBeVisible();
     await expect(ticker.locator('[data-original="true"]').first()).toHaveAttribute("href", `/chat?news=${id}&fresh=1#chat-composer`);

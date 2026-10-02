@@ -8,7 +8,7 @@ test("navigation distinguishes landing logo and social Home, including mobile", 
   await expect(nav.getByRole("link", { name: "الرئيسية", exact: true })).toHaveAttribute("href", "/updates");
   await expect(nav.getByRole("link", { name: "الرئيسية", exact: true })).toHaveAttribute("aria-current", "page");
   await page.getByRole("link", { name: "Nashmi home" }).click();
-  await expect(page).toHaveURL(/:3020\/$/);
+  await expect(page).toHaveURL(/\/welcome$/);
   await nav.getByRole("link", { name: "الرئيسية", exact: true }).click();
   await expect(page).toHaveURL(/\/updates$/);
   await page.setViewportSize({ width: 320, height: 844 });

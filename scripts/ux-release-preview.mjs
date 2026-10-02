@@ -99,24 +99,26 @@ try {
   page.on('pageerror', error => results.consoleErrors.push(error.message));
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const path of ['/', '/updates', '/parties', '/iec', '/laws', '/login']) {
+    for (const path of ['/', '/welcome', '/updates', '/parties', '/iec', '/laws', '/login', '/chat']) {
       const response = await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       assert.equal(response.status(), 200, path);
-      await page.locator('button[aria-controls="mobile-navigation"]:enabled').waitFor();
+      await page.locator('button[aria-controls="mobile-navigation"]:enabled').waitFor({ state: 'attached' });
       await page.evaluate(() => document.fonts.ready);
-      assert.equal(await page.locator('a[aria-label="Nashmi home"]').getAttribute('href'), '/');
+      assert.equal(await page.locator('a[aria-label="Nashmi home"]').getAttribute('href'), '/welcome');
       assert.equal(await page.locator('nav[aria-label] a[href="/updates"]').first().count(), 1);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, path);
-      const content = await page.locator('main').innerText();
+      const content = await page.locator('main').first().innerText();
       assert.ok(!content.includes('حساب نشمي التجريبي') && !content.includes('محتوى QA اصطناعي'), 'QA fixture content leaked into Preview');
       await page.screenshot({ path: `${output}/${path.replaceAll('/', '_') || '_home'}-${width}.png` });
       results.pages.push({ path, width, status: response.status() });
     }
     await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
     await page.locator('nav[aria-label] a[href="/updates"]').first().click();
+    await page.waitForURL('**/updates');
     assert.equal(new URL(page.url()).pathname, '/updates');
     await page.locator('a[aria-label="Nashmi home"]').click();
-    assert.equal(new URL(page.url()).pathname, '/');
+    await page.waitForURL('**/welcome');
+    assert.equal(new URL(page.url()).pathname, '/welcome');
   }
   assert.equal(results.consoleErrors.length, 0, 'Unhandled browser exceptions');
   save();

@@ -8,7 +8,7 @@ import { useTranslation } from "@/components/i18n/LanguageProvider";
 import { useDialog } from "@/lib/useDialog";
 type ReportTargetType = "post" | "poll" | "comment" | "party" | "user";
 
-export default function ReportButton({ targetType, targetId, compact = false }: { targetType: ReportTargetType; targetId: string; compact?: boolean }) {
+export default function ReportButton({ targetType, targetId, compact = false, menuItem = false }: { targetType: ReportTargetType; targetId: string; compact?: boolean; menuItem?: boolean }) {
   const [open, setOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -35,8 +35,8 @@ export default function ReportButton({ targetType, targetId, compact = false }: 
     finally { setPending(false); }
   }
   return <>
-    <button type="button" onClick={event => { event.currentTarget.focus(); setError(""); setOpen(true); }} aria-label={t("social.report")} aria-haspopup="dialog" aria-expanded={open} className={`focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm text-slate-600 hover:bg-civic/10 hover:text-civic dark:text-slate-300 ${compact ? "h-11 w-11 shrink-0" : "px-3"}`}>
-      <Flag className="h-4 w-4" aria-hidden="true"/>{compact ? null : t("social.report")}
+    <button type="button" role={menuItem ? "menuitem" : undefined} tabIndex={menuItem ? -1 : undefined} onClick={event => { event.currentTarget.focus(); setError(""); setOpen(true); }} aria-label={menuItem ? (language === "ar" ? "إبلاغ" : "Report") : t("social.report")} aria-haspopup="dialog" aria-expanded={open} className={menuItem ? "focus-ring flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-start text-sm text-slate-600 hover:bg-civic/10 hover:text-civic dark:text-slate-300" : `focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm text-slate-600 hover:bg-civic/10 hover:text-civic dark:text-slate-300 ${compact ? "h-11 w-11 shrink-0" : "px-3"}`}>
+      <Flag className="h-4 w-4" aria-hidden="true"/>{compact ? null : menuItem ? (language === "ar" ? "إبلاغ" : "Report") : t("social.report")}
     </button>
     {open ? createPortal(<div className="fixed inset-0 z-[80] grid place-items-center bg-ink/60 p-3 backdrop-blur-sm" onMouseDown={event => { if (event.target === event.currentTarget) setOpen(false); }}>
       <form ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId} dir={dir} onSubmit={submit} className="card w-full max-w-md space-y-4 p-5 outline-none">

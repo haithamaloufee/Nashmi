@@ -13,6 +13,8 @@ for (const role of ["party", "iec"]) test(`baseline ${role}: publish, edit, canc
   expect(response.status()).toBe(201);
   const id = (await response.json()).data.post._id;
   try {
+    // Await the committed dashboard refresh, not only its preceding POST response.
+    await expect(page.locator("main article").filter({ hasText: marker }).first()).toBeVisible();
     await page.goto(`/updates?search=${marker}`);
     const card = page.locator("article").filter({ hasText: marker }).first();
     await card.getByRole("button", { name: "إجراءات المحتوى", exact: true }).click();

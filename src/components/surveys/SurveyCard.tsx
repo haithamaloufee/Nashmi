@@ -28,6 +28,7 @@ export default function SurveyCard({ survey, compact = false }: { survey: Survey
           <SafeImage
             src={publisher?.imageUrl || null}
             alt={publisher?.name || "استبيان"}
+            sizes="44px"
             className="h-11 w-11 shrink-0 rounded bg-white object-contain ring-1 ring-line dark:bg-slate-900"
             fallback={<div className="grid h-11 w-11 shrink-0 place-items-center rounded bg-civic/10 text-lg font-black text-civic">{(publisher?.name || "N").slice(0, 1)}</div>}
             localPrefixes={["/uploads/", "/images/", "/related/"]}

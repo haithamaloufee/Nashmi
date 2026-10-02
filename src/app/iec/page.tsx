@@ -84,7 +84,7 @@ export default async function IecPage() {
 
             <div className="px-4 pb-4 sm:px-6">
               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
-                <SafeImage src={logoUrl} alt="شعار الهيئة المستقلة للانتخاب" className="-mt-14 h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white object-contain p-1 shadow-md dark:border-slate-950" fallback={logoFallback} localPrefixes={["/images/", "/uploads/", "/related/"]} />
+                <SafeImage src={logoUrl} alt="شعار الهيئة المستقلة للانتخاب" sizes="112px" className="-mt-14 h-28 w-28 shrink-0 rounded-full border-4 border-white bg-white object-contain p-1 shadow-md dark:border-slate-950" fallback={logoFallback} localPrefixes={["/images/", "/uploads/", "/related/"]} />
                 <div className="min-w-0 pb-1">
                   <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-civic/10 px-2.5 py-1 text-xs font-bold text-civic dark:bg-emerald-200/10 dark:text-emerald-100">
                     <Building2 className="h-4 w-4" />
