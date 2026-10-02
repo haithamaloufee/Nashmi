@@ -2,13 +2,31 @@ import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE } from "@/lib/cookies";
 import { verifyEdgeAuthToken } from "@/lib/jwtEdge";
 
+function configuredR2MediaOrigin() {
+  const endpoint = process.env.R2_ENDPOINT?.trim();
+  const accountId = process.env.R2_ACCOUNT_ID?.trim();
+  const source = endpoint || (accountId && /^[a-f0-9]{32}$/i.test(accountId)
+    ? `https://${accountId}.r2.cloudflarestorage.com`
+    : null);
+  if (!source) return null;
+  try {
+    const url = new URL(source);
+    if (url.protocol !== "https:" || !url.hostname.endsWith(".r2.cloudflarestorage.com") || url.username || url.password || url.port) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
 function withSecurityHeaders(response: NextResponse) {
   const production = process.env.NODE_ENV === "production";
+  const mediaOrigin = configuredR2MediaOrigin();
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline'${production ? "" : " 'unsafe-eval'"}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
+    `media-src 'self'${mediaOrigin ? ` ${mediaOrigin}` : ""}`,
     "font-src 'self' data:",
     "connect-src 'self' https://*.r2.cloudflarestorage.com",
     "frame-src https://www.youtube-nocookie.com https://www.youtube.com",

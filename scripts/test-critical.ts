@@ -402,6 +402,49 @@ function testAuthEmailSecurity() {
   assert.doesNotMatch(resetSource, /passwordSetupTokenHash/);
 }
 
+async function testR2VideoContentSecurityPolicy() {
+  const { NextRequest } = await import("next/server");
+  const { middleware } = await import("../src/middleware");
+  const originalEndpoint = process.env.R2_ENDPOINT;
+  const originalAccountId = process.env.R2_ACCOUNT_ID;
+  const account = "a".repeat(32);
+  const configuredAccount = "b".repeat(32);
+  const cases = [
+    { endpoint: undefined, accountId: undefined, expected: "media-src 'self'" },
+    { endpoint: undefined, accountId: account, expected: `media-src 'self' https://${account}.r2.cloudflarestorage.com` },
+    { endpoint: `https://${configuredAccount}.r2.cloudflarestorage.com/`, accountId: account, expected: `media-src 'self' https://${configuredAccount}.r2.cloudflarestorage.com` },
+    ...[
+      "https://unrelated.example",
+      `https://${account}.r2.cloudflarestorage.com.unrelated.example`,
+      `http://${account}.r2.cloudflarestorage.com`,
+      `https://someone:secret@${account}.r2.cloudflarestorage.com`,
+      `https://${account}.r2.cloudflarestorage.com:8443`,
+      "https://invalid endpoint; media-src https:"
+    ].map(endpoint => ({ endpoint, accountId: account, expected: "media-src 'self'" })),
+    { endpoint: undefined, accountId: "invalid-account; media-src https:", expected: "media-src 'self'" }
+  ];
+  try {
+    for (const sample of cases) {
+      if (sample.endpoint === undefined) delete process.env.R2_ENDPOINT;
+      else process.env.R2_ENDPOINT = sample.endpoint;
+      if (sample.accountId === undefined) delete process.env.R2_ACCOUNT_ID;
+      else process.env.R2_ACCOUNT_ID = sample.accountId;
+      const response = await middleware(new NextRequest("https://nashmi.example/updates"));
+      const directives = response.headers.get("Content-Security-Policy")!.split("; ");
+      assert.equal(directives.find(value => value.startsWith("media-src ")), sample.expected);
+      assert.ok(directives.includes("default-src 'self'"));
+      assert.ok(directives.includes("connect-src 'self' https://*.r2.cloudflarestorage.com"));
+      assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
+    }
+    console.log(`R2 video CSP: ${cases.length} configuration and safety cases passed.`);
+  } finally {
+    if (originalEndpoint === undefined) delete process.env.R2_ENDPOINT;
+    else process.env.R2_ENDPOINT = originalEndpoint;
+    if (originalAccountId === undefined) delete process.env.R2_ACCOUNT_ID;
+    else process.env.R2_ACCOUNT_ID = originalAccountId;
+  }
+}
+
 async function main() {
   await testPartyMatching();
   await testUploadValidation();
@@ -418,6 +461,7 @@ async function main() {
   await testAiEndpointBoundaries();
   await testSessionTokenVerification();
   testAuthEmailSecurity();
+  await testR2VideoContentSecurityPolicy();
   console.log("Critical tests passed.");
 }
 
