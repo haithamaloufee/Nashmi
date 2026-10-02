@@ -34,6 +34,7 @@ const sortLabelKeys = {
   pollsEndingSoon: "updates.pollsEndingSoon"
 } as const;
 const advancedFilterOptions = filters.map((value) => ({ value, labelKey: filterLabelKeys[value] }));
+const advancedSortOptions = sortOptions.map((value) => ({ value, labelKey: sortLabelKeys[value] }));
 
 export default function UpdatesClient({
   initialSearch = "",
@@ -100,14 +101,17 @@ export default function UpdatesClient({
       <AdvancedSearchModal
         open={advancedFiltersOpen}
         filterOptions={advancedFilterOptions}
+        sortOptions={advancedSortOptions}
         fromDate={fromDate}
         toDate={toDate}
         filter={filter}
         hashtag={hashtag}
+        sort={sort}
         onFromDateChange={setFromDate}
         onToDateChange={setToDate}
         onFilterChange={setFilter}
         onHashtagChange={setHashtag}
+        onSortChange={setSort}
         onReset={resetFilters}
         onApply={closeAdvancedFilters}
         onClose={closeAdvancedFilters}
@@ -120,8 +124,8 @@ export default function UpdatesClient({
       </aside>
       <section className="min-w-0 space-y-4" data-feed-region aria-busy={loading || loadingMore} aria-label={t("updates.title")}>
         <div className="card p-3">
-          <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2 sm:grid-cols-[minmax(0,1fr)_220px_44px]">
-            <label className="relative col-span-2 block sm:col-span-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_44px] items-stretch gap-2">
+            <label className="relative block min-w-0">
               <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/60" />
               <input
                 disabled={!ready}
@@ -131,12 +135,6 @@ export default function UpdatesClient({
                 placeholder={t("updates.search")}
                 aria-label={t("updates.search")}
               />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold xl:block">
-              <span className="sr-only">{t("updates.sortBy")}</span>
-              <select disabled={!ready} value={sort} onChange={(event) => setSort(event.target.value)} className="h-full min-h-11 w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white">
-                {sortOptions.map((item) => <option key={item} value={item}>{t(sortLabelKeys[item])}</option>)}
-              </select>
             </label>
             <button
               type="button"

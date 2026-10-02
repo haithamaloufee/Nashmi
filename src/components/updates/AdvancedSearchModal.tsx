@@ -14,14 +14,17 @@ type FilterOption = {
 type AdvancedSearchModalProps = {
   open: boolean;
   filterOptions: readonly FilterOption[];
+  sortOptions: readonly FilterOption[];
   fromDate: string;
   toDate: string;
   filter: string;
   hashtag: string;
+  sort: string;
   onFromDateChange: (value: string) => void;
   onToDateChange: (value: string) => void;
   onFilterChange: (value: string) => void;
   onHashtagChange: (value: string) => void;
+  onSortChange: (value: string) => void;
   onReset: () => void;
   onApply: () => void;
   onClose: () => void;
@@ -30,14 +33,17 @@ type AdvancedSearchModalProps = {
 export default function AdvancedSearchModal({
   open,
   filterOptions,
+  sortOptions,
   fromDate,
   toDate,
   filter,
   hashtag,
+  sort,
   onFromDateChange,
   onToDateChange,
   onFilterChange,
   onHashtagChange,
+  onSortChange,
   onReset,
   onApply,
   onClose
@@ -87,6 +93,26 @@ export default function AdvancedSearchModal({
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-1.5 text-sm font-semibold">
+              {t("updates.sortBy")}
+              <select
+                value={sort}
+                onChange={(event) => onSortChange(event.target.value)}
+                className="w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white"
+              >
+                {sortOptions.map((item) => <option key={item.value} value={item.value}>{t(item.labelKey)}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1.5 text-sm font-semibold">
+              {t("updates.contentType")}
+              <select
+                value={filter}
+                onChange={(event) => onFilterChange(event.target.value)}
+                className="w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white"
+              >
+                {filterOptions.map((item) => <option key={item.value} value={item.value}>{t(item.labelKey)}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1.5 text-sm font-semibold">
               {t("updates.fromDate")}
               <input
                 type="date"
@@ -103,20 +129,6 @@ export default function AdvancedSearchModal({
                 onChange={(event) => onToDateChange(event.target.value)}
                 className="w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white"
               />
-            </label>
-            <label className="grid gap-1.5 text-sm font-semibold sm:col-span-2">
-              {t("updates.contentType")}
-              <select
-                value={filter}
-                onChange={(event) => onFilterChange(event.target.value)}
-                className="w-full rounded border-line bg-white text-ink focus:border-civic focus:ring-civic dark:bg-slate-900 dark:text-white"
-              >
-                {filterOptions.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {t(item.labelKey)}
-                  </option>
-                ))}
-              </select>
             </label>
             <label className="grid gap-1.5 text-sm font-semibold sm:col-span-2">
               {t("updates.hashtagSearch")}
